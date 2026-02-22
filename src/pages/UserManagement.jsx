@@ -151,13 +151,13 @@ function UserManagement() {
                 className="bg-slate-900 border border-slate-800 rounded-xl p-4 sm:p-6"
               >
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-3 mb-2">
-                      <h3 className="text-base sm:text-lg font-semibold text-slate-50">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-3 mb-2 flex-wrap">
+                      <h3 className="text-base sm:text-lg font-semibold text-slate-50 break-words">
                         {user.displayName || 'Ei nimeä'}
                       </h3>
                       <span
-                        className={`px-2 py-1 rounded text-xs font-medium uppercase tracking-wide ${
+                        className={`px-2 py-1 rounded text-xs font-medium uppercase tracking-wide flex-shrink-0 ${
                           user.role === 'admin'
                             ? 'bg-amber-400/20 text-amber-400'
                             : 'bg-slate-700 text-slate-300'
@@ -166,8 +166,8 @@ function UserManagement() {
                         {user.role || 'user'}
                       </span>
                     </div>
-                    <p className="text-sm text-slate-400 mb-1">{user.email}</p>
-                    <p className="text-xs text-slate-500">
+                    <p className="text-sm text-slate-400 mb-1 break-all">{user.email}</p>
+                    <p className="text-xs text-slate-500 break-words">
                       Taso: {user.rank || 'harjoittelija'} | Pisteet: {user.progress?.totalScore || 0}
                     </p>
                   </div>
@@ -336,11 +336,11 @@ function DeleteConfirmModal({ user, onClose, onConfirm, loading }) {
       aria-labelledby="delete-modal-title"
     >
       <div className="bg-slate-900 border border-slate-800 rounded-xl max-w-md w-full p-6 sm:p-8">
-        <h2 id="delete-modal-title" className="text-xl sm:text-2xl font-bold text-red-600 mb-4">
+        <h2 id="delete-modal-title" className="text-xl sm:text-2xl font-bold text-red-600 mb-4 break-words">
           Poista käyttäjä
         </h2>
-        <p className="text-sm sm:text-base text-slate-300 mb-6">
-          Haluatko varmasti poistaa käyttäjän <strong className="text-slate-50">{user.displayName || user.email}</strong>?
+        <p className="text-sm sm:text-base text-slate-300 mb-6 break-words">
+          Haluatko varmasti poistaa käyttäjän <strong className="text-slate-50 break-all">{user.displayName || user.email}</strong>?
           <br />
           <br />
           <span className="text-red-500">Tämä toiminto on peruuttamaton.</span>

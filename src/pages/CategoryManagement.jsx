@@ -148,23 +148,23 @@ function CategoryManagement() {
                 className="bg-slate-900 border border-slate-800 rounded-xl p-6 hover:border-slate-700 transition-colors"
               >
                 <div className="flex items-start justify-between mb-4">
-                  <div className="flex-1">
-                    <h3 className="text-lg font-semibold text-slate-50 mb-2">
+                  <div className="flex-1 min-w-0">
+                    <h3 className="text-lg font-semibold text-slate-50 mb-2 break-words">
                       {category.name}
                     </h3>
                     {category.description && (
-                      <p className="text-sm text-slate-400 mb-3">
+                      <p className="text-sm text-slate-400 mb-3 break-words">
                         {category.description}
                       </p>
                     )}
                     {category.color && (
-                      <div className="flex items-center gap-2 text-xs text-slate-500">
+                      <div className="flex items-center gap-2 text-xs text-slate-500 break-all">
                         <div
-                          className="w-4 h-4 rounded"
+                          className="w-4 h-4 rounded flex-shrink-0"
                           style={{ backgroundColor: category.color }}
                           aria-hidden="true"
                         />
-                        {category.color}
+                        <span className="truncate">{category.color}</span>
                       </div>
                     )}
                   </div>
@@ -356,11 +356,11 @@ function DeleteConfirmModal({ category, onClose, onConfirm, loading }) {
       aria-labelledby="delete-modal-title"
     >
       <div className="bg-slate-900 border border-slate-800 rounded-xl max-w-md w-full p-6 sm:p-8">
-        <h2 id="delete-modal-title" className="text-xl sm:text-2xl font-bold text-red-600 mb-4">
+        <h2 id="delete-modal-title" className="text-xl sm:text-2xl font-bold text-red-600 mb-4 break-words">
           Poista kategoria
         </h2>
-        <p className="text-sm sm:text-base text-slate-300 mb-6">
-          Haluatko varmasti poistaa kategorian <strong className="text-slate-50">{category.name}</strong>?
+        <p className="text-sm sm:text-base text-slate-300 mb-6 break-words">
+          Haluatko varmasti poistaa kategorian <strong className="text-slate-50 break-words">{category.name}</strong>?
           <br />
           <br />
           <span className="text-red-500">Tämä toiminto on peruuttamaton.</span>
