@@ -63,8 +63,8 @@ function Login() {
       <div className="max-w-md w-full space-y-6 sm:space-y-8">
         <div className="text-center">
           <div 
-            className="w-20 h-20 sm:w-24 sm:h-24 mx-auto mb-4 bg-center bg-no-repeat bg-contain"
-            style={{ backgroundImage: `url(${logo})` }}
+            className="w-20 h-20 sm:w-24 sm:h-24 mx-auto mb-4 bg-center bg-no-repeat bg-contain opacity-90"
+            style={{ backgroundImage: `url(${logo})`, filter: 'brightness(1.1) contrast(1.05)' }}
             role="img"
             aria-label="Kiekuu logo"
           />

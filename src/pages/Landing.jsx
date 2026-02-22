@@ -47,8 +47,8 @@ function Landing() {
       <div className="max-w-md w-full">
         <div className="text-center mb-8">
           <div 
-            className="w-24 h-24 sm:w-32 sm:h-32 mx-auto mb-4 bg-center bg-no-repeat bg-contain"
-            style={{ backgroundImage: `url(${logo})` }}
+            className="w-24 h-24 sm:w-32 sm:h-32 mx-auto mb-4 bg-center bg-no-repeat bg-contain opacity-90"
+            style={{ backgroundImage: `url(${logo})`, filter: 'brightness(1.1) contrast(1.05)' }}
             role="img"
             aria-label="Kiekuu logo"
           />

@@ -38,8 +38,8 @@ function Home() {
           <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center py-4 sm:h-16 gap-4 sm:gap-0">
             <div className="flex items-center justify-center sm:justify-start gap-3">
               <div 
-                className="w-10 h-10 sm:w-12 sm:h-12 bg-center bg-no-repeat bg-contain flex-shrink-0"
-                style={{ backgroundImage: `url(${logo})` }}
+                className="w-10 h-10 sm:w-12 sm:h-12 bg-center bg-no-repeat bg-contain flex-shrink-0 opacity-90"
+                style={{ backgroundImage: `url(${logo})`, filter: 'brightness(1.1) contrast(1.05)' }}
                 role="img"
                 aria-label="Kiekuu logo"
               />
