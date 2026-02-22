@@ -8,6 +8,7 @@ import Home from './pages/Home';
 import AdminDashboard from './pages/AdminDashboard';
 import UserManagement from './pages/UserManagement';
 import CategoryManagement from './pages/CategoryManagement';
+import RankManagement from './pages/RankManagement';
 
 function App() {
   return (
@@ -46,6 +47,14 @@ function App() {
             element={
               <ProtectedRoute adminOnly>
                 <CategoryManagement />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/ranks"
+            element={
+              <ProtectedRoute adminOnly>
+                <RankManagement />
               </ProtectedRoute>
             }
           />

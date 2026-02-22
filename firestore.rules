@@ -69,6 +69,15 @@ service cloud.firestore {
       allow create, update, delete: if isAdmin();
     }
     
+    // Ranks collection
+    match /ranks/{rankId} {
+      // Everyone can read ranks
+      allow read: if isAuthenticated();
+      
+      // Only admins can modify
+      allow create, update, delete: if isAdmin();
+    }
+    
     // Deny everything else by default
     match /{document=**} {
       allow read, write: if false;

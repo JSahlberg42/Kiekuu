@@ -111,9 +111,13 @@ function AdminDashboard() {
               <h2 className="ml-4 text-lg sm:text-xl font-semibold text-orange-500 uppercase tracking-wide">Ranks</h2>
             </div>
             <p className="text-sm sm:text-base leading-relaxed text-slate-300 mb-4">Configure rank progression system</p>
-            <button className="w-full bg-red-600 text-slate-50 px-4 py-3 rounded-xl hover:bg-red-700 active:bg-red-800 transition-colors font-semibold min-h-[44px]" aria-label="Hallitse arvoja">
+            <Link
+              to="/admin/ranks"
+              className="block w-full bg-red-600 text-slate-50 px-4 py-3 rounded-xl hover:bg-red-700 active:bg-red-800 transition-colors font-semibold min-h-[44px] text-center"
+              aria-label="Hallitse arvoja"
+            >
               Manage Ranks
-            </button>
+            </Link>
           </div>
 
           {/* Settings */}
