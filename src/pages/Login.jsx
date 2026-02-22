@@ -60,26 +60,26 @@ function Login() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950 px-4">
+    <div className="min-h-screen flex items-center justify-center bg-slate-950 px-4">
       <div className="max-w-md w-full space-y-8">
         <div className="text-center">
-          <h1 className="text-4xl font-bold mb-2">🐓 Kiekuu</h1>
-          <h2 className="text-2xl font-semibold">Kirjaudu sisään</h2>
-          <p className="text-slate-600 dark:text-slate-400 mt-2">
+          <h1 className="text-4xl font-bold mb-2 text-slate-50">🐓 Kiekuu</h1>
+          <h2 className="text-xl font-semibold text-orange-500 uppercase tracking-wide">Kirjaudu sisään</h2>
+          <p className="text-base leading-relaxed text-slate-300 mt-2">
             Jatka oppimista
           </p>
         </div>
 
-        <form onSubmit={handleSubmit} className="mt-8 space-y-6">
+        <form onSubmit={handleSubmit} className="mt-8 space-y-6 bg-slate-900 border border-slate-800 rounded-xl p-8">
           {error && (
-            <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-800 dark:text-red-200 px-4 py-3 rounded">
+            <div className="bg-red-600/20 border border-red-600 text-slate-50 px-4 py-3 rounded-xl">
               {error}
             </div>
           )}
 
           <div className="space-y-4">
             <div>
-              <label htmlFor="email" className="block text-sm font-medium mb-2">
+              <label htmlFor="email" className="block text-xs font-medium uppercase tracking-widest text-slate-400 mb-2">
                 Sähköposti
               </label>
               <input
@@ -90,13 +90,13 @@ function Login() {
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full px-4 py-2 border border-slate-300 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-4 py-2 border border-slate-800 rounded-xl bg-slate-950 text-slate-50 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
                 placeholder="nimi@esimerkki.fi"
               />
             </div>
 
             <div>
-              <label htmlFor="password" className="block text-sm font-medium mb-2">
+              <label htmlFor="password" className="block text-xs font-medium uppercase tracking-widest text-slate-400 mb-2">
                 Salasana
               </label>
               <input
@@ -107,7 +107,7 @@ function Login() {
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full px-4 py-2 border border-slate-300 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-4 py-2 border border-slate-800 rounded-xl bg-slate-950 text-slate-50 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
                 placeholder="••••••••"
               />
             </div>
@@ -116,17 +116,17 @@ function Login() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-3 px-4 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 text-white font-medium rounded-lg transition-colors"
+            className="w-full py-3 px-4 bg-orange-500 hover:bg-orange-600 disabled:opacity-50 text-slate-50 font-semibold rounded-xl transition-colors"
           >
             {loading ? 'Kirjaudutaan...' : 'Kirjaudu sisään'}
           </button>
 
           <div className="relative">
             <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-slate-300 dark:border-slate-700"></div>
+              <div className="w-full border-t border-slate-800"></div>
             </div>
-            <div className="relative flex justify-center text-sm">
-              <span className="px-2 bg-slate-50 dark:bg-slate-950 text-slate-500">tai</span>
+            <div className="relative flex justify-center text-xs font-medium uppercase tracking-widest">
+              <span className="px-2 bg-slate-900 text-slate-500">tai</span>
             </div>
           </div>
 
@@ -134,7 +134,7 @@ function Login() {
             type="button"
             onClick={handleGoogleSignIn}
             disabled={loading}
-            className="w-full py-3 px-4 bg-white hover:bg-slate-50 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-medium rounded-lg border-2 border-slate-300 dark:border-slate-700 transition-colors disabled:opacity-50 flex items-center justify-center gap-3"
+            className="w-full py-3 px-4 bg-slate-800 hover:bg-slate-700 text-slate-50 font-semibold rounded-xl border border-slate-700 transition-colors disabled:opacity-50 flex items-center justify-center gap-3"
           >
             <svg className="w-5 h-5" viewBox="0 0 24 24">
               <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
@@ -146,14 +146,14 @@ function Login() {
           </button>
 
           <div className="text-center text-sm">
-            <p className="text-slate-600 dark:text-slate-400">
+            <p className="text-slate-400">
               Eikö sinulla ole tiliä?{' '}
-              <Link to="/signup" className="text-blue-600 hover:text-blue-700 font-medium">
+              <Link to="/signup" className="text-orange-500 hover:text-orange-400 font-medium">
                 Rekisteröidy
               </Link>
             </p>
-            <p className="text-slate-600 dark:text-slate-400 mt-2">
-              <Link to="/landing" className="text-blue-600 hover:text-blue-700 font-medium">
+            <p className="text-slate-400 mt-2">
+              <Link to="/landing" className="text-orange-500 hover:text-orange-400 font-medium">
                 ← Takaisin alkuun
               </Link>
             </p>

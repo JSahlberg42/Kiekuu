@@ -39,22 +39,22 @@ function LinkAccountModal({ isOpen, onClose, onSuccess }) {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg max-w-md w-full p-6">
-        <h2 className="text-2xl font-bold mb-4">🎉 Hienoa työtä!</h2>
-        <p className="mb-4 text-slate-600">
+    <div className="fixed inset-0 bg-slate-950/90 flex items-center justify-center z-50 p-4">
+      <div className="bg-slate-900 border border-slate-800 rounded-xl max-w-md w-full p-8">
+        <h2 className="text-3xl font-bold tracking-tight text-slate-50 mb-4">🎉 Hienoa työtä!</h2>
+        <p className="mb-6 text-base leading-relaxed text-slate-300">
           Olet suorittanut ensimmäisen tason. Luo tili jatkaaksesi oppimista ja säilyttääksesi edistymisesi.
         </p>
 
         {error && (
-          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+          <div className="bg-red-600/20 border border-red-600 text-slate-50 px-4 py-3 rounded-xl mb-4">
             {error}
           </div>
         )}
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label htmlFor="displayName" className="block text-sm font-medium text-slate-700 mb-1">
+            <label htmlFor="displayName" className="block text-xs font-medium uppercase tracking-widest text-slate-400 mb-2">
               Nimi
             </label>
             <input
@@ -63,12 +63,12 @@ function LinkAccountModal({ isOpen, onClose, onSuccess }) {
               value={displayName}
               onChange={(e) => setDisplayName(e.target.value)}
               required
-              className="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+              className="w-full px-4 py-2 border border-slate-800 rounded-xl bg-slate-950 text-slate-50 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
             />
           </div>
 
           <div>
-            <label htmlFor="email" className="block text-sm font-medium text-slate-700 mb-1">
+            <label htmlFor="email" className="block text-xs font-medium uppercase tracking-widest text-slate-400 mb-2">
               Sähköposti
             </label>
             <input
@@ -77,12 +77,12 @@ function LinkAccountModal({ isOpen, onClose, onSuccess }) {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
-              className="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+              className="w-full px-4 py-2 border border-slate-800 rounded-xl bg-slate-950 text-slate-50 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
             />
           </div>
 
           <div>
-            <label htmlFor="password" className="block text-sm font-medium text-slate-700 mb-1">
+            <label htmlFor="password" className="block text-xs font-medium uppercase tracking-widest text-slate-400 mb-2">
               Salasana
             </label>
             <input
@@ -92,14 +92,14 @@ function LinkAccountModal({ isOpen, onClose, onSuccess }) {
               onChange={(e) => setPassword(e.target.value)}
               required
               minLength={6}
-              className="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+              className="w-full px-4 py-2 border border-slate-800 rounded-xl bg-slate-950 text-slate-50 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
             />
           </div>
 
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-orange-500 hover:bg-orange-600 text-white font-semibold py-3 px-4 rounded-lg transition-colors disabled:opacity-50"
+            className="w-full bg-orange-500 hover:bg-orange-600 text-slate-50 font-semibold py-3 px-4 rounded-xl transition-colors disabled:opacity-50"
           >
             {loading ? 'Luodaan tiliä...' : 'Luo tili ja jatka'}
           </button>
@@ -108,7 +108,7 @@ function LinkAccountModal({ isOpen, onClose, onSuccess }) {
         <div className="mt-4 text-center">
           <button
             onClick={handleGoToLogin}
-            className="text-orange-600 hover:text-orange-700 text-sm font-medium"
+            className="text-orange-500 hover:text-orange-400 text-sm font-medium"
           >
             Minulla on jo tili - Kirjaudu sisään
           </button>

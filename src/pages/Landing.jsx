@@ -42,44 +42,44 @@ function Landing() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-orange-50 to-red-50">
+    <div className="min-h-screen flex items-center justify-center bg-slate-950">
       <div className="max-w-md w-full mx-4">
         <div className="text-center mb-8">
           <h1 className="text-6xl mb-4">🐓</h1>
-          <h1 className="text-4xl font-bold text-slate-900 mb-2">Kiekuu</h1>
-          <p className="text-lg text-slate-600">
+          <h1 className="text-3xl font-bold tracking-tight text-slate-50 mb-2">Kiekuu</h1>
+          <p className="text-base leading-relaxed text-slate-300">
             Pelillistetty oppimisalusta sopimuspalokuntien koulutukseen
           </p>
         </div>
 
         {error && (
-          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+          <div className="bg-red-600/20 border border-red-600 text-slate-50 px-4 py-3 rounded-xl mb-4">
             {error}
           </div>
         )}
 
-        <div className="bg-white rounded-lg shadow-xl p-8 space-y-4">
+        <div className="bg-slate-900 border border-slate-800 rounded-xl p-8 space-y-4">
           <button
             onClick={handleStartUsing}
             disabled={loading}
-            className="w-full bg-orange-500 hover:bg-orange-600 text-white font-semibold py-4 px-6 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full bg-orange-500 hover:bg-orange-600 text-slate-50 font-semibold py-4 px-6 rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {loading ? 'Aloitetaan...' : '🚀 Aloita oppiminen'}
           </button>
 
           <div className="relative">
             <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-slate-300"></div>
+              <div className="w-full border-t border-slate-800"></div>
             </div>
-            <div className="relative flex justify-center text-sm">
-              <span className="px-2 bg-white text-slate-500">tai</span>
+            <div className="relative flex justify-center text-xs font-medium uppercase tracking-widest">
+              <span className="px-2 bg-slate-900 text-slate-500">tai</span>
             </div>
           </div>
 
           <button
             onClick={handleGoogleSignIn}
             disabled={loading}
-            className="w-full bg-white hover:bg-slate-50 text-slate-700 font-semibold py-4 px-6 rounded-lg border-2 border-slate-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3"
+            className="w-full bg-slate-800 hover:bg-slate-700 text-slate-50 font-semibold py-4 px-6 rounded-xl border border-slate-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3"
           >
             <svg className="w-5 h-5" viewBox="0 0 24 24">
               <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
@@ -93,12 +93,12 @@ function Landing() {
           <button
             onClick={handleLogin}
             disabled={loading}
-            className="w-full bg-white hover:bg-slate-50 text-slate-700 font-semibold py-4 px-6 rounded-lg border-2 border-slate-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full bg-slate-800 hover:bg-slate-700 text-slate-50 font-semibold py-4 px-6 rounded-xl border border-slate-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Kirjaudu sähköpostilla
           </button>
 
-          <p className="text-sm text-slate-500 text-center mt-4">
+          <p className="text-xs font-medium uppercase tracking-widest text-slate-500 text-center mt-4">
             Voit aloittaa oppimisen heti ilman rekisteröitymistä. <br />
             Ensimmäisen tason jälkeen kirjaudu sisään jatkaaksesi.
           </p>
