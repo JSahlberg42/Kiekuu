@@ -37,6 +37,18 @@ service cloud.firestore {
       
       // No deletions allowed
       allow delete: if false;
+      
+      // User answers subcollection
+      match /answers/{answerId} {
+        // Users can read their own answers
+        allow read: if isOwner(userId);
+        
+        // Users can create their own answers
+        allow create: if isOwner(userId);
+        
+        // No updates or deletions
+        allow update, delete: if false;
+      }
     }
     
     // Questions collection
@@ -46,18 +58,6 @@ service cloud.firestore {
       
       // Only admins can create/update/delete questions
       allow create, update, delete: if isAdmin();
-    }
-    
-    // User progress/answers collection
-    match /users/{userId}/answers/{answerId} {
-      // Users can read their own answers
-      allow read: if isOwner(userId);
-      
-      // Users can create their own answers
-      allow create: if isOwner(userId);
-      
-      // No updates or deletions
-      allow update, delete: if false;
     }
     
     // Categories collection

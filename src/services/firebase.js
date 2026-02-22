@@ -1,6 +1,7 @@
 import { initializeApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
+import { initializeAppCheck, ReCaptchaEnterpriseProvider } from 'firebase/app-check';
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
@@ -14,9 +15,16 @@ const firebaseConfig = {
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
 
+// Initialize App Check with reCAPTCHA Enterprise
+if (import.meta.env.VITE_RECAPTCHA_ENTERPRISE_KEY) {
+  initializeAppCheck(app, {
+    provider: new ReCaptchaEnterpriseProvider(import.meta.env.VITE_RECAPTCHA_ENTERPRISE_KEY),
+    isTokenAutoRefreshEnabled: true,
+  });
+}
+
 // Initialize services
-export const auth = getAuth(app);
-export const db = getFirestore(app);
+export const auth = getAuth(app);export const db = getFirestore(app);
 
 // Note: Vertex AI is initialized in aiService.js
 export default app;
