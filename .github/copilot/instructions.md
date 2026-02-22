@@ -19,6 +19,9 @@ You are an expert developer building **Kiekuu** using **JavaScript (ES6+)**.
   5. `ryhmänjohtaja`
   6. `palokunnan päällikkö`
 
+## Styleguide
+Follow the visual guidelines in STYLEGUIDE.md for all UI components.
+
 ## Data Structure
 - Keep question objects consistent:
   ```javascript
