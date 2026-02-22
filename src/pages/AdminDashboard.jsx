@@ -1,5 +1,5 @@
 import { useAuth } from '../context/AuthContext';
-import { Navigate } from 'react-router-dom';
+import { Navigate, Link } from 'react-router-dom';
 
 function AdminDashboard() {
   const { userData, loading } = useAuth();
@@ -55,9 +55,13 @@ function AdminDashboard() {
               <h2 className="ml-4 text-lg sm:text-xl font-semibold text-orange-500 uppercase tracking-wide">Users</h2>
             </div>
             <p className="text-sm sm:text-base leading-relaxed text-slate-300 mb-4">View and manage user accounts</p>
-            <button className="w-full bg-red-600 text-slate-50 px-4 py-3 rounded-xl hover:bg-red-700 active:bg-red-800 transition-colors font-semibold min-h-[44px]" aria-label="Hallitse käyttäjiä">
+            <Link
+              to="/admin/users"
+              className="block w-full bg-red-600 text-slate-50 px-4 py-3 rounded-xl hover:bg-red-700 active:bg-red-800 transition-colors font-semibold min-h-[44px] text-center"
+              aria-label="Hallitse käyttäjiä"
+            >
               Manage Users
-            </button>
+            </Link>
           </div>
 
           {/* Categories Management */}
