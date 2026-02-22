@@ -99,33 +99,33 @@ function ProgressDashboard() {
           <>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
               {/* Rank Card */}
-              <div className="bg-gradient-to-br from-slate-900 to-slate-800 border border-slate-700 rounded-lg p-6">
+              <div className="bg-gradient-to-br from-slate-900 to-slate-800 border border-slate-700 rounded-lg p-6 overflow-hidden">
                 <p className="text-slate-400 text-sm mb-2">Taso</p>
-                <p className="text-3xl font-bold text-blue-400 capitalize">{stats.rank}</p>
+                <p className="text-2xl sm:text-3xl font-bold text-blue-400 capitalize break-words">{stats.rank}</p>
               </div>
 
               {/* Total Score Card */}
-              <div className="bg-gradient-to-br from-slate-900 to-slate-800 border border-slate-700 rounded-lg p-6">
+              <div className="bg-gradient-to-br from-slate-900 to-slate-800 border border-slate-700 rounded-lg p-6 overflow-hidden">
                 <p className="text-slate-400 text-sm mb-2">Kokonaispisteet</p>
-                <p className="text-3xl font-bold text-green-400">{stats.totalPoints}</p>
+                <p className="text-2xl sm:text-3xl font-bold text-green-400 break-words">{stats.totalPoints}</p>
               </div>
 
               {/* Questions Answered Card */}
-              <div className="bg-gradient-to-br from-slate-900 to-slate-800 border border-slate-700 rounded-lg p-6">
+              <div className="bg-gradient-to-br from-slate-900 to-slate-800 border border-slate-700 rounded-lg p-6 overflow-hidden">
                 <p className="text-slate-400 text-sm mb-2">Vastaukset</p>
-                <p className="text-3xl font-bold text-purple-400">{stats.questionsAnswered}</p>
+                <p className="text-2xl sm:text-3xl font-bold text-purple-400 break-words">{stats.questionsAnswered}</p>
               </div>
 
               {/* Correct Answers Card */}
-              <div className="bg-gradient-to-br from-slate-900 to-slate-800 border border-slate-700 rounded-lg p-6">
+              <div className="bg-gradient-to-br from-slate-900 to-slate-800 border border-slate-700 rounded-lg p-6 overflow-hidden">
                 <p className="text-slate-400 text-sm mb-2">Oikeat vastaukset</p>
-                <p className="text-3xl font-bold text-yellow-400">{stats.correctAnswers}</p>
+                <p className="text-2xl sm:text-3xl font-bold text-yellow-400 break-words">{stats.correctAnswers}</p>
               </div>
 
               {/* Accuracy Card */}
-              <div className="bg-gradient-to-br from-slate-900 to-slate-800 border border-slate-700 rounded-lg p-6">
+              <div className="bg-gradient-to-br from-slate-900 to-slate-800 border border-slate-700 rounded-lg p-6 overflow-hidden">
                 <p className="text-slate-400 text-sm mb-2">Tarkkuus</p>
-                <p className={`text-3xl font-bold ${getAccuracyColor(stats.accuracy)}`}>{stats.accuracy}%</p>
+                <p className={`text-2xl sm:text-3xl font-bold break-words ${getAccuracyColor(stats.accuracy)}`}>{stats.accuracy}%</p>
               </div>
             </div>
 
@@ -139,15 +139,15 @@ function ProgressDashboard() {
                       key={cat.category}
                       className="bg-slate-900 border border-slate-800 rounded-lg p-6 hover:border-slate-700 transition-all"
                     >
-                      <div className="flex items-start justify-between mb-4">
-                        <div>
-                          <h4 className="text-lg font-semibold text-slate-50 capitalize">{cat.category}</h4>
-                          <p className="text-slate-400 text-sm mt-1">
+                      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-4">
+                        <div className="min-w-0 flex-1">
+                          <h4 className="text-lg font-semibold text-slate-50 capitalize break-words">{cat.category}</h4>
+                          <p className="text-slate-400 text-sm mt-1 break-words">
                             {cat.answered} kysymystä · {cat.correct} oikein
                           </p>
                         </div>
-                        <div className="text-right">
-                          <p className={`text-2xl font-bold ${getAccuracyColor(cat.accuracy)}`}>
+                        <div className="text-right flex-shrink-0">
+                          <p className={`text-2xl font-bold whitespace-nowrap ${getAccuracyColor(cat.accuracy)}`}>
                             {cat.accuracy}%
                           </p>
                         </div>
