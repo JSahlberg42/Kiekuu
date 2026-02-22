@@ -31,5 +31,4 @@ jobs:
           repoToken: ${{ secrets.GITHUB_TOKEN }}
           firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_KIEKUU }}
           projectId: kiekuu-cb601
-          entryPoint: ./firebase-preview.json
           channelId: ${{ github.head_ref }}
