@@ -1,7 +1,8 @@
 import { createContext, useContext, useEffect, useState } from 'react';
 import PropTypes from 'prop-types';
 import { onAuthStateChanged } from 'firebase/auth';
-import { auth } from '../services/firebase';
+import { doc, setDoc } from 'firebase/firestore';
+import { auth, db } from '../services/firebase';
 import { getUserData } from '../services/authService';
 
 const AuthContext = createContext({});
@@ -21,42 +22,54 @@ export const AuthProvider = ({ children }) => {
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-      console.log('Auth state changed:', firebaseUser ? `User: ${firebaseUser.uid}, Anonymous: ${firebaseUser.isAnonymous}` : 'No user');
-      
       if (firebaseUser) {
         setUser(firebaseUser);
         
-        // Fetch user data from Firestore
-        // For anonymous users, retry a few times in case document is being created
+        // Fetch user data from Firestore with fast retries
         let retries = 0;
-        const maxRetries = 5;
+        const maxRetries = 4;
+        const retryDelays = [100, 200, 300, 400]; // Fast delays: total ~1 second max
         let data = null;
         
-        while (retries < maxRetries && !data) {
+        while (retries < maxRetries) {
           try {
-            console.log(`Fetching user data (attempt ${retries + 1})...`);
             data = await getUserData(firebaseUser.uid);
             if (data) {
-              console.log('User data fetched successfully:', data);
               setUserData(data);
               break;
-            } else if (retries < maxRetries - 1) {
-              console.log(`User data not found, retrying in ${200 * Math.pow(2, retries)}ms...`);
-              // Wait a bit before retrying (exponential backoff)
-              await new Promise(resolve => setTimeout(resolve, 200 * Math.pow(2, retries)));
-              retries++;
-            } else {
-              console.error('User document not found after retries');
-              setUserData(null);
+            }
+            
+            // Document not found, wait before retry
+            if (retries < maxRetries - 1) {
+              await new Promise(resolve => setTimeout(resolve, retryDelays[retries]));
             }
           } catch (error) {
             console.error('Error fetching user data:', error);
-            if (retries < maxRetries - 1) {
-              await new Promise(resolve => setTimeout(resolve, 200 * Math.pow(2, retries)));
-              retries++;
-            } else {
-              setUserData(null);
-            }
+          }
+          
+          retries++;
+        }
+        
+        // If still no data after retries, create document as fallback
+        if (!data) {
+          try {
+            const fallbackData = {
+              uid: firebaseUser.uid,
+              isAnonymous: firebaseUser.isAnonymous,
+              role: 'user',
+              rank: 'harjoittelija',
+              createdAt: new Date().toISOString(),
+              progress: {
+                currentLevel: 'harjoittelija',
+                totalScore: 0,
+                questionsAnswered: 0,
+              },
+            };
+            await setDoc(doc(db, 'users', firebaseUser.uid), fallbackData);
+            setUserData(fallbackData);
+          } catch (error) {
+            console.error('Error creating fallback user data:', error);
+            setUserData(null);
           }
         }
       } else {
@@ -64,7 +77,6 @@ export const AuthProvider = ({ children }) => {
         setUserData(null);
       }
       setLoading(false);
-      console.log('Auth context loading complete');
     });
 
     return unsubscribe;

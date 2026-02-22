@@ -133,45 +133,18 @@ export const resetPassword = async (email) => {
 /**
  * Get user data from Firestore
  * @param {string} uid - User ID
- * @returns {Promise<Object>} User data
+ * @returns {Promise<Object|null>} User data or null if not found
  */
 export const getUserData = async (uid) => {
   try {
     const userDoc = await getDoc(doc(db, 'users', uid));
     if (userDoc.exists()) {
-      console.log('User document found:', uid);
       return userDoc.data();
     }
-    
-    console.log('User document not found, creating it now...', uid);
-    
-    // If document doesn't exist (async creation in progress), create it now
-    const newUserData = {
-      uid: uid,
-      isAnonymous: true,
-      role: 'user',
-      rank: 'harjoittelija',
-      createdAt: new Date().toISOString(),
-      progress: {
-        currentLevel: 'harjoittelija',
-        totalScore: 0,
-        questionsAnswered: 0,
-      },
-    };
-    
-    try {
-      await setDoc(doc(db, 'users', uid), newUserData);
-      console.log('Created user document after retry:', uid);
-      return newUserData;
-    } catch (writeError) {
-      console.error('Failed to create user document:', writeError);
-      // Return default data even if Firestore fails
-      console.log('Returning default user data despite Firestore error');
-      return newUserData;
-    }
+    return null;
   } catch (error) {
     console.error('Get user data error:', error);
-    throw error;
+    return null; // Return null instead of throwing
   }
 };
 
@@ -202,8 +175,6 @@ export const signInAnonymouslyUser = async () => {
     console.log('Anonymous user created:', user.uid);
 
     // Create anonymous user document in Firestore
-    // Don't wait for it - let it complete in background
-    // AuthContext will retry if needed
     const userData = {
       uid: user.uid,
       isAnonymous: true,
@@ -217,25 +188,19 @@ export const signInAnonymouslyUser = async () => {
       },
     };
     
-    console.log('User data to be saved:', JSON.stringify(userData));
-    console.log('Initiating Firestore document creation (non-blocking)...');
+    // Wait up to 2 seconds for Firestore write, then continue regardless
+    // This prevents the loading spinner from hanging indefinitely
+    const writePromise = setDoc(doc(db, 'users', user.uid), userData);
+    const timeoutPromise = new Promise((resolve) => setTimeout(resolve, 2000));
     
-    // Fire and forget - don't block on Firestore write
-    // This prevents timeouts and lets navigation happen immediately
-    setDoc(doc(db, 'users', user.uid), userData)
-      .then(() => console.log('Firestore document created successfully in background'))
-      .catch((error) => {
-        console.error('Background Firestore write error:', error);
-        // Log but don't throw - user auth already succeeded
-      });
+    Promise.race([writePromise, timeoutPromise])
+      .then(() => console.log('Firestore document created successfully'))
+      .catch((error) => console.error('Firestore write error:', error));
 
-    console.log('Returning user immediately, Firestore write happening in background');
+    // Return immediately - don't wait for Firestore
     return user;
   } catch (error) {
     console.error('Anonymous sign in error:', error);
-    console.error('Error code:', error.code);
-    console.error('Error message:', error.message);
-    console.error('Error stack:', error.stack);
     throw error;
   }
 };
