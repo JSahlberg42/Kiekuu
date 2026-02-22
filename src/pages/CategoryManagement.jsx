@@ -1,12 +1,14 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { getAllCategories, createCategory, updateCategory, deleteCategory } from '../services/categoryService';
+import { getAllRanks } from '../services/rankService';
 import { useAuth } from '../context/AuthContext';
 import { Navigate } from 'react-router-dom';
 
 function CategoryManagement() {
   const { userData, loading: authLoading } = useAuth();
   const [categories, setCategories] = useState([]);
+  const [ranks, setRanks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [addingCategory, setAddingCategory] = useState(false);
@@ -16,21 +18,36 @@ function CategoryManagement() {
 
   useEffect(() => {
     if (!authLoading && userData?.role === 'admin') {
-      fetchCategories();
+      fetchData();
     }
   }, [authLoading, userData]);
 
-  const fetchCategories = async () => {
+  const fetchData = async () => {
     try {
       setLoading(true);
+      setError('');
+      const [fetchedCategories, fetchedRanks] = await Promise.all([
+        getAllCategories(),
+        getAllRanks()
+      ]);
+      setCategories(fetchedCategories);
+      setRanks(fetchedRanks);
+    } catch (err) {
+      setError('Virhe tietojen hakemisessa');
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchCategories = async () => {
+    try {
       setError('');
       const fetchedCategories = await getAllCategories();
       setCategories(fetchedCategories);
     } catch (err) {
       setError('Virhe kategorioiden hakemisessa');
       console.error(err);
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -157,16 +174,28 @@ function CategoryManagement() {
                         {category.description}
                       </p>
                     )}
-                    {category.color && (
-                      <div className="flex items-center gap-2 text-xs text-slate-500 break-all">
-                        <div
-                          className="w-4 h-4 rounded flex-shrink-0"
-                          style={{ backgroundColor: category.color }}
-                          aria-hidden="true"
-                        />
-                        <span className="truncate">{category.color}</span>
-                      </div>
-                    )}
+                    <div className="space-y-2">
+                      {category.requiredRankId && (
+                        <div className="flex items-center gap-2 text-xs text-amber-500">
+                          <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                          </svg>
+                          <span className="font-medium">
+                            Vaatii: {ranks.find(r => r.id === category.requiredRankId)?.name || 'Tuntematon arvo'}
+                          </span>
+                        </div>
+                      )}
+                      {category.color && (
+                        <div className="flex items-center gap-2 text-xs text-slate-500 break-all">
+                          <div
+                            className="w-4 h-4 rounded flex-shrink-0"
+                            style={{ backgroundColor: category.color }}
+                            aria-hidden="true"
+                          />
+                          <span className="truncate">{category.color}</span>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
 
@@ -195,6 +224,7 @@ function CategoryManagement() {
       {/* Add Category Modal */}
       {addingCategory && (
         <CategoryFormModal
+          ranks={ranks}
           onClose={() => setAddingCategory(false)}
           onSave={handleCreateCategory}
           loading={actionLoading}
@@ -206,6 +236,7 @@ function CategoryManagement() {
       {editingCategory && (
         <CategoryFormModal
           category={editingCategory}
+          ranks={ranks}
           onClose={() => setEditingCategory(null)}
           onSave={(data) => handleUpdateCategory(editingCategory.id, data)}
           loading={actionLoading}
@@ -227,12 +258,13 @@ function CategoryManagement() {
 }
 
 // Category Form Modal Component
-function CategoryFormModal({ category, onClose, onSave, loading, title }) {
+function CategoryFormModal({ category, ranks, onClose, onSave, loading, title }) {
   const [formData, setFormData] = useState({
     name: category?.name || '',
     description: category?.description || '',
     icon: category?.icon || '',
     color: category?.color || '#f97316',
+    requiredRankId: category?.requiredRankId || '',
   });
 
   const handleSubmit = (e) => {
@@ -319,6 +351,29 @@ function CategoryFormModal({ category, onClose, onSave, loading, title }) {
                 aria-label="Kategorian värikoodi"
               />
             </div>
+          </div>
+
+          <div>
+            <label htmlFor="category-rank" className="block text-xs font-medium uppercase tracking-widest text-slate-400 mb-2">
+              Vaadittu arvo
+            </label>
+            <select
+              id="category-rank"
+              value={formData.requiredRankId}
+              onChange={(e) => setFormData({ ...formData, requiredRankId: e.target.value })}
+              className="w-full px-4 py-3 border border-slate-800 rounded-xl bg-slate-950 text-slate-50 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 min-h-[44px]"
+              aria-label="Kategorian vaadittu arvo"
+            >
+              <option value="">Ei rajoitusta</option>
+              {ranks.map(rank => (
+                <option key={rank.id} value={rank.id}>
+                  {rank.name} ({rank.requiredScore} pistettä)
+                </option>
+              ))}
+            </select>
+            <p className="mt-2 text-xs text-slate-500">
+              Valitse arvo, joka käyttäjällä täytyy olla päästäkseen tähän kategoriaan. Tyhjä = ei rajoitusta.
+            </p>
           </div>
 
           <div className="flex flex-col sm:flex-row gap-3 pt-4">
