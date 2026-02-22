@@ -1,5 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import { signInAnonymouslyUser, signInWithGoogle } from '../services/authService';
+import logo from '../assets/images/Kiekuu_logo.jpg';
 import { useState } from 'react';
 
 function Landing() {
@@ -45,7 +46,7 @@ function Landing() {
     <div className="min-h-screen flex items-center justify-center bg-slate-950 px-4">
       <div className="max-w-md w-full">
         <div className="text-center mb-8">
-          <h1 className="text-5xl sm:text-6xl mb-4" role="img" aria-label="Kiekuu logo">🐓</h1>
+          <img src={logo} alt="Kiekuu logo" className="w-24 h-24 sm:w-32 sm:h-32 mx-auto mb-4 object-contain" />
           <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight text-slate-50 mb-2">Kiekuu</h1>
           <p className="text-sm sm:text-base leading-relaxed text-slate-300">
             Pelillistetty oppimisalusta sopimuspalokuntien koulutukseen

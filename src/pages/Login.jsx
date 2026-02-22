@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { signIn, signInWithGoogle } from '../services/authService';
-
+import { signIn, signInWithGoogle } from '../services/authService';import logo from '../assets/images/Kiekuu_logo.jpg';
 function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -63,7 +62,8 @@ function Login() {
     <div className="min-h-screen flex items-center justify-center bg-slate-950 px-4">
       <div className="max-w-md w-full space-y-6 sm:space-y-8">
         <div className="text-center">
-          <h1 className="text-3xl sm:text-4xl font-bold mb-2 text-slate-50">🐓 Kiekuu</h1>
+          <img src={logo} alt="Kiekuu logo" className="w-20 h-20 sm:w-24 sm:h-24 mx-auto mb-4 object-contain" />
+          <h1 className="text-3xl sm:text-4xl font-bold mb-2 text-slate-50">Kiekuu</h1>
           <h2 className="text-lg sm:text-xl font-semibold text-orange-500 uppercase tracking-wide">Kirjaudu sisään</h2>
           <p className="text-sm sm:text-base leading-relaxed text-slate-300 mt-2">
             Jatka oppimista
