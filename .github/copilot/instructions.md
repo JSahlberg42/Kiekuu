@@ -21,7 +21,7 @@ You are an expert developer building **Kiekuu** using **JavaScript (ES6+)**.
   6. `palokunnan päällikkö`
 
 ## Styleguide
-Follow the visual guidelines in STYLEGUIDE.md for all UI components.
+Follow the visual guidelines in `STYLEGUIDE.md` for all UI components.
 
 ## Data Structure
 - Keep question objects consistent:
@@ -107,3 +107,7 @@ Follow the visual guidelines in STYLEGUIDE.md for all UI components.
 - ❌ Don't remove ESLint or format code without running linter
 - ❌ Don't hardcode Firebase config; use environment variables
 - ❌ Don't forget `async`/`await` error handling for Firebase calls
+
+## DEV (IDE)
+- Never start dev server `npm run dev` - user will do that
+- Never deploy directy to Firebase hosting by using command `firebase deploy --only hosting` (Everything goes via GHA)

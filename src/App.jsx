@@ -1,18 +1,122 @@
-import PropTypes from 'prop-types';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { AuthProvider } from './context/AuthContext';
+import ProtectedRoute from './components/ProtectedRoute';
+import Landing from './pages/Landing';
+import Login from './pages/Login';
+import SignUp from './pages/SignUp';
+import Home from './pages/Home';
+import QuizBrowser from './pages/QuizBrowser';
+import QuizTake from './pages/QuizTake';
+import Progress from './pages/Progress';
+import AdminDashboard from './pages/AdminDashboard';
+import UserManagement from './pages/UserManagement';
+import CategoryManagement from './pages/CategoryManagement';
+import RankManagement from './pages/RankManagement';
+import QuestionManagement from './pages/QuestionManagement';
+import Statistics from './pages/Statistics';
+import PlatformConfiguration from './pages/PlatformConfiguration';
 
 function App() {
   return (
-    <div className="min-h-screen flex items-center justify-center">
-      <div className="text-center">
-        <h1 className="text-4xl font-bold mb-4">🐓 Kiekuu</h1>
-        <p className="text-lg text-slate-600 dark:text-slate-400">
-          Pelillistetty oppimisalusta
-        </p>
-      </div>
-    </div>
-  )
+    <Router>
+      <AuthProvider>
+        <Routes>
+          <Route path="/landing" element={<Landing />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/signup" element={<SignUp />} />
+          <Route
+            path="/"
+            element={
+              <ProtectedRoute>
+                <Home />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/quiz"
+            element={
+              <ProtectedRoute>
+                <QuizBrowser />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/quiz/take"
+            element={
+              <ProtectedRoute>
+                <QuizTake />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/progress"
+            element={
+              <ProtectedRoute>
+                <Progress />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin"
+            element={
+              <ProtectedRoute adminOnly>
+                <AdminDashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/users"
+            element={
+              <ProtectedRoute adminOnly>
+                <UserManagement />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/categories"
+            element={
+              <ProtectedRoute adminOnly>
+                <CategoryManagement />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/ranks"
+            element={
+              <ProtectedRoute adminOnly>
+                <RankManagement />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/questions"
+            element={
+              <ProtectedRoute adminOnly>
+                <QuestionManagement />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/statistics"
+            element={
+              <ProtectedRoute adminOnly>
+                <Statistics />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/settings"
+            element={
+              <ProtectedRoute adminOnly>
+                <PlatformConfiguration />
+              </ProtectedRoute>
+            }
+          />
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </AuthProvider>
+    </Router>
+  );
 }
 
-App.propTypes = {}
-
-export default App
+export default App;

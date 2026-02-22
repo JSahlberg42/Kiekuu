@@ -1,0 +1,95 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isOwner(userId) {
+      return request.auth.uid == userId;
+    }
+    
+    function isAdmin() {
+      return isAuthenticated() && 
+             exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+    
+    // Users collection
+    match /users/{userId} {
+      // Users can read their own data, admins can read all
+      allow read: if isOwner(userId) || isAdmin();
+      
+      // Users can create their own document on signup
+      allow create: if isOwner(userId) && 
+                      request.resource.data.role == 'user' &&
+                      request.resource.data.rank == 'harjoittelija';
+      
+      // Users can update their own data (except role)
+      allow update: if isOwner(userId) && 
+                      request.resource.data.role == resource.data.role;
+      
+      // Only admins can update roles
+      allow update: if isAdmin();
+      
+      // No deletions allowed
+      allow delete: if false;
+      
+      // User answers subcollection
+      match /answers/{answerId} {
+        // Users can read their own answers
+        allow read: if isOwner(userId);
+        
+        // Users can create their own answers
+        allow create: if isOwner(userId);
+        
+        // No updates or deletions
+        allow update, delete: if false;
+      }
+    }
+    
+    // Questions collection
+    match /questions/{questionId} {
+      // Everyone can read questions (when authenticated)
+      allow read: if isAuthenticated();
+      
+      // Only admins can create/update/delete questions
+      allow create, update, delete: if isAdmin();
+    }
+    
+    // Categories collection
+    match /categories/{categoryId} {
+      // Everyone can read categories
+      allow read: if isAuthenticated();
+      
+      // Only admins can modify
+      allow create, update, delete: if isAdmin();
+    }
+    
+    // Ranks collection
+    match /ranks/{rankId} {
+      // Everyone can read ranks
+      allow read: if isAuthenticated();
+      
+      // Only admins can modify
+      allow create, update, delete: if isAdmin();
+    }
+    
+    // Platform configuration
+    match /config/{configId} {
+      // Everyone can read configuration
+      allow read: if isAuthenticated();
+      
+      // Only admins can modify
+      allow create, update, delete: if isAdmin();
+    }
+    
+    // Deny everything else by default
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

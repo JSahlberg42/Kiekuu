@@ -1,8 +1,8 @@
-# Kiekuu 🐓📢
+# Kiekuu
 
 **Kiekuu** on pelillistetty oppimisalusta, joka on suunniteltu Suomen sopimuspalokuntien (VPK) koulutustarpeisiin. Se toimii osaamisen "herättäjänä" ja teoreettisena pohjana **Vaste**-ekosysteemille.
 
-Sovellus noudattaa **Pelastusopiston sopimushenkilöstön opetussuunnitelmaa (OPS)**.
+Sovellus pyrkii noudattamaan  **Pelastusopiston sopimushenkilöstön opetussuunnitelmaa (OPS)**. Lisäksi lähdemateriaalina on käytetty muuta pelastusalan materiaalia sekä Pelastusopiston julkaisuja.
 
 ## 🌟 Avainominaisuudet
 - **OPS-pohjainen progressio:** Sisältö on jaettu tasoihin, jotka vastaavat palokuntalaisen urapolkua ja virallisia kurssikokonaisuuksia.
@@ -27,3 +27,6 @@ Sovellus noudattaa **Pelastusopiston sopimushenkilöstön opetussuunnitelmaa (OP
 
 ## 📄 Lisenssi
 Tämä projekti on lisensoitu **MIT-lisenssillä**.
+
+## Logo
+![Kiekuu logo](docs/logo/Kiekuu_logo.png)
