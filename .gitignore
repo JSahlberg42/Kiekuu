@@ -53,3 +53,4 @@ dist-ssr/
 # Firebase
 .firebase/
 .firebaserc
+firebase-service-account.json
