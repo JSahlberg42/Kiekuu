@@ -6,6 +6,7 @@ You are an expert developer building **Kiekuu** using **JavaScript (ES6+)**.
 - **No TypeScript:** Use plain JavaScript. Avoid any .ts or .tsx files.
 - **UI Framework:** React with Vite (using .js and .jsx files).
 - **Component Library:** Use **shadcn/ui** and **Tailwind CSS**.
+- **Design Approach:** **Mobile-first responsive design** — develop for mobile screens first, then scale up.
 - **Icons:** Use `lucide-react`.
 - **Database:** Firebase Firestore (v10+).
 - **AI Integration:** Use `@firebase/vertex-ai` for "Smart Tutor" feedback.

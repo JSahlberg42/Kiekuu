@@ -12,9 +12,10 @@ Sovellus noudattaa **Pelastusopiston sopimushenkilöstön opetussuunnitelmaa (OP
 
 ## 🛠 Teknologia-pino
 - **Frontend:** React + Vite (JavaScript)
-- **Tyylittely:** Tailwind CSS + shadcn/ui
+- **Tyylittely:** Tailwind CSS + shadcn/ui (Mobile-First approach)
 - **Backend:** Firebase (Auth, Firestore, Cloud Functions)
 - **AI-moottori:** Vertex AI for Firebase (Gemini 1.5 Flash)
+- **Design Philosophy:** Mobile-first responsive design for optimal UX on all devices
 
 ## 📈 Tasojärjestelmä (Arvot)
 1. **Harjoittelija:** Palokuntatoiminnan perusteet, työturvallisuus ja yksikkötunnusten perusteet.
