@@ -6,7 +6,7 @@ function App() {
       <div className="text-center">
         <h1 className="text-4xl font-bold mb-4">🐓 Kiekuu</h1>
         <p className="text-lg text-slate-600 dark:text-slate-400">
-          Pelillistetty oppimisalusta
+          Pelillistetty oppimisalusta \o/
         </p>
       </div>
     </div>
