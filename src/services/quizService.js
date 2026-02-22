@@ -7,37 +7,50 @@ import { db } from './firebase';
  */
 export const getAvailableQuizzes = async () => {
   try {
-    const questionsRef = collection(db, 'questions');
-    const q = query(questionsRef, where('published', '==', true));
-    const snapshot = await getDocs(q);
+    // Fetch all questions and categories
+    const [questionsSnapshot, categoriesSnapshot] = await Promise.all([
+      getDocs(collection(db, 'questions')),
+      getDocs(collection(db, 'categories')),
+    ]);
     
-    const quizzes = [];
+    // Create a map of category ID -> category name
     const categoryMap = {};
+    categoriesSnapshot.forEach(doc => {
+      categoryMap[doc.id] = doc.data().name || doc.id;
+    });
+
+    const quizzes = [];
+    const quizMap = {};
     
-    snapshot.forEach(doc => {
+    questionsSnapshot.forEach(doc => {
       const data = doc.data();
-      const category = data.category || 'Muut';
+      // Skip unpublished questions only if explicitly marked as false
+      if (data.published === false) return;
+      
+      // Get category name from categoryId
+      const categoryId = data.categoryId || 'unknown';
+      const categoryName = categoryMap[categoryId] || 'Muut';
       
       // Group questions by category
-      if (!categoryMap[category]) {
-        categoryMap[category] = {
-          id: category.toLowerCase().replace(/\s+/g, '-'),
-          name: category,
+      if (!quizMap[categoryName]) {
+        quizMap[categoryName] = {
+          id: categoryId,
+          name: categoryName,
           questions: [],
           totalQuestions: 0,
           difficulties: new Set(),
         };
       }
       
-      categoryMap[category].questions.push({
+      quizMap[categoryName].questions.push({
         id: doc.id,
         ...data,
       });
-      categoryMap[category].difficulties.add(data.difficulty || 'perustaso');
+      quizMap[categoryName].difficulties.add(data.difficulty || 'perustaso');
     });
     
     // Convert to quiz cards
-    Object.values(categoryMap).forEach(cat => {
+    Object.values(quizMap).forEach(cat => {
       cat.totalQuestions = cat.questions.length;
       cat.difficulties = Array.from(cat.difficulties);
       quizzes.push(cat);
@@ -52,36 +65,41 @@ export const getAvailableQuizzes = async () => {
 
 /**
  * Get questions for a specific category
- * @param {string} categoryId - Category ID or name
+ * @param {string} categoryName - Category name
  * @param {string} difficulty - Optional: filter by difficulty
  * @returns {Promise<Array>} Array of questions
  */
-export const getQuestionsByCategory = async (categoryId, difficulty = null) => {
+export const getQuestionsByCategory = async (categoryName, difficulty = null) => {
   try {
-    let q;
+    // First, find the category ID from the category name
+    const categoriesSnapshot = await getDocs(collection(db, 'categories'));
+    let categoryId = null;
     
-    if (difficulty) {
-      q = query(
-        collection(db, 'questions'),
-        where('category', '==', categoryId),
-        where('difficulty', '==', difficulty),
-        where('published', '==', true)
-      );
-    } else {
-      q = query(
-        collection(db, 'questions'),
-        where('category', '==', categoryId),
-        where('published', '==', true)
-      );
-    }
+    categoriesSnapshot.forEach(doc => {
+      if (doc.data().name === categoryName) {
+        categoryId = doc.id;
+      }
+    });
+
+    // Fetch questions with this categoryId
+    const questionsRef = collection(db, 'questions');
+    const constraints = [where('categoryId', '==', categoryId || categoryName)];
     
+    const q = query(questionsRef, ...constraints);
     const snapshot = await getDocs(q);
     const questions = [];
     
     snapshot.forEach(doc => {
+      const data = doc.data();
+      // Skip unpublished questions only if explicitly marked as false
+      if (data.published === false) return;
+      
+      // Apply difficulty filter if specified
+      if (difficulty && data.difficulty !== difficulty) return;
+      
       questions.push({
         id: doc.id,
-        ...doc.data(),
+        ...data,
       });
     });
     
@@ -258,24 +276,45 @@ export const getCategoryStatistics = async (userId) => {
       };
     });
     
-    // Get question details to map answers to categories
+    // Get question details and category mapping
     const allQuestions = {};
-    const questionsRef = collection(db, 'questions');
-    const snapshot = await getDocs(questionsRef);
-    snapshot.forEach(doc => {
+    const categoryMap = {};
+    const [questionsSnapshot, categoriesSnapshot] = await Promise.all([
+      getDocs(collection(db, 'questions')),
+      getDocs(collection(db, 'categories')),
+    ]);
+    
+    // Map category IDs to names
+    categoriesSnapshot.forEach(doc => {
+      categoryMap[doc.id] = doc.data().name || doc.id;
+    });
+    
+    // Store question data
+    questionsSnapshot.forEach(doc => {
       allQuestions[doc.id] = doc.data();
     });
     
     // Calculate stats per category
     answers.forEach(answer => {
       const question = allQuestions[answer.questionId];
-      if (question && question.category) {
-        const category = question.category;
-        if (stats[category]) {
-          stats[category].answered++;
-          if (answer.isCorrect) {
-            stats[category].correct++;
-          }
+      if (question) {
+        // Get category name from categoryId
+        const categoryId = question.categoryId;
+        const categoryName = categoryMap[categoryId] || 'Muut';
+        
+        // Initialize if not already initialized
+        if (!stats[categoryName]) {
+          stats[categoryName] = {
+            category: categoryName,
+            answered: 0,
+            correct: 0,
+            accuracy: 0,
+          };
+        }
+        
+        stats[categoryName].answered++;
+        if (answer.isCorrect) {
+          stats[categoryName].correct++;
         }
       }
     });
