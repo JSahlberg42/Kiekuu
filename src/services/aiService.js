@@ -4,7 +4,7 @@ import app from './firebase';
 // Initialize Firebase AI
 const ai = getAI(app);
 
-// Get the generative model (Gemini 2.0 Flash)
+// Get the generative model (Gemini 3 Flash Preview)
 const model = getGenerativeModel(ai, { 
   model: 'gemini-3-flash-preview',
   generationConfig: {
@@ -12,24 +12,26 @@ const model = getGenerativeModel(ai, {
     topP: 0.95,
     topK: 40,
     maxOutputTokens: 8192,
-  }
+  },
+  tools: [
+    { urlContext: {} } // Enable URL Context tool for direct URL processing
+  ]
 });
 
 /**
  * Generate questions using AI based on context and parameters
  * @param {Object} params - Generation parameters
- * @param {string} params.context - Context from URL or text
+ * @param {string} params.context - Context text (optional if url or fileData provided)
+ * @param {string} params.url - Direct URL for AI to fetch and analyze (optional)
+ * @param {Object} params.fileData - Optional file data object with { mimeType, data } for PDFs
  * @param {number} params.questionCount - Number of questions to generate
  * @param {string} params.difficulty - Difficulty level (easy, medium, hard, pro)
  * @param {string} params.categoryName - Category name for context
  * @returns {Promise<Array>} Generated questions array
  */
-export const generateQuestions = async ({ context, questionCount, difficulty, categoryName }) => {
+export const generateQuestions = async ({ context, url, fileData, questionCount, difficulty, categoryName }) => {
   try {
-    const prompt = `Olet tekoäly, joka luo tietokilpailukysymyksiä suomalaisille sopimuspalokunnille.
-
-KONTEKSTI:
-${context}
+    const promptText = `Olet tekoäly, joka luo tietokilpailukysymyksiä suomalaisille sopimuspalokunnille.
 
 TEHTÄVÄ:
 Luo ${questionCount} monivalintakysymystä kategoriassa "${categoryName}" vaikeustasolla "${difficulty}".
@@ -64,10 +66,32 @@ SÄÄNNÖT:
 5. Kysymysten tulee olla relevantteja suomalaisille sopimuspalokunnille
 6. Käytä selkeää suomen kieltä
 7. Älä sisällytä mitään ylimääräistä tekstiä, VAIN JSON-array
+${url ? `8. Hae ja analysoi sisältö URL-osoitteesta: ${url}` : '8. Lue konteksti liitetystä dokumentista (PDF) tai tekstistä'}
 
-Luo nyt kysymykset:`;
+${url ? 'Hae sisältö annetusta URL-osoitteesta ja luo kysymykset sen perusteella.' : 'Analysoi liitetty dokumentti tai teksti ja luo kysymykset sen sisällön perusteella:'}`;
 
-    const result = await model.generateContent(prompt);
+    // Prepare content for AI - support text, URL, and file (PDF) inputs
+    let content;
+    if (url) {
+      // For URLs, let the URL Context tool fetch the content
+      content = promptText;
+    } else if (fileData) {
+      // For PDF files, send both the prompt and the file
+      content = [
+        promptText,
+        {
+          inlineData: {
+            mimeType: fileData.mimeType,
+            data: fileData.data
+          }
+        }
+      ];
+    } else {
+      // For text context, include it in the prompt
+      content = `${promptText}\n\nKONTEKSTI:\n${context}`;
+    }
+
+    const result = await model.generateContent(content);
     const response = await result.response;
     const text = response.text();
     
@@ -109,6 +133,8 @@ Luo nyt kysymykset:`;
 
 /**
  * Extract text content from URL
+ * @deprecated This function is no longer needed. Gemini 3 Flash has native URL support through the URL Context tool.
+ * URLs can be passed directly to generateQuestions() via the url parameter.
  * @param {string} url - URL to fetch content from
  * @returns {Promise<string>} Extracted text content
  */
@@ -164,32 +190,54 @@ export const fetchContentFromUrl = async (url) => {
 };
 
 /**
- * Read and extract text from uploaded file
+ * Read and extract content from uploaded file
  * @param {File} file - File object
- * @returns {Promise<string>} Extracted text content
+ * @returns {Promise<Object|string>} For PDFs: {mimeType, data}, for text files: string content
  */
 export const readFileContent = async (file) => {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     
-    reader.onload = (e) => {
-      try {
-        const text = e.target.result;
-        // Limit to reasonable length
-        resolve(text.substring(0, 50000));
-      } catch (error) {
-        reject(new Error('Virhe tiedoston lukemisessa'));
-      }
-    };
-    
-    reader.onerror = () => {
-      reject(new Error('Virhe tiedoston lukemisessa'));
-    };
-    
-    // Read as text
+    // Handle PDFs - read as base64 for AI model
     if (file.type === 'application/pdf') {
-      reject(new Error('PDF-tiedostoja ei voi lukea suoraan. Kopioi teksti manuaalisesti.'));
+      reader.onload = (e) => {
+        try {
+          // Convert ArrayBuffer to base64
+          const base64 = btoa(
+            new Uint8Array(e.target.result)
+              .reduce((data, byte) => data + String.fromCharCode(byte), '')
+          );
+          
+          resolve({
+            mimeType: 'application/pdf',
+            data: base64
+          });
+        } catch (error) {
+          reject(new Error('Virhe PDF-tiedoston lukemisessa'));
+        }
+      };
+      
+      reader.onerror = () => {
+        reject(new Error('Virhe PDF-tiedoston lukemisessa'));
+      };
+      
+      reader.readAsArrayBuffer(file);
     } else {
+      // Handle text files (.txt, .md)
+      reader.onload = (e) => {
+        try {
+          const text = e.target.result;
+          // Limit to reasonable length
+          resolve(text.substring(0, 50000));
+        } catch (error) {
+          reject(new Error('Virhe tiedoston lukemisessa'));
+        }
+      };
+      
+      reader.onerror = () => {
+        reject(new Error('Virhe tiedoston lukemisessa'));
+      };
+      
       reader.readAsText(file);
     }
   });

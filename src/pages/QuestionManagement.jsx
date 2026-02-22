@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { getAllQuestions, createQuestion, updateQuestion, deleteQuestion } from '../services/questionService';
 import { getAllCategories } from '../services/categoryService';
-import { generateQuestions, fetchContentFromUrl, readFileContent } from '../services/aiService';
+import { generateQuestions, readFileContent } from '../services/aiService';
 import { useAuth } from '../context/AuthContext';
 import { Navigate } from 'react-router-dom';
 
@@ -658,6 +658,9 @@ function AIGenerationModal({ categories, onClose, onGenerate }) {
 
       // Get context based on type
       let context = '';
+      let fileData = null;
+      let url = '';
+      
       if (formData.contextType === 'text') {
         context = formData.contextText;
         if (!context.trim()) {
@@ -667,12 +670,20 @@ function AIGenerationModal({ categories, onClose, onGenerate }) {
         if (!formData.contextUrl.trim()) {
           throw new Error('Anna URL-osoite');
         }
-        context = await fetchContentFromUrl(formData.contextUrl);
+        // Pass URL directly to AI (Gemini 3 Flash URL Context tool)
+        url = formData.contextUrl;
       } else if (formData.contextType === 'file') {
         if (!formData.contextFile) {
           throw new Error('Valitse tiedosto');
         }
-        context = await readFileContent(formData.contextFile);
+        const fileContent = await readFileContent(formData.contextFile);
+        
+        // Check if it's a PDF (returns object) or text file (returns string)
+        if (typeof fileContent === 'object' && fileContent.mimeType) {
+          fileData = fileContent;
+        } else {
+          context = fileContent;
+        }
       }
 
       if (!formData.categoryId) {
@@ -684,6 +695,8 @@ function AIGenerationModal({ categories, onClose, onGenerate }) {
       // Generate questions with AI
       const questions = await generateQuestions({
         context,
+        url,
+        fileData,
         questionCount: formData.questionCount,
         difficulty: formData.difficulty,
         categoryName: category?.name || 'Yleinen',
@@ -895,9 +908,9 @@ function AIGenerationModal({ categories, onClose, onGenerate }) {
                   className="w-full px-4 py-3 border border-slate-800 rounded-xl bg-slate-950 text-slate-50 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 min-h-[44px]"
                   required
                 />
-                <div className="mt-2 p-3 bg-amber-900/20 border border-amber-600/30 rounded-lg">
-                  <p className="text-xs text-amber-500">
-                    ⚠️ URL-haku ei välttämättä toimi kaikilla sivustoilla CORS-rajoitusten vuoksi. Jos haku epäonnistuu, avaa sivu selaimessa, kopioi teksti ja käytä "Teksti"-vaihtoehtoa.
+                <div className="mt-2 p-3 bg-green-900/20 border border-green-600/30 rounded-lg">
+                  <p className="text-xs text-green-500">
+                    ✓ Gemini 3 Flash hae sisällön suoraan URL-osoitteesta (ei CORS-rajoituksia). Tukee HTML, PDF, JSON, XML, CSV (max 34MB).
                   </p>
                 </div>
               </div>
@@ -912,12 +925,12 @@ function AIGenerationModal({ categories, onClose, onGenerate }) {
                   type="file"
                   id="ai-context-file"
                   onChange={handleFileChange}
-                  accept=".txt,.md"
+                  accept=".txt,.md,.pdf,application/pdf"
                   className="w-full px-4 py-3 border border-slate-800 rounded-xl bg-slate-950 text-slate-50 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 min-h-[44px] file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-purple-600 file:text-slate-50 file:font-medium hover:file:bg-purple-700"
                   required
                 />
                 <p className="mt-2 text-xs text-slate-500">
-                  Tuetut tiedostomuodot: .txt, .md (maksimi ~50,000 merkkiä)
+                  Tuetut tiedostomuodot: .txt, .md, .pdf (PDF-tuki Gemini 3 Flash -mallilla)
                 </p>
               </div>
             )}

@@ -1,7 +1,7 @@
 # AI Question Generator - Käyttöohje
 
 ## Yleiskatsaus
-AI-kysymysgeneraattori käyttää Firebase Vertex AI:ta (Gemini 1.5 Flash) luomaan automaattisesti tietokilpailukysymyksiä oppimateriaalin pohjalta.
+AI-kysymysgeneraattori käyttää Firebase Vertex AI:ta (Gemini 3 Flash) luomaan automaattisesti tietokilpailukysymyksiä oppimateriaalin pohjalta. Tukee tekstiä, URL-osoitteita ja PDF-dokumentteja.
 
 ## Käyttö
 
@@ -30,17 +30,21 @@ AI-kysymysgeneraattori käyttää Firebase Vertex AI:ta (Gemini 1.5 Flash) luoma
 #### Vaihtoehto A: Teksti
 - Kopioi ja liitä oppimateriaali suoraan tekstikenttään
 - Maksimi ~50,000 merkkiä
-- Paras vaihtoehto, jos materiaali on helposti kopioitavissa
+- Paras vaihtoehto kun materiaali on helposti kopioitavissa
 
-#### Vaihtoehto B: URL
+#### Vaihtoehto B: URL (Suositeltu verkkoyhteydellä)
 - Anna julkisen verkkosivun URL-osoite
-- Huom: CORS-rajoitukset voivat estää joidenkin sivustojen käytön
-- AI yrittää purkaa HTML:n tekstimuotoon automaattisesti
+- **Gemini 3 Flash URL Context -työkalu** hakee sisällön suoraan
+- **Ei CORS-rajoituksia**: AI hakee sisällön palvelinpuolella
+- Tukee: HTML-sivut, PDF:t, JSON, XML, CSV, tekstiedostot
+- Maksimi 34MB per URL, jopa 20 URL:ia per pyyntö
+- URL:ien tulee olla julkisesti saatavilla (ei maksumuureja tai kirjautumista)
 
 #### Vaihtoehto C: Tiedosto
-- Lataa .txt tai .md -tiedosto
-- Maksimi ~50,000 merkkiä
-- PDF-tiedostoja ei tueta suoraan (kopioi teksti manuaalisesti)
+- Lataa .txt, .md tai .pdf -tiedosto
+- **PDF-tuki**: Gemini 3 Flash osaa lukea PDF-dokumentteja suoraan
+- Tekstipohjaiset tiedostot maksimi ~50,000 merkkiä
+- PDF:t voivat olla laajempia ja sisältää kuvia/kaavioita
 
 ### 4. Generoi kysymykset
 - Klikkaa "Generoi kysymykset"
@@ -93,18 +97,34 @@ Jokainen kysymys sisältää:
    - Hard: Kokeneemmille käyttäjille
    - Pro: Erikoisosaamisen testaamiseen
 
+6. **PDF-dokumenttien käyttö**
+   - Suosi selkeitä, hyvin muotoiltuja PDF:iä
+   - AI osaa lukea tekstiä, taulukoita ja kuvatekstejä
+   - Skannatut kuvat (ilman OCR:ia) eivät toimi optimaalisesti
+
+7. **URL-osoitteiden käyttö**
+   - Varmista, että URL on julkisesti saatavilla
+   - Wikipedia, viralliset oppaat ja dokumentaatiosivut toimivat erinomaisesti
+   - AI hakee sisällön suoraan ilman CORS-ongelmia
+   - Voit antaa jopa 20 URL:ia kerralla (erotettu pilkulla tai annettuna erikseen)
+
 ## Rajoitukset
 
-- Maksimi kontekstin pituus: ~50,000 merkkiä
+- Maksimi kontekstin pituus: ~50,000 merkkiä (tekstit)
+- URL-tuki: Max 20 URL:ia, 34MB per URL, 1M token yhteensä
+- PDF: Koko dokumentti (ei merkkirajoitusta), skannatut kuvat saattavat heikentää laatua
 - Maksimi kysymysten määrä: 20 per kerta
-- PDF-tiedostoja ei tueta suoraan
-- Jotkin URL:t voivat olla CORS-suojattuja
+- URL-vaatimukset: Julkisesti saatavilla, ei maksumuureja tai kirjautumista
 - AI voi generoida epätarkkoja kysymyksiä - tarkista aina!
 
 ## Tekninen toteutus
 
-- **AI-malli**: Gemini 1.5 Flash (Firebase Vertex AI)
+- **AI-malli**: Gemini 3 Flash Preview (Firebase Vertex AI)
 - **Temperature**: 0.7 (tasapainoinen luovuus)
+- **Työkalut**: URL Context tool (natiivi URL-tuki)
+- **Tuetut syötteet**: Teksti, URL (HTML/PDF/JSON/XML/CSV), PDF-tiedostot
+- **URL-käsittely**: Suora haku palvelinpuolella, ei CORS-rajoituksia
+- **PDF-käsittely**: Base64-enkoodaus, suora lähetys mallille
 - **Formaatti**: Strukturoitu JSON-vastaus
 - **Kieli**: Suomi
 - **Validointi**: Automaattinen rakenteiden tarkistus
