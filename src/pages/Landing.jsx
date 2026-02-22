@@ -12,10 +12,13 @@ function Landing() {
     setLoading(true);
     setError('');
     try {
+      console.log('Starting anonymous sign in...');
       await signInAnonymouslyUser();
+      console.log('Anonymous sign in successful, navigating to home...');
       navigate('/');
     } catch (err) {
-      setError(err.message || 'Failed to start. Please try again.');
+      console.error('Anonymous sign in error:', err);
+      setError(err.message || 'Aloitus epäonnistui. Yritä uudelleen.');
     } finally {
       setLoading(false);
     }

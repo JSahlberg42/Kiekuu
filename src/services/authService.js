@@ -169,10 +169,13 @@ export const isAdmin = async (uid) => {
  */
 export const signInAnonymouslyUser = async () => {
   try {
+    console.log('Creating anonymous user...');
     const userCredential = await signInAnonymously(auth);
     const user = userCredential.user;
+    console.log('Anonymous user created:', user.uid);
 
     // Create anonymous user document in Firestore
+    console.log('Creating Firestore document...');
     await setDoc(doc(db, 'users', user.uid), {
       uid: user.uid,
       isAnonymous: true,
@@ -185,6 +188,11 @@ export const signInAnonymouslyUser = async () => {
         questionsAnswered: 0,
       },
     });
+    console.log('Firestore document created');
+
+    // Wait a moment to ensure document is written
+    await new Promise(resolve => setTimeout(resolve, 500));
+    console.log('Returning user after delay');
 
     return user;
   } catch (error) {

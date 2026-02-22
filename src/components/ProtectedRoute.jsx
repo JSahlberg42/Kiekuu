@@ -5,6 +5,8 @@ import { useAuth } from '../context/AuthContext';
 function ProtectedRoute({ children, adminOnly = false }) {
   const { isAuthenticated, isAdmin, loading } = useAuth();
 
+  console.log('ProtectedRoute:', { isAuthenticated, isAdmin, loading, adminOnly });
+
   if (loading) {
     return (
       <div className="min-h-screen bg-slate-950 flex items-center justify-center" role="status" aria-live="polite">
@@ -18,13 +20,16 @@ function ProtectedRoute({ children, adminOnly = false }) {
   }
 
   if (!isAuthenticated) {
+    console.log('Not authenticated, redirecting to /landing');
     return <Navigate to="/landing" replace />;
   }
 
   if (adminOnly && !isAdmin) {
+    console.log('Not admin, redirecting to /');
     return <Navigate to="/" replace />;
   }
 
+  console.log('ProtectedRoute: Rendering children');
   return children;
 }
 

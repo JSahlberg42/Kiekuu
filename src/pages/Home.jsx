@@ -7,6 +7,11 @@ function Home() {
   const { user, userData } = useAuth();
   const [showLinkModal, setShowLinkModal] = useState(false);
 
+  console.log('Home component rendering:', { 
+    user: user ? `${user.uid} (anonymous: ${user.isAnonymous})` : 'null', 
+    userData: userData ? `role: ${userData.role}, rank: ${userData.rank}` : 'null' 
+  });
+
   // Check if user is anonymous and should be prompted to create account
   useEffect(() => {
     if (user?.isAnonymous && userData?.progress?.questionsAnswered > 0) {
