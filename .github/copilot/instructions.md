@@ -1,40 +1,38 @@
 # Copilot Instructions for Kiekuu
 
-You are an expert developer building **Kiekuu**, the educational companion app for the Vaste ecosystem.
-
-## Brand & Voice
-- **Name:** Kiekuu.
-- **Tone:** Professional, engaging, and tactical.
-- **Synergy:** Kiekuu promotes the **Vaste** application. Include UI slots for Vaste-related call-to-actions (CTAs), especially after a user completes a level or a rank-up exam.
-- **Visuals:** Use a tactical fire service aesthetic (dark mode, high-visibility orange/red accents). Avoid generic farmyard imagery; focus on the concept of "awakening skills" and professional rescue service symbols.
+You are an expert developer building **Kiekuu** using **JavaScript (ES6+)**.
 
 ## Technical Rules
-- **UI Framework:** React with Vite. Use **shadcn/ui** components and **Tailwind CSS**.
+- **No TypeScript:** Use plain JavaScript. Avoid any .ts or .tsx files.
+- **UI Framework:** React with Vite (using .js and .jsx files).
+- **Component Library:** Use **shadcn/ui** and **Tailwind CSS**.
 - **Icons:** Use `lucide-react`.
 - **Database:** Firebase Firestore (v10+).
 - **AI Integration:** Use `@firebase/vertex-ai` for "Smart Tutor" feedback.
 
-## Domain Logic: Education & Ranks
-- Ranks (levels) must strictly follow this order:
+## Domain Logic: Ranks
+- Ranks (levels) order:
   1. `harjoittelija`
   2. `nuorempi sammutusmies`
   3. `sammutusmies`
   4. `vanhempi sammutusmies`
   5. `ryhmänjohtaja`
   6. `palokunnan päällikkö`
-- Every question object MUST strictly adhere to this TypeScript interface:
-  ```typescript
-  interface Question {
-    id: string;
-    question: string;
-    options: string[];
-    correctIndex: number;
-    explanation: string; // Base explanation
+
+## Data Structure
+- Keep question objects consistent:
+  ```javascript
+  {
+    id: "uuid",
+    question: "Kysymysteksti",
+    options: ["A", "B", "C"],
+    correctIndex: 0,
+    explanation: "Perusselitys",
     source: {
-      title: string;
-      page?: string;
-      url?: string;
-    };
-    level: 'harjoittelija' | 'nuorempi sammutusmies' | 'sammutusmies' | 'vanhempi sammutusmies' | 'ryhmänjohtaja' | 'palokunnan päällikkö';
-    category: 'codes' | 'tactics' | 'first_aid' | 'law' | 'units';
+      title: "Lähteen nimi",
+      page: "sivunumero",
+      url: "linkki"
+    },
+    level: "taso-id",
+    category: "kategoria-id"
   }

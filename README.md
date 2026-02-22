@@ -11,11 +11,10 @@ Sovellus noudattaa **Pelastusopiston sopimushenkilöstön opetussuunnitelmaa (OP
 - **Vaste-integraatio:** Kiekuu valmentaa käyttäjän ammattitaitoa, jotta operatiivinen työ Vaste-sovelluksella on sujuvaa.
 
 ## 🛠 Teknologia-pino
-- **Frontend:** React + Vite + TypeScript
+- **Frontend:** React + Vite (JavaScript)
 - **Tyylittely:** Tailwind CSS + shadcn/ui
 - **Backend:** Firebase (Auth, Firestore, Cloud Functions)
 - **AI-moottori:** Vertex AI for Firebase (Gemini 1.5 Flash)
-- **Mobiili-silta:** Capacitor
 
 ## 📈 Tasojärjestelmä (Arvot)
 1. **Harjoittelija:** Palokuntatoiminnan perusteet, työturvallisuus ja yksikkötunnusten perusteet.
