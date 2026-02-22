@@ -82,7 +82,7 @@ function Home() {
       </nav>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="text-center py-12">
+        <div className="mb-12">
           <h2 className="text-3xl font-bold tracking-tight text-slate-50 mb-4">
             Tervetuloa{user?.isAnonymous ? '' : `, ${user?.displayName}`}!
           </h2>
@@ -97,11 +97,70 @@ function Home() {
           <p className="text-slate-600 dark:text-slate-400">
             Pisteet: {userData?.progress?.totalScore || 0}
           </p>
+        </div>
 
-          <div className="mt-8">
-            <p className="text-slate-600 dark:text-slate-400">
-              Oppimistehtävät tulossa pian...
+        {/* Main Action Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-12">
+          {/* Start Quiz Card */}
+          <Link
+            to="/quiz"
+            className="group bg-gradient-to-br from-slate-900 to-slate-800 border border-slate-800 hover:border-blue-600 rounded-xl p-8 transition-all cursor-pointer hover:shadow-lg hover:shadow-blue-500/20"
+          >
+            <div className="flex items-start justify-between mb-4">
+              <div className="w-12 h-12 bg-gradient-to-br from-blue-600 to-blue-700 rounded-lg flex items-center justify-center text-white text-xl font-bold group-hover:scale-110 transition-transform">
+                ✏️
+              </div>
+            </div>
+            <h3 className="text-2xl font-bold text-slate-50 mb-2 group-hover:text-blue-400 transition-colors">
+              Aloita Kysely
+            </h3>
+            <p className="text-slate-400 mb-4">
+              Testaa osaamistasi ratkaisemalla kysymyksiä eri kategorioista ja vaikeusasteista.
             </p>
+            <div className="inline-block px-4 py-2 bg-blue-600 group-hover:bg-blue-700 rounded-lg text-white text-sm font-semibold transition-colors">
+              Aloita harjoittelu →
+            </div>
+          </Link>
+
+          {/* Progress Card */}
+          <Link
+            to="/progress"
+            className="group bg-gradient-to-br from-slate-900 to-slate-800 border border-slate-800 hover:border-green-600 rounded-xl p-8 transition-all cursor-pointer hover:shadow-lg hover:shadow-green-500/20"
+          >
+            <div className="flex items-start justify-between mb-4">
+              <div className="w-12 h-12 bg-gradient-to-br from-green-600 to-green-700 rounded-lg flex items-center justify-center text-white text-xl font-bold group-hover:scale-110 transition-transform">
+                📊
+              </div>
+            </div>
+            <h3 className="text-2xl font-bold text-slate-50 mb-2 group-hover:text-green-400 transition-colors">
+              Edistyminen
+            </h3>
+            <p className="text-slate-400 mb-4">
+              Seuraa edistymistäsi, tarkastele tilastojasi ja näe missä parannat eniten.
+            </p>
+            <div className="inline-block px-4 py-2 bg-green-600 group-hover:bg-green-700 rounded-lg text-white text-sm font-semibold transition-colors">
+              Näytä tilastot →
+            </div>
+          </Link>
+        </div>
+
+        {/* Stats Overview */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="bg-slate-900 border border-slate-800 rounded-lg p-4">
+            <p className="text-slate-400 text-sm mb-1">Vastaukset</p>
+            <p className="text-2xl font-bold text-blue-400">{userData?.progress?.questionsAnswered || 0}</p>
+          </div>
+          <div className="bg-slate-900 border border-slate-800 rounded-lg p-4">
+            <p className="text-slate-400 text-sm mb-1">Oikeat vastaukset</p>
+            <p className="text-2xl font-bold text-green-400">{userData?.progress?.correctAnswers || 0}</p>
+          </div>
+          <div className="bg-slate-900 border border-slate-800 rounded-lg p-4">
+            <p className="text-slate-400 text-sm mb-1">Kokonaispisteet</p>
+            <p className="text-2xl font-bold text-purple-400">{userData?.progress?.totalScore || 0}</p>
+          </div>
+          <div className="bg-slate-900 border border-slate-800 rounded-lg p-4">
+            <p className="text-slate-400 text-sm mb-1">Taso</p>
+            <p className="text-2xl font-bold text-yellow-400 capitalize">{userData?.rank || 'harjoittelija'}</p>
           </div>
         </div>
       </main>

@@ -5,6 +5,9 @@ import Landing from './pages/Landing';
 import Login from './pages/Login';
 import SignUp from './pages/SignUp';
 import Home from './pages/Home';
+import QuizBrowser from './pages/QuizBrowser';
+import QuizTake from './pages/QuizTake';
+import Progress from './pages/Progress';
 import AdminDashboard from './pages/AdminDashboard';
 import UserManagement from './pages/UserManagement';
 import CategoryManagement from './pages/CategoryManagement';
@@ -26,6 +29,30 @@ function App() {
             element={
               <ProtectedRoute>
                 <Home />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/quiz"
+            element={
+              <ProtectedRoute>
+                <QuizBrowser />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/quiz/take"
+            element={
+              <ProtectedRoute>
+                <QuizTake />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/progress"
+            element={
+              <ProtectedRoute>
+                <Progress />
               </ProtectedRoute>
             }
           />
