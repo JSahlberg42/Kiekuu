@@ -95,9 +95,13 @@ function AdminDashboard() {
               <h2 className="ml-4 text-lg sm:text-xl font-semibold text-orange-500 uppercase tracking-wide">Statistics</h2>
             </div>
             <p className="text-sm sm:text-base leading-relaxed text-slate-300 mb-4">View platform analytics</p>
-            <button className="w-full bg-orange-500 text-slate-50 px-4 py-3 rounded-xl hover:bg-orange-600 active:bg-orange-700 transition-colors font-semibold min-h-[44px]" aria-label="Näytä tilastot">
+            <Link
+              to="/admin/statistics"
+              className="block w-full bg-orange-500 text-slate-50 px-4 py-3 rounded-xl hover:bg-orange-600 active:bg-orange-700 transition-colors font-semibold min-h-[44px] text-center"
+              aria-label="Näytä tilastot"
+            >
               View Statistics
-            </button>
+            </Link>
           </div>
 
           {/* Ranks Management */}
@@ -132,9 +136,13 @@ function AdminDashboard() {
               <h2 className="ml-4 text-lg sm:text-xl font-semibold text-orange-500 uppercase tracking-wide">Settings</h2>
             </div>
             <p className="text-sm sm:text-base leading-relaxed text-slate-300 mb-4">Platform configuration</p>
-            <button className="w-full bg-slate-700 text-slate-50 px-4 py-3 rounded-xl hover:bg-slate-600 active:bg-slate-500 transition-colors font-semibold min-h-[44px]" aria-label="Asetukset">
+            <Link
+              to="/admin/settings"
+              className="block w-full bg-slate-700 text-slate-50 px-4 py-3 rounded-xl hover:bg-slate-600 active:bg-slate-500 transition-colors font-semibold min-h-[44px] text-center"
+              aria-label="Asetukset"
+            >
               Settings
-            </button>
+            </Link>
           </div>
         </div>
       </div>

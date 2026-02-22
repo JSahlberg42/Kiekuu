@@ -78,6 +78,15 @@ service cloud.firestore {
       allow create, update, delete: if isAdmin();
     }
     
+    // Platform configuration
+    match /config/{configId} {
+      // Everyone can read configuration
+      allow read: if isAuthenticated();
+      
+      // Only admins can modify
+      allow create, update, delete: if isAdmin();
+    }
+    
     // Deny everything else by default
     match /{document=**} {
       allow read, write: if false;

@@ -9,6 +9,8 @@ import AdminDashboard from './pages/AdminDashboard';
 import UserManagement from './pages/UserManagement';
 import CategoryManagement from './pages/CategoryManagement';
 import RankManagement from './pages/RankManagement';
+import Statistics from './pages/Statistics';
+import PlatformConfiguration from './pages/PlatformConfiguration';
 
 function App() {
   return (
@@ -55,6 +57,22 @@ function App() {
             element={
               <ProtectedRoute adminOnly>
                 <RankManagement />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/statistics"
+            element={
+              <ProtectedRoute adminOnly>
+                <Statistics />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/settings"
+            element={
+              <ProtectedRoute adminOnly>
+                <PlatformConfiguration />
               </ProtectedRoute>
             }
           />
