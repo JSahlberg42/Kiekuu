@@ -110,3 +110,4 @@ Follow the visual guidelines in `STYLEGUIDE.md` for all UI components.
 
 ## DEV (IDE)
 - Never start dev server `npm run dev` - user will do that
+- Never deploy directy to Firebase hosting by using command `firebase deploy --only hosting` (Everything goes via GHA)
