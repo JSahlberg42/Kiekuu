@@ -75,9 +75,13 @@ function AdminDashboard() {
               <h2 className="ml-4 text-lg sm:text-xl font-semibold text-orange-500 uppercase tracking-wide">Categories</h2>
             </div>
             <p className="text-sm sm:text-base leading-relaxed text-slate-300 mb-4">Organize question categories</p>
-            <button className="w-full bg-amber-400 text-slate-950 px-4 py-3 rounded-xl hover:bg-amber-500 active:bg-amber-600 transition-colors font-semibold min-h-[44px]" aria-label="Hallitse kategorioita">
+            <Link
+              to="/admin/categories"
+              className="block w-full bg-amber-400 text-slate-950 px-4 py-3 rounded-xl hover:bg-amber-500 active:bg-amber-600 transition-colors font-semibold min-h-[44px] text-center"
+              aria-label="Hallitse kategorioita"
+            >
               Manage Categories
-            </button>
+            </Link>
           </div>
 
           {/* Statistics */}
