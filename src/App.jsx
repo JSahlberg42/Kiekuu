@@ -9,6 +9,7 @@ import AdminDashboard from './pages/AdminDashboard';
 import UserManagement from './pages/UserManagement';
 import CategoryManagement from './pages/CategoryManagement';
 import RankManagement from './pages/RankManagement';
+import QuestionManagement from './pages/QuestionManagement';
 import Statistics from './pages/Statistics';
 import PlatformConfiguration from './pages/PlatformConfiguration';
 
@@ -57,6 +58,14 @@ function App() {
             element={
               <ProtectedRoute adminOnly>
                 <RankManagement />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/questions"
+            element={
+              <ProtectedRoute adminOnly>
+                <QuestionManagement />
               </ProtectedRoute>
             }
           />

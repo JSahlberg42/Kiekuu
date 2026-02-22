@@ -39,9 +39,13 @@ function AdminDashboard() {
               <h2 className="ml-4 text-lg sm:text-xl font-semibold text-orange-500 uppercase tracking-wide">Questions</h2>
             </div>
             <p className="text-sm sm:text-base leading-relaxed text-slate-300 mb-4">Manage quiz questions and answers</p>
-            <button className="w-full bg-orange-500 text-slate-50 px-4 py-3 rounded-xl hover:bg-orange-600 active:bg-orange-700 transition-colors font-semibold min-h-[44px]" aria-label="Hallitse kysymyksiä">
+            <Link
+              to="/admin/questions"
+              className="block w-full bg-orange-500 text-slate-50 px-4 py-3 rounded-xl hover:bg-orange-600 active:bg-orange-700 transition-colors font-semibold min-h-[44px] text-center"
+              aria-label="Hallitse kysymyksiä"
+            >
               Manage Questions
-            </button>
+            </Link>
           </div>
 
           {/* Users Management */}

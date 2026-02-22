@@ -1,0 +1,597 @@
+import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
+import { getAllQuestions, createQuestion, updateQuestion, deleteQuestion } from '../services/questionService';
+import { getAllCategories } from '../services/categoryService';
+import { useAuth } from '../context/AuthContext';
+import { Navigate } from 'react-router-dom';
+
+function QuestionManagement() {
+  const { userData, loading: authLoading } = useAuth();
+  const [questions, setQuestions] = useState([]);
+  const [categories, setCategories] = useState([]);
+  const [filteredQuestions, setFilteredQuestions] = useState([]);
+  const [selectedCategory, setSelectedCategory] = useState('all');
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [addingQuestion, setAddingQuestion] = useState(false);
+  const [editingQuestion, setEditingQuestion] = useState(null);
+  const [deletingQuestion, setDeletingQuestion] = useState(null);
+  const [actionLoading, setActionLoading] = useState(false);
+
+  useEffect(() => {
+    if (!authLoading && userData?.role === 'admin') {
+      fetchData();
+    }
+  }, [authLoading, userData]);
+
+  useEffect(() => {
+    if (selectedCategory === 'all') {
+      setFilteredQuestions(questions);
+    } else {
+      setFilteredQuestions(questions.filter(q => q.categoryId === selectedCategory));
+    }
+  }, [selectedCategory, questions]);
+
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+      setError('');
+      const [fetchedQuestions, fetchedCategories] = await Promise.all([
+        getAllQuestions(),
+        getAllCategories()
+      ]);
+      setQuestions(fetchedQuestions);
+      setCategories(fetchedCategories);
+      setFilteredQuestions(fetchedQuestions);
+    } catch (err) {
+      setError('Virhe tietojen hakemisessa');
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchQuestions = async () => {
+    try {
+      setError('');
+      const fetchedQuestions = await getAllQuestions();
+      setQuestions(fetchedQuestions);
+    } catch (err) {
+      setError('Virhe kysymysten hakemisessa');
+      console.error(err);
+    }
+  };
+
+  const handleCreateQuestion = async (questionData) => {
+    try {
+      setActionLoading(true);
+      setError('');
+      await createQuestion(questionData);
+      await fetchQuestions();
+      setAddingQuestion(false);
+    } catch (err) {
+      setError('Virhe kysymyksen luomisessa');
+      console.error(err);
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleUpdateQuestion = async (questionId, updates) => {
+    try {
+      setActionLoading(true);
+      setError('');
+      await updateQuestion(questionId, updates);
+      await fetchQuestions();
+      setEditingQuestion(null);
+    } catch (err) {
+      setError('Virhe kysymyksen päivittämisessä');
+      console.error(err);
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleDeleteQuestion = async (questionId) => {
+    try {
+      setActionLoading(true);
+      setError('');
+      await deleteQuestion(questionId);
+      await fetchQuestions();
+      setDeletingQuestion(null);
+    } catch (err) {
+      setError('Virhe kysymyksen poistamisessa');
+      console.error(err);
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  if (authLoading || loading) {
+    return (
+      <div className="min-h-screen bg-slate-950 flex items-center justify-center" role="status" aria-live="polite">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500 mx-auto" aria-hidden="true"></div>
+          <p className="mt-4 text-sm sm:text-base text-slate-400">Ladataan...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!userData || userData.role !== 'admin') {
+    return <Navigate to="/" replace />;
+  }
+
+  return (
+    <div className="min-h-screen bg-slate-950">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+        {/* Header */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6 sm:mb-8">
+          <div>
+            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight text-slate-50">
+              Kysymysten hallinta
+            </h1>
+            <p className="text-sm sm:text-base leading-relaxed text-slate-300 mt-2">
+              Hallitse tietokilpailun kysymyksiä ja vastauksia
+            </p>
+          </div>
+          <Link
+            to="/admin"
+            className="inline-flex items-center justify-center px-4 py-2 bg-slate-800 hover:bg-slate-700 active:bg-slate-600 text-slate-50 rounded-xl text-sm font-semibold transition-colors min-h-[44px]"
+            aria-label="Takaisin hallintapaneeliin"
+          >
+            ← Takaisin
+          </Link>
+        </div>
+
+        {error && (
+          <div className="mb-6 p-4 bg-red-900/20 border border-red-600 rounded-xl" role="alert">
+            <p className="text-sm sm:text-base text-red-500">{error}</p>
+          </div>
+        )}
+
+        {/* Filters and Actions */}
+        <div className="flex flex-col sm:flex-row gap-4 mb-6">
+          <div className="flex-1">
+            <select
+              value={selectedCategory}
+              onChange={(e) => setSelectedCategory(e.target.value)}
+              className="w-full px-4 py-3 border border-slate-800 rounded-xl bg-slate-900 text-slate-50 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 min-h-[44px]"
+              aria-label="Suodata kategorian mukaan"
+            >
+              <option value="all">Kaikki kategoriat ({questions.length})</option>
+              {categories.map(category => (
+                <option key={category.id} value={category.id}>
+                  {category.name} ({questions.filter(q => q.categoryId === category.id).length})
+                </option>
+              ))}
+            </select>
+          </div>
+          <button
+            onClick={() => setAddingQuestion(true)}
+            className="px-6 py-3 bg-orange-500 hover:bg-orange-600 active:bg-orange-700 text-slate-50 rounded-xl font-semibold transition-colors min-h-[44px]"
+            aria-label="Lisää uusi kysymys"
+          >
+            + Lisää kysymys
+          </button>
+        </div>
+
+        {/* Questions List */}
+        <div className="space-y-4">
+          {filteredQuestions.length === 0 ? (
+            <div className="bg-slate-900 border border-slate-800 rounded-xl p-8 text-center">
+              <p className="text-slate-400">
+                {selectedCategory === 'all' 
+                  ? 'Ei kysymyksiä. Lisää ensimmäinen kysymys.' 
+                  : 'Ei kysymyksiä tässä kategoriassa.'}
+              </p>
+            </div>
+          ) : (
+            filteredQuestions.map((question) => {
+              const category = categories.find(c => c.id === question.categoryId);
+              return (
+                <div
+                  key={question.id}
+                  className="bg-slate-900 border border-slate-800 rounded-xl p-6 hover:border-slate-700 transition-colors"
+                >
+                  <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
+                    <div className="flex-1 min-w-0">
+                      {/* Category Badge */}
+                      {category && (
+                        <div className="mb-3">
+                          <span className="inline-flex items-center gap-2 px-3 py-1 bg-amber-400/20 text-amber-400 rounded-lg text-xs font-medium">
+                            {category.icon && <span>{category.icon}</span>}
+                            {category.name}
+                          </span>
+                        </div>
+                      )}
+                      
+                      {/* Question Text */}
+                      <h3 className="text-base sm:text-lg font-semibold text-slate-50 mb-3 break-words">
+                        {question.question}
+                      </h3>
+                      
+                      {/* Options */}
+                      <div className="space-y-2 mb-3">
+                        {question.options?.map((option, index) => (
+                          <div
+                            key={index}
+                            className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm ${
+                              index === question.correctIndex
+                                ? 'bg-green-500/20 text-green-400 font-medium'
+                                : 'bg-slate-800 text-slate-300'
+                            }`}
+                          >
+                            <span className="font-semibold flex-shrink-0">
+                              {String.fromCharCode(65 + index)}.
+                            </span>
+                            <span className="break-words">{option}</span>
+                            {index === question.correctIndex && (
+                              <svg className="w-4 h-4 ml-auto flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                              </svg>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                      
+                      {/* Explanation */}
+                      {question.explanation && (
+                        <div className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg mb-3">
+                          <p className="text-xs font-medium uppercase tracking-widest text-blue-400 mb-1">Selitys</p>
+                          <p className="text-sm text-slate-300 break-words">{question.explanation}</p>
+                        </div>
+                      )}
+                      
+                      {/* Source */}
+                      {question.source && (
+                        <div className="text-xs text-slate-500">
+                          Lähde: {question.source.title}
+                          {question.source.page && `, s. ${question.source.page}`}
+                        </div>
+                      )}
+                    </div>
+                    
+                    {/* Actions */}
+                    <div className="flex flex-row lg:flex-col gap-2 lg:gap-3 lg:flex-shrink-0">
+                      <button
+                        onClick={() => setEditingQuestion(question)}
+                        className="flex-1 lg:flex-none px-4 py-2 bg-orange-500 hover:bg-orange-600 active:bg-orange-700 text-slate-50 rounded-xl text-sm font-semibold transition-colors min-h-[44px]"
+                        aria-label={`Muokkaa kysymystä: ${question.question}`}
+                      >
+                        Muokkaa
+                      </button>
+                      <button
+                        onClick={() => setDeletingQuestion(question)}
+                        className="flex-1 lg:flex-none px-4 py-2 bg-red-600 hover:bg-red-700 active:bg-red-800 text-slate-50 rounded-xl text-sm font-semibold transition-colors min-h-[44px]"
+                        aria-label={`Poista kysymys: ${question.question}`}
+                      >
+                        Poista
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              );
+            })
+          )}
+        </div>
+      </div>
+
+      {/* Add Question Modal */}
+      {addingQuestion && (
+        <QuestionFormModal
+          categories={categories}
+          onClose={() => setAddingQuestion(false)}
+          onSave={handleCreateQuestion}
+          loading={actionLoading}
+          title="Lisää uusi kysymys"
+        />
+      )}
+
+      {/* Edit Question Modal */}
+      {editingQuestion && (
+        <QuestionFormModal
+          question={editingQuestion}
+          categories={categories}
+          onClose={() => setEditingQuestion(null)}
+          onSave={(data) => handleUpdateQuestion(editingQuestion.id, data)}
+          loading={actionLoading}
+          title="Muokkaa kysymystä"
+        />
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {deletingQuestion && (
+        <DeleteConfirmModal
+          question={deletingQuestion}
+          onClose={() => setDeletingQuestion(null)}
+          onConfirm={() => handleDeleteQuestion(deletingQuestion.id)}
+          loading={actionLoading}
+        />
+      )}
+    </div>
+  );
+}
+
+// Question Form Modal Component
+function QuestionFormModal({ question, categories, onClose, onSave, loading, title }) {
+  const [formData, setFormData] = useState({
+    question: question?.question || '',
+    options: question?.options || ['', '', '', ''],
+    correctIndex: question?.correctIndex ?? 0,
+    explanation: question?.explanation || '',
+    categoryId: question?.categoryId || '',
+    source: {
+      title: question?.source?.title || '',
+      page: question?.source?.page || '',
+      url: question?.source?.url || '',
+    },
+  });
+
+  const handleOptionChange = (index, value) => {
+    const newOptions = [...formData.options];
+    newOptions[index] = value;
+    setFormData({ ...formData, options: newOptions });
+  };
+
+  const addOption = () => {
+    if (formData.options.length < 6) {
+      setFormData({ ...formData, options: [...formData.options, ''] });
+    }
+  };
+
+  const removeOption = (index) => {
+    if (formData.options.length > 2) {
+      const newOptions = formData.options.filter((_, i) => i !== index);
+      setFormData({
+        ...formData,
+        options: newOptions,
+        correctIndex: formData.correctIndex >= index && formData.correctIndex > 0 
+          ? formData.correctIndex - 1 
+          : formData.correctIndex,
+      });
+    }
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    
+    // Filter out empty options
+    const filteredOptions = formData.options.filter(opt => opt.trim() !== '');
+    
+    if (filteredOptions.length < 2) {
+      alert('Kysymyksessä tulee olla vähintään kaksi vastausvaihtoehtoa');
+      return;
+    }
+    
+    const questionData = {
+      ...formData,
+      options: filteredOptions,
+      correctIndex: Math.min(formData.correctIndex, filteredOptions.length - 1),
+    };
+    
+    // Remove empty source fields
+    if (!questionData.source.title && !questionData.source.page && !questionData.source.url) {
+      delete questionData.source;
+    }
+    
+    onSave(questionData);
+  };
+
+  return (
+    <div
+      className="fixed inset-0 bg-slate-950/90 flex items-center justify-center z-50 p-4 overflow-y-auto"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="question-modal-title"
+    >
+      <div className="bg-slate-900 border border-slate-800 rounded-xl max-w-2xl w-full p-6 sm:p-8 my-8">
+        <h2 id="question-modal-title" className="text-xl sm:text-2xl font-bold text-slate-50 mb-6">
+          {title}
+        </h2>
+
+        <form onSubmit={handleSubmit} className="space-y-5" role="form" aria-label={title}>
+          {/* Category Selection */}
+          <div>
+            <label htmlFor="question-category" className="block text-xs font-medium uppercase tracking-widest text-slate-400 mb-2">
+              Kategoria *
+            </label>
+            <select
+              id="question-category"
+              value={formData.categoryId}
+              onChange={(e) => setFormData({ ...formData, categoryId: e.target.value })}
+              className="w-full px-4 py-3 border border-slate-800 rounded-xl bg-slate-950 text-slate-50 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 min-h-[44px]"
+              required
+            >
+              <option value="">Valitse kategoria</option>
+              {categories.map(category => (
+                <option key={category.id} value={category.id}>
+                  {category.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Question Text */}
+          <div>
+            <label htmlFor="question-text" className="block text-xs font-medium uppercase tracking-widest text-slate-400 mb-2">
+              Kysymys *
+            </label>
+            <textarea
+              id="question-text"
+              value={formData.question}
+              onChange={(e) => setFormData({ ...formData, question: e.target.value })}
+              rows={3}
+              className="w-full px-4 py-3 border border-slate-800 rounded-xl bg-slate-950 text-slate-50 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 resize-none"
+              required
+              aria-required="true"
+            />
+          </div>
+
+          {/* Options */}
+          <div>
+            <label className="block text-xs font-medium uppercase tracking-widest text-slate-400 mb-2">
+              Vastausvaihtoehdot *
+            </label>
+            <div className="space-y-3">
+              {formData.options.map((option, index) => (
+                <div key={index} className="flex gap-2">
+                  <div className="flex items-center gap-2 flex-1">
+                    <input
+                      type="radio"
+                      name="correctAnswer"
+                      checked={formData.correctIndex === index}
+                      onChange={() => setFormData({ ...formData, correctIndex: index })}
+                      className="w-5 h-5 text-orange-500 focus:ring-orange-500 focus:ring-2"
+                      aria-label={`Merkitse vastaus ${String.fromCharCode(65 + index)} oikeaksi`}
+                    />
+                    <span className="text-slate-300 font-semibold flex-shrink-0">
+                      {String.fromCharCode(65 + index)}.
+                    </span>
+                    <input
+                      type="text"
+                      value={option}
+                      onChange={(e) => handleOptionChange(index, e.target.value)}
+                      placeholder={`Vastausvaihtoehto ${String.fromCharCode(65 + index)}`}
+                      className="flex-1 px-4 py-3 border border-slate-800 rounded-xl bg-slate-950 text-slate-50 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 min-h-[44px]"
+                    />
+                  </div>
+                  {formData.options.length > 2 && (
+                    <button
+                      type="button"
+                      onClick={() => removeOption(index)}
+                      className="px-3 py-2 bg-red-600/20 hover:bg-red-600/30 text-red-500 rounded-xl transition-colors min-h-[44px]"
+                      aria-label={`Poista vastausvaihtoehto ${String.fromCharCode(65 + index)}`}
+                    >
+                      ×
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+            {formData.options.length < 6 && (
+              <button
+                type="button"
+                onClick={addOption}
+                className="mt-3 px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-sm transition-colors min-h-[44px]"
+              >
+                + Lisää vaihtoehto
+              </button>
+            )}
+          </div>
+
+          {/* Explanation */}
+          <div>
+            <label htmlFor="question-explanation" className="block text-xs font-medium uppercase tracking-widest text-slate-400 mb-2">
+              Selitys
+            </label>
+            <textarea
+              id="question-explanation"
+              value={formData.explanation}
+              onChange={(e) => setFormData({ ...formData, explanation: e.target.value })}
+              rows={3}
+              placeholder="Selitä miksi oikea vastaus on oikein..."
+              className="w-full px-4 py-3 border border-slate-800 rounded-xl bg-slate-950 text-slate-50 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 resize-none"
+            />
+          </div>
+
+          {/* Source Information */}
+          <div className="border-t border-slate-800 pt-5">
+            <h3 className="text-sm font-medium text-slate-400 mb-3">Lähdetiedot (valinnainen)</h3>
+            <div className="space-y-3">
+              <input
+                type="text"
+                value={formData.source.title}
+                onChange={(e) => setFormData({ ...formData, source: { ...formData.source, title: e.target.value } })}
+                placeholder="Lähteen nimi"
+                className="w-full px-4 py-3 border border-slate-800 rounded-xl bg-slate-950 text-slate-50 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 min-h-[44px]"
+              />
+              <div className="grid grid-cols-2 gap-3">
+                <input
+                  type="text"
+                  value={formData.source.page}
+                  onChange={(e) => setFormData({ ...formData, source: { ...formData.source, page: e.target.value } })}
+                  placeholder="Sivunumero"
+                  className="px-4 py-3 border border-slate-800 rounded-xl bg-slate-950 text-slate-50 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 min-h-[44px]"
+                />
+                <input
+                  type="url"
+                  value={formData.source.url}
+                  onChange={(e) => setFormData({ ...formData, source: { ...formData.source, url: e.target.value } })}
+                  placeholder="URL"
+                  className="px-4 py-3 border border-slate-800 rounded-xl bg-slate-950 text-slate-50 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 min-h-[44px]"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Form Actions */}
+          <div className="flex flex-col sm:flex-row gap-3 pt-4">
+            <button
+              type="button"
+              onClick={onClose}
+              disabled={loading}
+              className="flex-1 px-4 py-3 bg-slate-800 hover:bg-slate-700 active:bg-slate-600 text-slate-50 rounded-xl font-semibold transition-colors disabled:opacity-50 min-h-[44px]"
+              aria-label="Peruuta"
+            >
+              Peruuta
+            </button>
+            <button
+              type="submit"
+              disabled={loading}
+              className="flex-1 px-4 py-3 bg-orange-500 hover:bg-orange-600 active:bg-orange-700 text-slate-50 rounded-xl font-semibold transition-colors disabled:opacity-50 min-h-[44px]"
+              aria-label="Tallenna kysymys"
+            >
+              {loading ? 'Tallennetaan...' : 'Tallenna'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+// Delete Confirmation Modal Component
+function DeleteConfirmModal({ question, onClose, onConfirm, loading }) {
+  return (
+    <div
+      className="fixed inset-0 bg-slate-950/90 flex items-center justify-center z-50 p-4"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="delete-modal-title"
+    >
+      <div className="bg-slate-900 border border-slate-800 rounded-xl max-w-md w-full p-6 sm:p-8">
+        <h2 id="delete-modal-title" className="text-xl sm:text-2xl font-bold text-red-600 mb-4 break-words">
+          Poista kysymys
+        </h2>
+        <p className="text-sm sm:text-base text-slate-300 mb-6 break-words">
+          Haluatko varmasti poistaa kysymyksen: <strong className="text-slate-50 break-words">{question.question}</strong>?
+          <br />
+          <br />
+          <span className="text-red-500">Tämä toiminto on peruuttamaton.</span>
+        </p>
+
+        <div className="flex flex-col sm:flex-row gap-3">
+          <button
+            onClick={onClose}
+            disabled={loading}
+            className="flex-1 px-4 py-3 bg-slate-800 hover:bg-slate-700 active:bg-slate-600 text-slate-50 rounded-xl font-semibold transition-colors disabled:opacity-50 min-h-[44px]"
+            aria-label="Peruuta poisto"
+          >
+            Peruuta
+          </button>
+          <button
+            onClick={onConfirm}
+            disabled={loading}
+            className="flex-1 px-4 py-3 bg-red-600 hover:bg-red-700 active:bg-red-800 text-slate-50 rounded-xl font-semibold transition-colors disabled:opacity-50 min-h-[44px]"
+            aria-label="Vahvista kysymyksen poisto"
+          >
+            {loading ? 'Poistetaan...' : 'Poista pysyvästi'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default QuestionManagement;
