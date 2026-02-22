@@ -13,12 +13,29 @@ function Landing() {
     setError('');
     try {
       console.log('Starting anonymous sign in...');
-      await signInAnonymouslyUser();
+      const user = await signInAnonymouslyUser();
       console.log('Anonymous sign in successful, navigating to home...');
+      console.log('User object:', user);
       navigate('/');
     } catch (err) {
       console.error('Anonymous sign in error:', err);
-      setError(err.message || 'Aloitus epäonnistui. Yritä uudelleen.');
+      console.error('Error details:', {
+        code: err.code,
+        message: err.message,
+        name: err.name
+      });
+      
+      // Show user-friendly error message
+      let errorMessage = 'Aloitus epäonnistui. ';
+      if (err.message && err.message.includes('timeout')) {
+        errorMessage += 'Yhteys aikakatkaistiin. Tarkista internetyhteytesi ja yritä uudelleen.';
+      } else if (err.code === 'permission-denied') {
+        errorMessage += 'Lupa evätty. Ota yhteyttä tukeen.';
+      } else {
+        errorMessage += 'Yritä uudelleen hetken kuluttua.';
+      }
+      
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }

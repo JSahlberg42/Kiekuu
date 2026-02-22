@@ -174,9 +174,10 @@ export const signInAnonymouslyUser = async () => {
     const user = userCredential.user;
     console.log('Anonymous user created:', user.uid);
 
-    // Create anonymous user document in Firestore
+    // Create anonymous user document in Firestore with timeout
     console.log('Creating Firestore document...');
-    await setDoc(doc(db, 'users', user.uid), {
+    
+    const userData = {
       uid: user.uid,
       isAnonymous: true,
       role: 'user',
@@ -187,8 +188,23 @@ export const signInAnonymouslyUser = async () => {
         totalScore: 0,
         questionsAnswered: 0,
       },
-    });
-    console.log('Firestore document created');
+    };
+    
+    console.log('User data to be saved:', JSON.stringify(userData));
+    
+    // Add timeout to setDoc
+    const timeoutPromise = new Promise((_, reject) => 
+      setTimeout(() => reject(new Error('Firestore write timeout after 10s')), 10000)
+    );
+    
+    const writePromise = setDoc(doc(db, 'users', user.uid), userData);
+    
+    await Promise.race([writePromise, timeoutPromise])
+      .then(() => console.log('Firestore document created successfully'))
+      .catch((error) => {
+        console.error('Firestore write error:', error);
+        throw error;
+      });
 
     // Wait a moment to ensure document is written
     await new Promise(resolve => setTimeout(resolve, 500));
@@ -197,6 +213,9 @@ export const signInAnonymouslyUser = async () => {
     return user;
   } catch (error) {
     console.error('Anonymous sign in error:', error);
+    console.error('Error code:', error.code);
+    console.error('Error message:', error.message);
+    console.error('Error stack:', error.stack);
     throw error;
   }
 };
