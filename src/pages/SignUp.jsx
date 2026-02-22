@@ -81,17 +81,17 @@ function SignUp() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-950 px-4">
-      <div className="max-w-md w-full space-y-8">
+    <div className="min-h-screen flex items-center justify-center bg-slate-950 px-4 py-8">
+      <div className="max-w-md w-full space-y-6 sm:space-y-8">
         <div className="text-center">
-          <h1 className="text-4xl font-bold mb-2 text-slate-50">🐓 Kiekuu</h1>
-          <h2 className="text-xl font-semibold text-orange-500 uppercase tracking-wide">Luo tili</h2>
-          <p className="text-base leading-relaxed text-slate-300 mt-2">
+          <h1 className="text-3xl sm:text-4xl font-bold mb-2 text-slate-50">🐓 Kiekuu</h1>
+          <h2 className="text-lg sm:text-xl font-semibold text-orange-500 uppercase tracking-wide">Luo tili</h2>
+          <p className="text-sm sm:text-base leading-relaxed text-slate-300 mt-2">
             Aloita oppiminen tänään
           </p>
         </div>
 
-        <form onSubmit={handleSubmit} className="mt-8 space-y-6 bg-slate-900 border border-slate-800 rounded-xl p-8">
+        <form onSubmit={handleSubmit} className="mt-6 sm:mt-8 space-y-4 sm:space-y-6 bg-slate-900 border border-slate-800 rounded-xl p-6 sm:p-8" role="form" aria-label="Rekisteröitymislomake">
           {error && (
             <div className="bg-red-600/20 border border-red-600 text-slate-50 px-4 py-3 rounded-xl">
               {error}
@@ -170,7 +170,8 @@ function SignUp() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-3 px-4 bg-orange-500 hover:bg-orange-600 disabled:opacity-50 text-slate-50 font-semibold rounded-xl transition-colors"
+            className="w-full py-3 px-4 bg-orange-500 hover:bg-orange-600 active:bg-orange-700 disabled:opacity-50 text-slate-50 font-semibold rounded-xl transition-colors min-h-[44px]"
+            aria-label="Rekisteröidy"
           >
             {loading ? 'Luodaan tiliä...' : 'Rekisteröidy'}
           </button>
@@ -188,7 +189,8 @@ function SignUp() {
             type="button"
             onClick={handleGoogleSignIn}
             disabled={loading}
-            className="w-full py-3 px-4 bg-slate-800 hover:bg-slate-700 text-slate-50 font-semibold rounded-xl border border-slate-700 transition-colors disabled:opacity-50 flex items-center justify-center gap-3"
+            className="w-full py-3 px-4 bg-slate-800 hover:bg-slate-700 active:bg-slate-600 text-slate-50 font-semibold rounded-xl border border-slate-700 transition-colors disabled:opacity-50 flex items-center justify-center gap-3 min-h-[44px]"
+            aria-label="Rekisteröidy Google-tilillä"
           >
             <svg className="w-5 h-5" viewBox="0 0 24 24">
               <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>

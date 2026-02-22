@@ -42,12 +42,12 @@ function Landing() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-950">
-      <div className="max-w-md w-full mx-4">
+    <div className="min-h-screen flex items-center justify-center bg-slate-950 px-4">
+      <div className="max-w-md w-full">
         <div className="text-center mb-8">
-          <h1 className="text-6xl mb-4">🐓</h1>
-          <h1 className="text-3xl font-bold tracking-tight text-slate-50 mb-2">Kiekuu</h1>
-          <p className="text-base leading-relaxed text-slate-300">
+          <h1 className="text-5xl sm:text-6xl mb-4" role="img" aria-label="Kiekuu logo">🐓</h1>
+          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight text-slate-50 mb-2">Kiekuu</h1>
+          <p className="text-sm sm:text-base leading-relaxed text-slate-300">
             Pelillistetty oppimisalusta sopimuspalokuntien koulutukseen
           </p>
         </div>
@@ -58,11 +58,12 @@ function Landing() {
           </div>
         )}
 
-        <div className="bg-slate-900 border border-slate-800 rounded-xl p-8 space-y-4">
+        <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 sm:p-8 space-y-4">
           <button
             onClick={handleStartUsing}
             disabled={loading}
-            className="w-full bg-orange-500 hover:bg-orange-600 text-slate-50 font-semibold py-4 px-6 rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full bg-orange-500 hover:bg-orange-600 active:bg-orange-700 text-slate-50 font-semibold py-4 px-6 rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed min-h-[44px]"
+            aria-label="Aloita oppiminen ilman rekisteröitymistä"
           >
             {loading ? 'Aloitetaan...' : '🚀 Aloita oppiminen'}
           </button>
@@ -79,7 +80,8 @@ function Landing() {
           <button
             onClick={handleGoogleSignIn}
             disabled={loading}
-            className="w-full bg-slate-800 hover:bg-slate-700 text-slate-50 font-semibold py-4 px-6 rounded-xl border border-slate-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3"
+            className="w-full bg-slate-800 hover:bg-slate-700 active:bg-slate-600 text-slate-50 font-semibold py-4 px-6 rounded-xl border border-slate-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3 min-h-[44px]"
+            aria-label="Kirjaudu sisään Google-tilillä"
           >
             <svg className="w-5 h-5" viewBox="0 0 24 24">
               <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
@@ -93,7 +95,8 @@ function Landing() {
           <button
             onClick={handleLogin}
             disabled={loading}
-            className="w-full bg-slate-800 hover:bg-slate-700 text-slate-50 font-semibold py-4 px-6 rounded-xl border border-slate-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full bg-slate-800 hover:bg-slate-700 active:bg-slate-600 text-slate-50 font-semibold py-4 px-6 rounded-xl border border-slate-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed min-h-[44px]"
+            aria-label="Kirjaudu sisään sähköpostilla"
           >
             Kirjaudu sähköpostilla
           </button>
@@ -106,6 +109,9 @@ function Landing() {
 
         <div className="mt-8 text-center text-sm text-slate-600">
           <p>Noudattelee Pelastusopiston sopimushenkilöstön OPS:in sisältöä sekä muita alan suosituksia.</p>
+        </div>
+        <div className="mt-4 text-center text-xs text-slate-500">
+          <p>© 2026 Jussi Sahlberg</p>
         </div>
       </div>
     </div>

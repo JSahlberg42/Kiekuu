@@ -34,13 +34,13 @@ function Home() {
 
   return (
     <div className="min-h-screen bg-slate-950">
-      <nav className="bg-slate-900 border-b border-slate-800">
+      <nav className="bg-slate-900 border-b border-slate-800" role="navigation" aria-label="Main navigation">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center">
-              <h1 className="text-3xl font-bold tracking-tight text-slate-50">🐓 Kiekuu</h1>
+          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center py-4 sm:h-16 gap-4 sm:gap-0">
+            <div className="flex items-center justify-center sm:justify-start">
+              <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-50">🐓 Kiekuu</h1>
             </div>
-            <div className="flex items-center gap-4">
+            <div className="flex flex-col sm:flex-row items-center gap-3 sm:gap-4">
               {user?.isAnonymous ? (
                 <span className="text-xs font-medium uppercase tracking-widest text-slate-500">
                   Vieras
@@ -53,14 +53,16 @@ function Home() {
               {userData?.role === 'admin' && (
                 <Link
                   to="/admin"
-                  className="px-4 py-2 bg-amber-400 hover:bg-amber-500 text-slate-950 rounded-xl text-sm font-semibold"
+                  className="w-full sm:w-auto text-center px-4 py-2 bg-amber-400 hover:bg-amber-500 active:bg-amber-600 text-slate-950 rounded-xl text-sm font-semibold transition-colors min-h-[44px] flex items-center justify-center"
+                  aria-label="Siirry admin-hallintapaneeliin"
                 >
                   Admin
                 </Link>
               )}
               <button
                 onClick={handleLogout}
-                className="px-4 py-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-xl text-sm font-medium text-slate-50"
+                className="w-full sm:w-auto px-4 py-2 bg-slate-800 hover:bg-slate-700 active:bg-slate-600 border border-slate-700 rounded-xl text-sm font-medium text-slate-50 transition-colors min-h-[44px]"
+                aria-label="Kirjaudu ulos"
               >
                 Kirjaudu ulos
               </button>
