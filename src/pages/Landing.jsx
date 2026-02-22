@@ -46,7 +46,12 @@ function Landing() {
     <div className="min-h-screen flex items-center justify-center bg-slate-950 px-4">
       <div className="max-w-md w-full">
         <div className="text-center mb-8">
-          <img src={logo} alt="Kiekuu logo" className="w-24 h-24 sm:w-32 sm:h-32 mx-auto mb-4 object-contain" />
+          <div 
+            className="w-24 h-24 sm:w-32 sm:h-32 mx-auto mb-4 bg-center bg-no-repeat bg-contain"
+            style={{ backgroundImage: `url(${logo})` }}
+            role="img"
+            aria-label="Kiekuu logo"
+          />
           <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight text-slate-50 mb-2">Kiekuu</h1>
           <p className="text-sm sm:text-base leading-relaxed text-slate-300">
             Pelillistetty oppimisalusta sopimuspalokuntien koulutukseen

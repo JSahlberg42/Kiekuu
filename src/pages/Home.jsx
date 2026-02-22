@@ -37,7 +37,12 @@ function Home() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center py-4 sm:h-16 gap-4 sm:gap-0">
             <div className="flex items-center justify-center sm:justify-start gap-3">
-              <img src={logo} alt="Kiekuu logo" className="w-10 h-10 sm:w-12 sm:h-12 object-contain" />
+              <div 
+                className="w-10 h-10 sm:w-12 sm:h-12 bg-center bg-no-repeat bg-contain flex-shrink-0"
+                style={{ backgroundImage: `url(${logo})` }}
+                role="img"
+                aria-label="Kiekuu logo"
+              />
               <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-50">Kiekuu</h1>
             </div>
             <div className="flex flex-col sm:flex-row items-center gap-3 sm:gap-4">
