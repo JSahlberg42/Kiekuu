@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { getAllQuestions, createQuestion, updateQuestion, deleteQuestion } from '../services/questionService';
 import { getAllCategories } from '../services/categoryService';
+import { generateQuestions, fetchContentFromUrl, readFileContent } from '../services/aiService';
 import { useAuth } from '../context/AuthContext';
 import { Navigate } from 'react-router-dom';
 
@@ -16,6 +17,7 @@ function QuestionManagement() {
   const [addingQuestion, setAddingQuestion] = useState(false);
   const [editingQuestion, setEditingQuestion] = useState(null);
   const [deletingQuestion, setDeletingQuestion] = useState(null);
+  const [generatingWithAI, setGeneratingWithAI] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
 
   useEffect(() => {
@@ -107,6 +109,19 @@ function QuestionManagement() {
     }
   };
 
+  const handleBulkCreateQuestions = async (questionsArray) => {
+    try {
+      setError('');
+      const promises = questionsArray.map(q => createQuestion(q));
+      await Promise.all(promises);
+      await fetchQuestions();
+    } catch (err) {
+      setError('Virhe kysymysten luomisessa');
+      console.error(err);
+      throw err;
+    }
+  };
+
   if (authLoading || loading) {
     return (
       <div className="min-h-screen bg-slate-950 flex items-center justify-center" role="status" aria-live="polite">
@@ -167,6 +182,16 @@ function QuestionManagement() {
               ))}
             </select>
           </div>
+          <button
+            onClick={() => setGeneratingWithAI(true)}
+            className="px-6 py-3 bg-purple-600 hover:bg-purple-700 active:bg-purple-800 text-slate-50 rounded-xl font-semibold transition-colors min-h-[44px] flex items-center justify-center gap-2"
+            aria-label="Generoi kysymyksiä tekoälyllä"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+            </svg>
+            AI-generaattori
+          </button>
           <button
             onClick={() => setAddingQuestion(true)}
             className="px-6 py-3 bg-orange-500 hover:bg-orange-600 active:bg-orange-700 text-slate-50 rounded-xl font-semibold transition-colors min-h-[44px]"
@@ -307,6 +332,15 @@ function QuestionManagement() {
           onClose={() => setDeletingQuestion(null)}
           onConfirm={() => handleDeleteQuestion(deletingQuestion.id)}
           loading={actionLoading}
+        />
+      )}
+
+      {/* AI Generation Modal */}
+      {generatingWithAI && (
+        <AIGenerationModal
+          categories={categories}
+          onClose={() => setGeneratingWithAI(false)}
+          onGenerate={handleBulkCreateQuestions}
         />
       )}
     </div>
@@ -589,6 +623,418 @@ function DeleteConfirmModal({ question, onClose, onConfirm, loading }) {
             {loading ? 'Poistetaan...' : 'Poista pysyvästi'}
           </button>
         </div>
+      </div>
+    </div>
+  );
+}
+
+// AI Generation Modal Component
+function AIGenerationModal({ categories, onClose, onGenerate }) {
+  const [formData, setFormData] = useState({
+    categoryId: '',
+    questionCount: 5,
+    difficulty: 'medium',
+    contextType: 'text', // 'text', 'url', 'file'
+    contextText: '',
+    contextUrl: '',
+    contextFile: null,
+  });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [generatedQuestions, setGeneratedQuestions] = useState([]);
+  const [step, setStep] = useState(1); // 1: input, 2: review
+
+  const handleFileChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setFormData({ ...formData, contextFile: file });
+    }
+  };
+
+  const handleGenerate = async () => {
+    try {
+      setLoading(true);
+      setError('');
+
+      // Get context based on type
+      let context = '';
+      if (formData.contextType === 'text') {
+        context = formData.contextText;
+        if (!context.trim()) {
+          throw new Error('Anna kontekstiteksti');
+        }
+      } else if (formData.contextType === 'url') {
+        if (!formData.contextUrl.trim()) {
+          throw new Error('Anna URL-osoite');
+        }
+        context = await fetchContentFromUrl(formData.contextUrl);
+      } else if (formData.contextType === 'file') {
+        if (!formData.contextFile) {
+          throw new Error('Valitse tiedosto');
+        }
+        context = await readFileContent(formData.contextFile);
+      }
+
+      if (!formData.categoryId) {
+        throw new Error('Valitse kategoria');
+      }
+
+      const category = categories.find(c => c.id === formData.categoryId);
+      
+      // Generate questions with AI
+      const questions = await generateQuestions({
+        context,
+        questionCount: formData.questionCount,
+        difficulty: formData.difficulty,
+        categoryName: category?.name || 'Yleinen',
+      });
+
+      // Add categoryId to each question
+      const questionsWithCategory = questions.map(q => ({
+        ...q,
+        categoryId: formData.categoryId,
+      }));
+
+      setGeneratedQuestions(questionsWithCategory);
+      setStep(2);
+    } catch (err) {
+      setError(err.message || 'Virhe kysymysten generoinnissa');
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSaveAll = async () => {
+    try {
+      setLoading(true);
+      setError('');
+      await onGenerate(generatedQuestions);
+      onClose();
+    } catch (err) {
+      setError('Virhe kysymysten tallentamisessa');
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const removeQuestion = (index) => {
+    setGeneratedQuestions(generatedQuestions.filter((_, i) => i !== index));
+  };
+
+  return (
+    <div
+      className="fixed inset-0 bg-slate-950/90 flex items-center justify-center z-50 p-4 overflow-y-auto"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="ai-modal-title"
+    >
+      <div className="bg-slate-900 border border-slate-800 rounded-xl max-w-4xl w-full p-6 sm:p-8 my-8">
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-purple-600/20 rounded-xl">
+              <svg className="w-6 h-6 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+              </svg>
+            </div>
+            <h2 id="ai-modal-title" className="text-xl sm:text-2xl font-bold text-slate-50">
+              AI-kysymysgeneraattori
+            </h2>
+          </div>
+          <button
+            onClick={onClose}
+            disabled={loading}
+            className="p-2 hover:bg-slate-800 rounded-xl transition-colors"
+            aria-label="Sulje"
+          >
+            <svg className="w-6 h-6 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        {error && (
+          <div className="mb-6 p-4 bg-red-900/20 border border-red-600 rounded-xl" role="alert">
+            <p className="text-sm text-red-500">{error}</p>
+          </div>
+        )}
+
+        {step === 1 ? (
+          // Step 1: Input Parameters
+          <div className="space-y-6">
+            {/* Category Selection */}
+            <div>
+              <label htmlFor="ai-category" className="block text-xs font-medium uppercase tracking-widest text-slate-400 mb-2">
+                Kategoria *
+              </label>
+              <select
+                id="ai-category"
+                value={formData.categoryId}
+                onChange={(e) => setFormData({ ...formData, categoryId: e.target.value })}
+                className="w-full px-4 py-3 border border-slate-800 rounded-xl bg-slate-950 text-slate-50 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 min-h-[44px]"
+                required
+              >
+                <option value="">Valitse kategoria</option>
+                {categories.map(category => (
+                  <option key={category.id} value={category.id}>
+                    {category.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Question Count and Difficulty */}
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label htmlFor="ai-count" className="block text-xs font-medium uppercase tracking-widest text-slate-400 mb-2">
+                  Kysymysten määrä
+                </label>
+                <input
+                  type="number"
+                  id="ai-count"
+                  value={formData.questionCount}
+                  onChange={(e) => setFormData({ ...formData, questionCount: parseInt(e.target.value) })}
+                  min="1"
+                  max="20"
+                  className="w-full px-4 py-3 border border-slate-800 rounded-xl bg-slate-950 text-slate-50 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 min-h-[44px]"
+                />
+              </div>
+              <div>
+                <label htmlFor="ai-difficulty" className="block text-xs font-medium uppercase tracking-widest text-slate-400 mb-2">
+                  Vaikeustaso
+                </label>
+                <select
+                  id="ai-difficulty"
+                  value={formData.difficulty}
+                  onChange={(e) => setFormData({ ...formData, difficulty: e.target.value })}
+                  className="w-full px-4 py-3 border border-slate-800 rounded-xl bg-slate-950 text-slate-50 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 min-h-[44px]"
+                >
+                  <option value="easy">Helppo (Easy)</option>
+                  <option value="medium">Keskitaso (Medium)</option>
+                  <option value="hard">Vaikea (Hard)</option>
+                  <option value="pro">Ammattilainen (Pro)</option>
+                </select>
+              </div>
+            </div>
+
+            {/* Context Type Selection */}
+            <div>
+              <label className="block text-xs font-medium uppercase tracking-widest text-slate-400 mb-3">
+                Kontekstin lähde *
+              </label>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => setFormData({ ...formData, contextType: 'text' })}
+                  className={`flex-1 px-4 py-3 rounded-xl font-medium transition-colors min-h-[44px] ${
+                    formData.contextType === 'text'
+                      ? 'bg-purple-600 text-slate-50'
+                      : 'bg-slate-800 text-slate-400 hover:bg-slate-700'
+                  }`}
+                >
+                  Teksti
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setFormData({ ...formData, contextType: 'url' })}
+                  className={`flex-1 px-4 py-3 rounded-xl font-medium transition-colors min-h-[44px] ${
+                    formData.contextType === 'url'
+                      ? 'bg-purple-600 text-slate-50'
+                      : 'bg-slate-800 text-slate-400 hover:bg-slate-700'
+                  }`}
+                >
+                  URL
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setFormData({ ...formData, contextType: 'file' })}
+                  className={`flex-1 px-4 py-3 rounded-xl font-medium transition-colors min-h-[44px] ${
+                    formData.contextType === 'file'
+                      ? 'bg-purple-600 text-slate-50'
+                      : 'bg-slate-800 text-slate-400 hover:bg-slate-700'
+                  }`}
+                >
+                  Tiedosto
+                </button>
+              </div>
+            </div>
+
+            {/* Context Input */}
+            {formData.contextType === 'text' && (
+              <div>
+                <label htmlFor="ai-context-text" className="block text-xs font-medium uppercase tracking-widest text-slate-400 mb-2">
+                  Kontekstiteksti * <span className="text-green-500 text-[10px] font-normal">(Suositeltu)</span>
+                </label>
+                <textarea
+                  id="ai-context-text"
+                  value={formData.contextText}
+                  onChange={(e) => setFormData({ ...formData, contextText: e.target.value })}
+                  rows={8}
+                  placeholder="Liitä tähän oppimateriaaliteksti, josta kysymykset generoidaan..."
+                  className="w-full px-4 py-3 border border-slate-800 rounded-xl bg-slate-950 text-slate-50 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 resize-none"
+                  required
+                />
+                <p className="mt-2 text-xs text-slate-500">
+                  ✓ Luotettavin tapa: Kopioi ja liitä teksti oppimateriaalista, artikkelista tai ohjekirjasta.
+                </p>
+              </div>
+            )}
+
+            {formData.contextType === 'url' && (
+              <div>
+                <label htmlFor="ai-context-url" className="block text-xs font-medium uppercase tracking-widest text-slate-400 mb-2">
+                  URL-osoite *
+                </label>
+                <input
+                  type="url"
+                  id="ai-context-url"
+                  value={formData.contextUrl}
+                  onChange={(e) => setFormData({ ...formData, contextUrl: e.target.value })}
+                  placeholder="https://esimerkki.fi/oppimateriaali"
+                  className="w-full px-4 py-3 border border-slate-800 rounded-xl bg-slate-950 text-slate-50 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 min-h-[44px]"
+                  required
+                />
+                <div className="mt-2 p-3 bg-amber-900/20 border border-amber-600/30 rounded-lg">
+                  <p className="text-xs text-amber-500">
+                    ⚠️ URL-haku ei välttämättä toimi kaikilla sivustoilla CORS-rajoitusten vuoksi. Jos haku epäonnistuu, avaa sivu selaimessa, kopioi teksti ja käytä "Teksti"-vaihtoehtoa.
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {formData.contextType === 'file' && (
+              <div>
+                <label htmlFor="ai-context-file" className="block text-xs font-medium uppercase tracking-widest text-slate-400 mb-2">
+                  Tiedosto *
+                </label>
+                <input
+                  type="file"
+                  id="ai-context-file"
+                  onChange={handleFileChange}
+                  accept=".txt,.md"
+                  className="w-full px-4 py-3 border border-slate-800 rounded-xl bg-slate-950 text-slate-50 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 min-h-[44px] file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-purple-600 file:text-slate-50 file:font-medium hover:file:bg-purple-700"
+                  required
+                />
+                <p className="mt-2 text-xs text-slate-500">
+                  Tuetut tiedostomuodot: .txt, .md (maksimi ~50,000 merkkiä)
+                </p>
+              </div>
+            )}
+
+            {/* Actions */}
+            <div className="flex flex-col sm:flex-row gap-3 pt-4">
+              <button
+                type="button"
+                onClick={onClose}
+                disabled={loading}
+                className="flex-1 px-6 py-3 bg-slate-800 hover:bg-slate-700 active:bg-slate-600 text-slate-50 rounded-xl font-semibold transition-colors disabled:opacity-50 min-h-[44px]"
+              >
+                Peruuta
+              </button>
+              <button
+                type="button"
+                onClick={handleGenerate}
+                disabled={loading}
+                className="flex-1 px-6 py-3 bg-purple-600 hover:bg-purple-700 active:bg-purple-800 text-slate-50 rounded-xl font-semibold transition-colors disabled:opacity-50 min-h-[44px]"
+              >
+                {loading ? 'Generoidaan...' : 'Generoi kysymykset'}
+              </button>
+            </div>
+          </div>
+        ) : (
+          // Step 2: Review Generated Questions
+          <div className="space-y-6">
+            <div className="flex items-center justify-between">
+              <p className="text-sm text-slate-400">
+                Generoitu {generatedQuestions.length} kysymystä
+              </p>
+              <button
+                onClick={() => setStep(1)}
+                className="text-sm text-purple-500 hover:text-purple-400"
+              >
+                ← Takaisin
+              </button>
+            </div>
+
+            {/* Generated Questions List */}
+            <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-2">
+              {generatedQuestions.map((question, index) => (
+                <div
+                  key={index}
+                  className="bg-slate-950 border border-slate-800 rounded-xl p-4"
+                >
+                  <div className="flex items-start justify-between gap-4 mb-3">
+                    <h4 className="font-semibold text-slate-50 flex-1">{question.question}</h4>
+                    <button
+                      onClick={() => removeQuestion(index)}
+                      className="p-1 hover:bg-red-600/20 rounded text-red-500"
+                      aria-label="Poista kysymys"
+                    >
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  </div>
+
+                  <div className="space-y-2 mb-3">
+                    {question.options.map((option, optIndex) => (
+                      <div
+                        key={optIndex}
+                        className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm ${
+                          optIndex === question.correctIndex
+                            ? 'bg-green-500/20 text-green-400'
+                            : 'bg-slate-800 text-slate-300'
+                        }`}
+                      >
+                        <span className="font-semibold">{String.fromCharCode(65 + optIndex)}.</span>
+                        <span className="flex-1">{option}</span>
+                        {optIndex === question.correctIndex && (
+                          <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                          </svg>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+
+                  {question.explanation && (
+                    <p className="text-xs text-slate-400 mb-2">
+                      <strong>Selitys:</strong> {question.explanation}
+                    </p>
+                  )}
+
+                  {question.source && (
+                    <p className="text-xs text-slate-500">
+                      <strong>Lähde:</strong> {question.source.title}
+                      {question.source.page && `, ${question.source.page}`}
+                    </p>
+                  )}
+                </div>
+              ))}
+            </div>
+
+            {/* Save Actions */}
+            <div className="flex flex-col sm:flex-row gap-3 pt-4 border-t border-slate-800">
+              <button
+                type="button"
+                onClick={onClose}
+                disabled={loading}
+                className="flex-1 px-6 py-3 bg-slate-800 hover:bg-slate-700 active:bg-slate-600 text-slate-50 rounded-xl font-semibold transition-colors disabled:opacity-50 min-h-[44px]"
+              >
+                Peruuta
+              </button>
+              <button
+                type="button"
+                onClick={handleSaveAll}
+                disabled={loading || generatedQuestions.length === 0}
+                className="flex-1 px-6 py-3 bg-purple-600 hover:bg-purple-700 active:bg-purple-800 text-slate-50 rounded-xl font-semibold transition-colors disabled:opacity-50 min-h-[44px]"
+              >
+                {loading ? 'Tallennetaan...' : `Tallenna kaikki (${generatedQuestions.length})`}
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

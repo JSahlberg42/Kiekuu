@@ -18,4 +18,5 @@ const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 export const db = getFirestore(app);
 
+// Note: Vertex AI is initialized in aiService.js
 export default app;
