@@ -107,3 +107,6 @@ Follow the visual guidelines in `STYLEGUIDE.md` for all UI components.
 - ❌ Don't remove ESLint or format code without running linter
 - ❌ Don't hardcode Firebase config; use environment variables
 - ❌ Don't forget `async`/`await` error handling for Firebase calls
+
+## DEV (IDE)
+- Never start dev server "npm run dev" - user will do that
