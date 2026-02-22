@@ -109,4 +109,4 @@ Follow the visual guidelines in `STYLEGUIDE.md` for all UI components.
 - ❌ Don't forget `async`/`await` error handling for Firebase calls
 
 ## DEV (IDE)
-- Never start dev server "npm run dev" - user will do that
+- Never start dev server `npm run dev` - user will do that
