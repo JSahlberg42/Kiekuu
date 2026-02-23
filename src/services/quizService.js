@@ -460,15 +460,7 @@ export const getCategoryStatistics = async (userId) => {
       });
     }
 
-    const progressByCategoryUpdate = Object.values(statsByCategoryId).reduce((acc, stat) => {
-      acc[stat.categoryId] = stat;
-      return acc;
-    }, {});
-
-    if (Object.keys(progressByCategoryUpdate).length > 0) {
-      await updateDoc(userRef, { progressByCategory: progressByCategoryUpdate });
-    }
-
+    // Return computed stats (read-only - cache is built incrementally via submitAnswer)
     return Object.values(statsByCategoryId)
       .filter(stat => stat.answered > 0)
       .map(stat => ({
@@ -481,5 +473,99 @@ export const getCategoryStatistics = async (userId) => {
     logFirestoreErrorContext('getCategoryStatistics', error);
     console.error('Error fetching category statistics:', error);
     return [];
+  }
+};
+
+/**
+ * Rebuild category statistics cache for a user (admin utility)
+ * This should be called explicitly when needed to backfill cache for existing users,
+ * not automatically during normal read operations.
+ * @param {string} userId - User ID
+ * @returns {Promise<Object>} Updated cache object
+ */
+export const rebuildCategoryStatsCache = async (userId) => {
+  try {
+    const userRef = doc(db, 'users', userId);
+    const answers = await getUserAnswers(userId);
+    
+    if (answers.length === 0) {
+      return {};
+    }
+
+    const hasCategoryInfo = answers.some(answer => answer.categoryId || answer.categoryName);
+    const statsByCategoryId = {};
+
+    if (hasCategoryInfo) {
+      answers.forEach(answer => {
+        const categoryId = answer.categoryId || answer.categoryName || 'Muut';
+        const categoryName = answer.categoryName || answer.categoryId || 'Muut';
+
+        if (!statsByCategoryId[categoryId]) {
+          statsByCategoryId[categoryId] = {
+            categoryId,
+            name: categoryName,
+            answered: 0,
+            correct: 0,
+          };
+        }
+
+        statsByCategoryId[categoryId].answered += 1;
+        if (answer.isCorrect) {
+          statsByCategoryId[categoryId].correct += 1;
+        }
+      });
+    } else {
+      const allQuestions = {};
+      const categoryMap = {};
+      const [questionsSnapshot, categoriesSnapshot] = await Promise.all([
+        getDocs(collection(db, 'questions')),
+        getDocs(collection(db, 'categories')),
+      ]);
+
+      categoriesSnapshot.forEach(doc => {
+        categoryMap[doc.id] = doc.data().name || doc.id;
+      });
+
+      questionsSnapshot.forEach(doc => {
+        allQuestions[doc.id] = doc.data();
+      });
+
+      answers.forEach(answer => {
+        const question = allQuestions[answer.questionId];
+        if (!question) return;
+
+        const categoryId = question.categoryId || 'Muut';
+        const categoryName = categoryMap[categoryId] || 'Muut';
+
+        if (!statsByCategoryId[categoryId]) {
+          statsByCategoryId[categoryId] = {
+            categoryId,
+            name: categoryName,
+            answered: 0,
+            correct: 0,
+          };
+        }
+
+        statsByCategoryId[categoryId].answered += 1;
+        if (answer.isCorrect) {
+          statsByCategoryId[categoryId].correct += 1;
+        }
+      });
+    }
+
+    const progressByCategoryUpdate = Object.values(statsByCategoryId).reduce((acc, stat) => {
+      acc[stat.categoryId] = stat;
+      return acc;
+    }, {});
+
+    if (Object.keys(progressByCategoryUpdate).length > 0) {
+      await updateDoc(userRef, { progressByCategory: progressByCategoryUpdate });
+    }
+
+    return progressByCategoryUpdate;
+  } catch (error) {
+    logFirestoreErrorContext('rebuildCategoryStatsCache', error);
+    console.error('Error rebuilding category stats cache:', error);
+    throw error;
   }
 };
