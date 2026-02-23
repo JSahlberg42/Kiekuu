@@ -233,15 +233,25 @@ export const getUserAnswers = async (userId) => {
 /**
  * Get user statistics
  * @param {string} userId - User ID
- * @returns {Promise<Object>} User statistics
+ * @returns {Promise<Object>} User statistics (returns safe defaults on error)
  */
 export const getUserStatistics = async (userId) => {
+  const defaultStats = {
+    rank: 'harjoittelija',
+    totalScore: 0,
+    questionsAnswered: 0,
+    correctAnswers: 0,
+    accuracy: 0,
+    totalPoints: 0,
+    lastActivity: null,
+  };
+
   try {
     const userRef = doc(db, 'users', userId);
     const userDoc = await getDoc(userRef);
     
     if (!userDoc.exists()) {
-      throw new Error('User document not found');
+      return defaultStats;
     }
     
     const userData = userDoc.data();
@@ -262,7 +272,7 @@ export const getUserStatistics = async (userId) => {
     };
   } catch (error) {
     console.error('Error fetching user statistics:', error);
-    throw error;
+    return defaultStats;
   }
 };
 

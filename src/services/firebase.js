@@ -1,6 +1,6 @@
 import { initializeApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
-import { getFirestore } from 'firebase/firestore';
+import { initializeFirestore, persistentLocalCache } from 'firebase/firestore';
 import { initializeAppCheck, ReCaptchaEnterpriseProvider, getToken } from 'firebase/app-check';
 
 const firebaseConfig = {
@@ -33,7 +33,10 @@ if (import.meta.env.VITE_RECAPTCHA_ENTERPRISE_KEY) {
 
 // Initialize services
 export const auth = getAuth(app);
-export const db = getFirestore(app);
+// Enable offline persistence so cached documents are served when the client is offline
+export const db = initializeFirestore(app, {
+  localCache: persistentLocalCache(),
+});
 
 // Debug utility for checking App Check token in development
 export async function debugAppCheckToken() {
