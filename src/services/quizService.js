@@ -260,11 +260,14 @@ export const updateUserProgress = async (userId, updates, options = {}) => {
         }
       : {};
 
+    // Wait for Firestore update to complete successfully before returning
+    // If update fails, this will throw and be caught below
     await updateDoc(userRef, {
       ...progressUpdates,
       ...categoryUpdates,
     });
 
+    // Firestore update succeeded - return optimistically calculated progress if available
     if (currentProgress) {
       return {
         ...currentProgress,
@@ -274,6 +277,7 @@ export const updateUserProgress = async (userId, updates, options = {}) => {
       };
     }
 
+    // No cached progress provided - fetch updated document from Firestore
     const userDoc = await getDoc(userRef);
     if (!userDoc.exists()) {
       throw new Error('User document not found');
