@@ -11,6 +11,7 @@ const QuizTake = lazy(() => import('./pages/QuizTake'));
 const Progress = lazy(() => import('./pages/Progress'));
 
 const AdminDashboard = lazy(() => import('./pages/AdminDashboard'));
+const Feedback = lazy(() => import('./pages/Feedback'));
 const UserManagement = lazy(() => import('./pages/UserManagement'));
 const CategoryManagement = lazy(() => import('./pages/CategoryManagement'));
 const RankManagement = lazy(() => import('./pages/RankManagement'));
@@ -71,6 +72,16 @@ function App() {
               <ProtectedRoute>
                 <Suspense fallback={routeFallback}>
                   <Progress />
+                </Suspense>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/feedback"
+            element={
+              <ProtectedRoute>
+                <Suspense fallback={routeFallback}>
+                  <Feedback />
                 </Suspense>
               </ProtectedRoute>
             }

@@ -6,6 +6,7 @@ import LinkAccountModal from '../components/LinkAccountModal';import logo from '
 function Home() {
   const { user, userData } = useAuth();
   const [showLinkModal, setShowLinkModal] = useState(false);
+  const [showFeedbackPrompt, setShowFeedbackPrompt] = useState(false);
 
   console.log('Home component rendering:', { 
     user: user ? `${user.uid} (anonymous: ${user.isAnonymous})` : 'null', 
@@ -22,6 +23,17 @@ function Home() {
       }
     }
   }, [user, userData]);
+
+  useEffect(() => {
+    if (!user || user.isAnonymous || !userData?.rank) return;
+
+    const storageKey = `kiekuu:lastRank:${user.uid}`;
+    const previousRank = localStorage.getItem(storageKey);
+    if (previousRank && previousRank !== userData.rank) {
+      setShowFeedbackPrompt(true);
+    }
+    localStorage.setItem(storageKey, userData.rank);
+  }, [user, userData?.rank]);
 
   const handleLogout = async () => {
     try {
@@ -68,6 +80,19 @@ function Home() {
                 >
                   Admin
                 </Link>
+              )}
+              {!user?.isAnonymous ? (
+                <Link
+                  to="/feedback"
+                  className="w-full sm:w-auto text-center px-4 py-2 bg-slate-800 hover:bg-slate-700 active:bg-slate-600 border border-slate-700 rounded-xl text-sm font-medium text-slate-50 transition-colors min-h-[44px] flex items-center justify-center"
+                  aria-label="Anna palautetta"
+                >
+                  Palaute
+                </Link>
+              ) : (
+                <span className="w-full sm:w-auto text-center px-4 py-2 bg-slate-900 border border-slate-800 rounded-xl text-sm font-medium text-slate-500 min-h-[44px] flex items-center justify-center">
+                  Palaute
+                </span>
               )}
               <button
                 onClick={handleLogout}
@@ -170,6 +195,39 @@ function Home() {
         onClose={() => setShowLinkModal(false)}
         onSuccess={handleLinkSuccess}
       />
+
+      {showFeedbackPrompt && (
+        <div
+          className="fixed inset-0 bg-slate-950/90 flex items-center justify-center z-50 p-4"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="feedback-prompt-title"
+        >
+          <div className="bg-slate-900 border border-slate-800 rounded-xl max-w-md w-full p-6 sm:p-8">
+            <h2 id="feedback-prompt-title" className="text-xl sm:text-2xl font-bold text-slate-50 mb-3">
+              Onnittelut uudesta tasosta!
+            </h2>
+            <p className="text-sm text-slate-300 mb-6">
+              Haluatko antaa palautetta Kiekkuusta?
+            </p>
+            <div className="flex flex-col sm:flex-row gap-3">
+              <button
+                onClick={() => setShowFeedbackPrompt(false)}
+                className="flex-1 px-4 py-3 bg-slate-800 hover:bg-slate-700 text-slate-50 rounded-xl font-semibold transition-colors"
+              >
+                Ehka myohemmin
+              </button>
+              <Link
+                to="/feedback"
+                className="flex-1 px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold transition-colors text-center"
+                onClick={() => setShowFeedbackPrompt(false)}
+              >
+                Anna palaute
+              </Link>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
