@@ -102,9 +102,16 @@ export const getQuestionsByCategory = async (categoryName, difficulty = null) =>
       // Apply difficulty filter if specified
       if (difficulty && data.difficulty !== difficulty) return;
       
+      const normalizedCorrectAnswerIndex = Number.isInteger(data.correctAnswerIndex)
+        ? data.correctAnswerIndex
+        : typeof data.correctAnswerIndex === 'string'
+          ? parseInt(data.correctAnswerIndex, 10)
+          : data.correctAnswerIndex;
+
       questions.push({
         id: doc.id,
         ...data,
+        correctAnswerIndex: normalizedCorrectAnswerIndex,
       });
     });
     

@@ -98,24 +98,18 @@ function QuizTake() {
     return count + (answerIndex === q.correctAnswerIndex ? 1 : 0);
   }, 0);
 
-  const handleSelectAnswer = (answerIndex) => {
-    if (!submitting && !quizComplete) {
-      setSelectedAnswers({
-        ...selectedAnswers,
-        [currentQuestionIndex]: answerIndex,
-      });
-    }
-  };
-
-  const handleNext = async () => {
-    if (!isAnswered) {
-      alert('Valitse vastaus ennen jatkamista');
+  const handleSelectAnswer = async (answerIndex) => {
+    if (submitting || quizComplete || isAnswered) {
       return;
     }
 
     try {
       setSubmitting(true);
-      const answerIndex = selectedAnswers[currentQuestionIndex];
+      setSelectedAnswers(prev => ({
+        ...prev,
+        [currentQuestionIndex]: answerIndex,
+      }));
+
       const isCorrect = answerIndex === currentQuestion.correctAnswerIndex;
       const qDifficulty = currentQuestion.difficulty || 'perustaso';
 
@@ -141,6 +135,11 @@ function QuizTake() {
           ? 'Yhteysongelma. Tarkista verkkoyhteys ja yritä uudelleen.'
           : 'Vastauksen lähettäminen epäonnistui'
       );
+      setSelectedAnswers(prev => {
+        const updated = { ...prev };
+        delete updated[currentQuestionIndex];
+        return updated;
+      });
     } finally {
       setSubmitting(false);
     }
@@ -331,37 +330,8 @@ function QuizTake() {
             })}
           </div>
 
-          {/* Hint or explanation if available */}
-          {currentQuestion.explanation && (quizComplete || submitting) && (
-            <div className="mt-6 p-4 bg-slate-800 border border-slate-700 rounded-lg">
-              <p className="text-sm text-slate-400 mb-2">Selitys:</p>
-              <p className="text-slate-300">{currentQuestion.explanation}</p>
-            </div>
-          )}
         </div>
 
-        {/* Action Buttons */}
-        <div className="flex gap-4">
-          <button
-            onClick={() => {
-              if (currentQuestionIndex > 0) {
-                setCurrentQuestionIndex(currentQuestionIndex - 1);
-              }
-            }}
-            disabled={currentQuestionIndex === 0 || submitting}
-            className="px-6 py-3 bg-slate-800 hover:bg-slate-700 disabled:bg-slate-900 disabled:text-slate-600 text-slate-300 rounded-lg font-semibold transition-colors"
-          >
-            Edellinen
-          </button>
-          <div className="flex-1"></div>
-          <button
-            onClick={handleNext}
-            disabled={!isAnswered || submitting}
-            className="px-8 py-3 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 disabled:from-slate-700 disabled:to-slate-700 disabled:text-slate-500 text-white rounded-lg font-semibold transition-all disabled:cursor-not-allowed"
-          >
-            {submitting ? 'Lähetetään...' : currentQuestionIndex === questions.length - 1 ? 'Valmis' : 'Seuraava'}
-          </button>
-        </div>
       </main>
     </div>
   );
