@@ -71,9 +71,10 @@ export const auth = getAuth(app);
 // Use in-memory cache (no IndexedDB lock) to avoid the startup race condition where
 // persistentLocalCache's tab-manager lock acquisition causes "client is offline" errors
 // for users who are actually online.
-export const db = initializeFirestore(app, {
-  localCache: memoryLocalCache(),
-});
+export const db = initializeFirestore(app, {});
+// export const db = initializeFirestore(app, {
+//   localCache: memoryLocalCache(),
+// });
 
 export const appCheckStatus = {
   enabled: Boolean(appCheck),
