@@ -186,6 +186,18 @@ function QuizTake() {
   if (quizComplete) {
     const totalTime = Math.round((Date.now() - startTime) / 1000);
     const accuracy = Math.round((correctAnswers / questions.length) * 100);
+    const wrongAnswers = Object.entries(selectedAnswers)
+      .map(([index, answerIndex]) => {
+        const question = questions[parseInt(index, 10)];
+        if (!question || answerIndex === question.correctAnswerIndex) {
+          return null;
+        }
+        return {
+          question,
+          selectedIndex: answerIndex,
+        };
+      })
+      .filter(Boolean);
 
     return (
       <div className="min-h-screen bg-slate-950">
@@ -235,6 +247,60 @@ function QuizTake() {
                 )}
               </div>
             </div>
+
+            {/* Wrong Answer Review */}
+            {wrongAnswers.length > 0 && (
+              <div className="bg-slate-900 rounded-lg p-4 mb-8 text-left">
+                <h3 className="text-lg font-semibold text-slate-50 mb-4">Väärät vastaukset</h3>
+                <div className="space-y-4">
+                  {wrongAnswers.map(({ question, selectedIndex }, idx) => {
+                    const correctIndex = question.correctAnswerIndex;
+                    const correctAnswer = question.options?.[correctIndex] || '-';
+                    const selectedAnswer = question.options?.[selectedIndex] || '-';
+                    const source = question.source || null;
+
+                    return (
+                      <div key={question.id || idx} className="border border-slate-800 rounded-lg p-4">
+                        <p className="text-slate-100 font-semibold mb-2 break-words">
+                          {question.question}
+                        </p>
+                        <p className="text-sm text-red-300 mb-1 break-words">
+                          Sinun vastauksesi: {selectedAnswer}
+                        </p>
+                        <p className="text-sm text-green-300 mb-2 break-words">
+                          Oikea vastaus: {correctAnswer}
+                        </p>
+                        {question.explanation && (
+                          <div className="bg-slate-800 border border-slate-700 rounded-lg p-3 mb-2">
+                            <p className="text-xs text-slate-400 mb-1">Selitys:</p>
+                            <p className="text-sm text-slate-200 break-words">{question.explanation}</p>
+                          </div>
+                        )}
+                        {source && (source.title || source.page || source.url) && (
+                          <div className="text-xs text-slate-500 break-words">
+                            Lähde: {source.title || 'Tuntematon'}
+                            {source.page && `, s. ${source.page}`}
+                            {source.url && (
+                              <span>
+                                {' '}
+                                <a
+                                  href={source.url}
+                                  className="text-blue-400 hover:text-blue-300 underline"
+                                  target="_blank"
+                                  rel="noreferrer"
+                                >
+                                  {source.url}
+                                </a>
+                              </span>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
 
             {/* Actions */}
             <div className="flex gap-4">
