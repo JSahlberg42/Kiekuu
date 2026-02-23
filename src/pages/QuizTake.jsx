@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { getQuestionsByCategory, submitAnswer } from '../services/quizService';
+import { isFirestoreOfflineError, logFirestoreErrorContext } from '../utils/firestoreDiagnostics';
 import { getRandomizedQuestions, calculatePoints, DEFAULT_DIFFICULTY_POINTS, DEFAULT_DIFFICULTY_PENALTIES } from '../services/gamificationService';
 import logo from '../assets/images/Kiekuu_logo.jpg';
 
@@ -41,7 +42,12 @@ function QuizTake() {
           setQuestions(getRandomizedQuestions(data, 10, difficulty));
         }
       } catch (err) {
-        setError('Kysymysten lataaminen epäonnistui');
+        logFirestoreErrorContext('getQuestionsByCategory', err);
+        setError(
+          isFirestoreOfflineError(err)
+            ? 'Yhteysongelma. Tarkista verkkoyhteys ja yritä uudelleen.'
+            : 'Kysymysten lataaminen epäonnistui'
+        );
         console.error('Error loading questions:', err);
       } finally {
         setLoading(false);
@@ -128,8 +134,13 @@ function QuizTake() {
         setQuizComplete(true);
       }
     } catch (err) {
+      logFirestoreErrorContext('submitAnswer', err);
       console.error('Error submitting answer:', err);
-      alert('Vastauksen lähettäminen epäonnistui');
+      alert(
+        isFirestoreOfflineError(err)
+          ? 'Yhteysongelma. Tarkista verkkoyhteys ja yritä uudelleen.'
+          : 'Vastauksen lähettäminen epäonnistui'
+      );
     } finally {
       setSubmitting(false);
     }

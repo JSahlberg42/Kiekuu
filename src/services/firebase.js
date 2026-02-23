@@ -75,6 +75,12 @@ export const db = initializeFirestore(app, {
   localCache: memoryLocalCache(),
 });
 
+export const appCheckStatus = {
+  enabled: Boolean(appCheck),
+  hasRecaptchaKey: Boolean(recaptchaKey),
+  usingDebugToken: Boolean(import.meta.env.DEV),
+};
+
 // Debug utility for checking App Check token in development
 export async function debugAppCheckToken() {
   if (!appCheck) {
