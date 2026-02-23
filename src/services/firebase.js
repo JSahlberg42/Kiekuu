@@ -12,6 +12,12 @@ const firebaseConfig = {
   appId: import.meta.env.VITE_FIREBASE_APP_ID,
 };
 
+const isDiagnosticsEnabled = () => {
+  if (import.meta.env.DEV) return true;
+  const rawValue = import.meta.env.VITE_DIAGNOSTICS_ENABLED ?? import.meta.env.VITE_DIAGNOSTICS;
+  return rawValue === 'true' || rawValue === '1';
+};
+
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
 
@@ -98,9 +104,11 @@ export async function debugAppCheckToken() {
 }
 
 // Expose debug function globally for browser console
-if (import.meta.env.DEV) {
+if (typeof window !== 'undefined' && isDiagnosticsEnabled()) {
   window.__debugAppCheck = debugAppCheckToken;
+  window.__firebaseAppOptions = app.options;
   console.log('💡 Run window.__debugAppCheck() in browser console to check App Check token');
+  console.log('🔎 Firebase app options:', app.options);
 }
 
 // Note: Vertex AI is initialized in aiService.js
