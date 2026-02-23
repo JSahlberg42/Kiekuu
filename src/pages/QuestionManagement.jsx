@@ -355,6 +355,7 @@ function QuestionManagement() {
           categories={categories}
           onClose={() => setGeneratingWithAI(false)}
           onGenerate={handleBulkCreateQuestions}
+          initialCategoryId={selectedCategory !== 'all' ? selectedCategory : ''}
         />
       )}
     </div>
@@ -643,9 +644,9 @@ function DeleteConfirmModal({ question, onClose, onConfirm, loading }) {
 }
 
 // AI Generation Modal Component
-function AIGenerationModal({ categories, onClose, onGenerate }) {
+function AIGenerationModal({ categories, onClose, onGenerate, initialCategoryId = '' }) {
   const [formData, setFormData] = useState({
-    categoryId: '',
+    categoryId: initialCategoryId,
     questionCount: 5,
     difficulty: 'medium',
     contextType: 'text', // 'text', 'url', 'file'
