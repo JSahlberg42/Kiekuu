@@ -3,11 +3,11 @@ import PropTypes from 'prop-types';
 import { useAuth } from '../context/AuthContext';
 
 function ProtectedRoute({ children, adminOnly = false }) {
-  const { isAuthenticated, isAdmin, loading } = useAuth();
+  const { isAuthenticated, isAdmin, loading, userDataLoading } = useAuth();
 
-  console.log('ProtectedRoute:', { isAuthenticated, isAdmin, loading, adminOnly });
+  console.log('ProtectedRoute:', { isAuthenticated, isAdmin, loading, userDataLoading, adminOnly });
 
-  if (loading) {
+  if (loading || (adminOnly && userDataLoading)) {
     return (
       <div className="min-h-screen bg-slate-950 flex items-center justify-center" role="status" aria-live="polite">
         <div className="text-center">

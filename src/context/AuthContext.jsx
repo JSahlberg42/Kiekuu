@@ -19,13 +19,17 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [userData, setUserData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [userDataLoading, setUserDataLoading] = useState(false);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       if (firebaseUser) {
         setUser(firebaseUser);
-        
-        // Fetch user data from Firestore with fast retries
+        // Auth state is known — stop blocking the protected route immediately
+        setLoading(false);
+
+        // Fetch user data from Firestore in the background
+        setUserDataLoading(true);
         let retries = 0;
         const maxRetries = 4;
         const retryDelays = [100, 200, 300, 400]; // Fast delays: total ~1 second max
@@ -72,11 +76,12 @@ export const AuthProvider = ({ children }) => {
             setUserData(null);
           }
         }
+        setUserDataLoading(false);
       } else {
         setUser(null);
         setUserData(null);
+        setLoading(false);
       }
-      setLoading(false);
     });
 
     return unsubscribe;
@@ -86,6 +91,7 @@ export const AuthProvider = ({ children }) => {
     user,
     userData,
     loading,
+    userDataLoading,
     isAuthenticated: !!user,
     isAdmin: userData?.role === 'admin',
   };
