@@ -140,7 +140,7 @@ function Feedback() {
                         ? 'bg-amber-400/20 border-amber-400 text-amber-400'
                         : 'bg-slate-950 border-slate-800 text-slate-600 hover:border-slate-600 hover:text-slate-500'
                     }`}
-                    aria-label={`Valitse ${value} tahti`}
+                    aria-label={`Valitse ${value} tähti`}
                   >
                     ★
                   </button>
