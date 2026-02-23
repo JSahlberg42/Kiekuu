@@ -3,13 +3,21 @@ import { getAuth } from 'firebase/auth';
 import { initializeFirestore, memoryLocalCache } from 'firebase/firestore';
 import { initializeAppCheck, ReCaptchaEnterpriseProvider, getToken } from 'firebase/app-check';
 
+const normalizeEnv = (value) => (typeof value === 'string' ? value.trim() : value);
+
 const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
-  appId: import.meta.env.VITE_FIREBASE_APP_ID,
+  apiKey: normalizeEnv(import.meta.env.VITE_FIREBASE_API_KEY),
+  authDomain: normalizeEnv(import.meta.env.VITE_FIREBASE_AUTH_DOMAIN),
+  projectId: normalizeEnv(import.meta.env.VITE_FIREBASE_PROJECT_ID),
+  storageBucket: normalizeEnv(import.meta.env.VITE_FIREBASE_STORAGE_BUCKET),
+  messagingSenderId: normalizeEnv(import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID),
+  appId: normalizeEnv(import.meta.env.VITE_FIREBASE_APP_ID),
+};
+
+const isDiagnosticsEnabled = () => {
+  if (import.meta.env.DEV) return true;
+  const rawValue = import.meta.env.VITE_DIAGNOSTICS_ENABLED ?? import.meta.env.VITE_DIAGNOSTICS;
+  return rawValue === 'true' || rawValue === '1';
 };
 
 // Initialize Firebase
@@ -75,6 +83,12 @@ export const db = initializeFirestore(app, {
   localCache: memoryLocalCache(),
 });
 
+export const appCheckStatus = {
+  enabled: Boolean(appCheck),
+  hasRecaptchaKey: Boolean(recaptchaKey),
+  usingDebugToken: Boolean(import.meta.env.DEV),
+};
+
 // Debug utility for checking App Check token in development
 export async function debugAppCheckToken() {
   if (!appCheck) {
@@ -92,9 +106,11 @@ export async function debugAppCheckToken() {
 }
 
 // Expose debug function globally for browser console
-if (import.meta.env.DEV) {
+if (typeof window !== 'undefined' && isDiagnosticsEnabled()) {
   window.__debugAppCheck = debugAppCheckToken;
+  window.__firebaseAppOptions = app.options;
   console.log('💡 Run window.__debugAppCheck() in browser console to check App Check token');
+  console.log('🔎 Firebase app options:', app.options);
 }
 
 // Note: Vertex AI is initialized in aiService.js

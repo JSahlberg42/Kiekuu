@@ -12,6 +12,7 @@ import {
 } from 'firebase/auth';
 import { doc, setDoc, getDoc, updateDoc } from 'firebase/firestore';
 import { auth, db } from './firebase';
+import { isFirestoreOfflineError, logFirestoreErrorContext } from '../utils/firestoreDiagnostics';
 
 /**
  * Sign up a new user with email and password
@@ -123,14 +124,11 @@ export const getUserData = async (uid) => {
     return null;
   } catch (error) {
     console.error('Get user data error:', error);
+    logFirestoreErrorContext('getUserData', error);
     // Re-throw network errors (offline / server unreachable) so the caller can
     // detect them and avoid pointless retries.
     // Firebase Firestore uses code 'unavailable' for offline/network errors.
-    if (
-      error?.code === 'unavailable' ||
-      error?.code === 'firestore/unavailable' ||
-      error?.message?.includes('offline')
-    ) {
+    if (isFirestoreOfflineError(error)) {
       throw error;
     }
     return null;

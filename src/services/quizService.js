@@ -1,6 +1,7 @@
 import { collection, query, where, getDocs, addDoc, getDoc, doc, updateDoc } from 'firebase/firestore';
 import { db } from './firebase';
 import { calculatePoints, checkAndUpdateUserRank, getPlatformConfig } from './gamificationService';
+import { logFirestoreErrorContext } from '../utils/firestoreDiagnostics';
 
 /**
  * Get all available quizzes/questions for a user
@@ -61,6 +62,7 @@ export const getAvailableQuizzes = async () => {
     
     return quizzes;
   } catch (error) {
+    logFirestoreErrorContext('getAvailableQuizzes', error);
     console.error('Error fetching available quizzes:', error);
     throw error;
   }
@@ -108,6 +110,7 @@ export const getQuestionsByCategory = async (categoryName, difficulty = null) =>
     
     return questions;
   } catch (error) {
+    logFirestoreErrorContext('getQuestionsByCategory', error);
     console.error('Error fetching questions by category:', error);
     throw error;
   }
@@ -156,6 +159,7 @@ export const submitAnswer = async (userId, questionId, selectedIndex, isCorrect,
       ...answer,
     };
   } catch (error) {
+    logFirestoreErrorContext('submitAnswer', error);
     console.error('Error submitting answer:', error);
     throw error;
   }
@@ -198,6 +202,7 @@ export const updateUserProgress = async (userId, updates) => {
 
     return newProgress;
   } catch (error) {
+    logFirestoreErrorContext('updateUserProgress', error);
     console.error('Error updating user progress:', error);
     throw error;
   }
@@ -225,6 +230,7 @@ export const getUserAnswers = async (userId) => {
       new Date(b.submittedAt) - new Date(a.submittedAt)
     );
   } catch (error) {
+    logFirestoreErrorContext('getUserAnswers', error);
     console.error('Error fetching user answers:', error);
     return [];
   }
@@ -271,6 +277,7 @@ export const getUserStatistics = async (userId) => {
       lastActivity: userData.lastActivity || userData.createdAt,
     };
   } catch (error) {
+    logFirestoreErrorContext('getUserStatistics', error);
     console.error('Error fetching user statistics:', error);
     return defaultStats;
   }
@@ -350,6 +357,7 @@ export const getCategoryStatistics = async (userId) => {
     
     return Object.values(stats).filter(s => s.answered > 0);
   } catch (error) {
+    logFirestoreErrorContext('getCategoryStatistics', error);
     console.error('Error fetching category statistics:', error);
     return [];
   }
