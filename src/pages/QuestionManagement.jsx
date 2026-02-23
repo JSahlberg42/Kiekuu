@@ -7,7 +7,7 @@ import { useAuth } from '../context/AuthContext';
 import { Navigate } from 'react-router-dom';
 
 function QuestionManagement() {
-  const { userData, loading: authLoading } = useAuth();
+  const { user, userData, loading: authLoading } = useAuth();
   const [questions, setQuestions] = useState([]);
   const [categories, setCategories] = useState([]);
   const [filteredQuestions, setFilteredQuestions] = useState([]);
@@ -64,11 +64,20 @@ function QuestionManagement() {
     }
   };
 
+  const buildCreatedBy = () => ({
+    uid: userData?.uid || user?.uid || null,
+    displayName: userData?.displayName || user?.displayName || null,
+    email: userData?.email || user?.email || null,
+  });
+
   const handleCreateQuestion = async (questionData) => {
     try {
       setActionLoading(true);
       setError('');
-      await createQuestion(questionData);
+      await createQuestion({
+        ...questionData,
+        createdBy: buildCreatedBy(),
+      });
       await fetchQuestions();
       setAddingQuestion(false);
     } catch (err) {
@@ -112,7 +121,11 @@ function QuestionManagement() {
   const handleBulkCreateQuestions = async (questionsArray) => {
     try {
       setError('');
-      const promises = questionsArray.map(q => createQuestion(q));
+      const createdBy = buildCreatedBy();
+      const promises = questionsArray.map(q => createQuestion({
+        ...q,
+        createdBy,
+      }));
       await Promise.all(promises);
       await fetchQuestions();
     } catch (err) {
