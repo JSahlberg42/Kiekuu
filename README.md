@@ -28,5 +28,8 @@ Sovellus pyrkii noudattamaan  **Pelastusopiston sopimushenkilöstön opetussuunn
 ## 📄 Lisenssi
 Tämä projekti on lisensoitu **MIT-lisenssillä**.
 
+## 🗒️ Backlog
+- Anonymous users: evaluate cleanup of stale accounts and revisit session reuse behavior (Firebase Auth persistence vs storing UID locally).
+
 ## Logo
 ![Kiekuu logo](docs/logo/Kiekuu_logo.png)

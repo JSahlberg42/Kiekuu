@@ -13,6 +13,7 @@ function UserManagement() {
   const [error, setError] = useState('');
   const [editingUser, setEditingUser] = useState(null);
   const [deletingUser, setDeletingUser] = useState(null);
+  const [viewingProgressUser, setViewingProgressUser] = useState(null);
   const [actionLoading, setActionLoading] = useState(false);
 
   useEffect(() => {
@@ -174,6 +175,13 @@ function UserManagement() {
 
                   <div className="flex flex-row sm:flex-col gap-2 sm:gap-3">
                     <button
+                      onClick={() => setViewingProgressUser(user)}
+                      className="flex-1 sm:flex-none px-4 py-2 bg-slate-800 hover:bg-slate-700 active:bg-slate-600 text-slate-50 rounded-xl text-sm font-semibold transition-colors min-h-[44px]"
+                      aria-label={`Näytä käyttäjän edistyminen ${user.displayName || user.email}`}
+                    >
+                      Edistyminen
+                    </button>
+                    <button
                       onClick={() => setEditingUser(user)}
                       className="flex-1 sm:flex-none px-4 py-2 bg-orange-500 hover:bg-orange-600 active:bg-orange-700 text-slate-50 rounded-xl text-sm font-semibold transition-colors min-h-[44px]"
                       aria-label={`Muokkaa käyttäjää ${user.displayName || user.email}`}
@@ -202,6 +210,13 @@ function UserManagement() {
           onClose={() => setEditingUser(null)}
           onSave={handleEditUser}
           loading={actionLoading}
+        />
+      )}
+
+      {viewingProgressUser && (
+        <UserProgressModal
+          user={viewingProgressUser}
+          onClose={() => setViewingProgressUser(null)}
         />
       )}
 
@@ -363,6 +378,102 @@ function DeleteConfirmModal({ user, onClose, onConfirm, loading }) {
           >
             {loading ? 'Poistetaan...' : 'Poista pysyvästi'}
           </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function UserProgressModal({ user, onClose }) {
+  const progress = user.progress || {};
+  const answered = progress.questionsAnswered || 0;
+  const correct = progress.correctAnswers || 0;
+  const accuracy = answered > 0 ? Math.round((correct / answered) * 100) : 0;
+  const totalScore = progress.totalScore || 0;
+  const lastActivity = user.lastActivity || user.createdAt || null;
+  const progressByCategory = user.progressByCategory || {};
+  const categoryStats = Object.values(progressByCategory).filter(stat => stat && stat.answered > 0);
+
+  return (
+    <div
+      className="fixed inset-0 bg-slate-950/90 flex items-center justify-center z-50 p-4"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="progress-modal-title"
+    >
+      <div className="bg-slate-900 border border-slate-800 rounded-xl max-w-2xl w-full p-6 sm:p-8 max-h-[90vh] overflow-y-auto">
+        <div className="flex items-start justify-between gap-4 mb-6">
+          <div>
+            <h2 id="progress-modal-title" className="text-xl sm:text-2xl font-bold text-slate-50">
+              Edistyminen
+            </h2>
+            <p className="text-sm text-slate-400 break-words">
+              {user.displayName || user.email || user.id}
+            </p>
+          </div>
+          <button
+            onClick={onClose}
+            className="p-2 hover:bg-slate-800 rounded-xl transition-colors"
+            aria-label="Sulje"
+          >
+            <svg className="w-6 h-6 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+          <div className="bg-slate-950 border border-slate-800 rounded-lg p-4">
+            <p className="text-xs text-slate-400 mb-1">Taso</p>
+            <p className="text-lg font-semibold text-blue-400 capitalize break-words">{user.rank || 'harjoittelija'}</p>
+          </div>
+          <div className="bg-slate-950 border border-slate-800 rounded-lg p-4">
+            <p className="text-xs text-slate-400 mb-1">Pisteet</p>
+            <p className="text-lg font-semibold text-green-400 break-words">{totalScore}</p>
+          </div>
+          <div className="bg-slate-950 border border-slate-800 rounded-lg p-4">
+            <p className="text-xs text-slate-400 mb-1">Vastatut</p>
+            <p className="text-lg font-semibold text-purple-400 break-words">{answered}</p>
+          </div>
+          <div className="bg-slate-950 border border-slate-800 rounded-lg p-4">
+            <p className="text-xs text-slate-400 mb-1">Tarkkuus</p>
+            <p className="text-lg font-semibold text-yellow-400 break-words">{accuracy}%</p>
+          </div>
+        </div>
+
+        <div className="text-xs text-slate-500 mb-6">
+          Viimeisin aktiivisuus: {lastActivity ? new Date(lastActivity).toLocaleString('fi-FI') : '-'}
+        </div>
+
+        <div>
+          <h3 className="text-sm font-semibold text-slate-300 mb-3">Kategoriat</h3>
+          {categoryStats.length === 0 ? (
+            <div className="bg-slate-950 border border-slate-800 rounded-lg p-4 text-sm text-slate-400">
+              Ei kategoriakohtaisia tilastoja.
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {categoryStats.map((stat) => {
+                const statAccuracy = stat.answered > 0 ? Math.round((stat.correct / stat.answered) * 100) : 0;
+                return (
+                  <div key={stat.categoryId || stat.name} className="bg-slate-950 border border-slate-800 rounded-lg p-4">
+                    <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
+                      <p className="text-sm text-slate-200 break-words">{stat.name || stat.categoryId}</p>
+                      <p className="text-xs text-slate-400">
+                        {stat.answered} vastattu · {stat.correct} oikein
+                      </p>
+                    </div>
+                    <div className="w-full bg-slate-800 rounded-full h-2">
+                      <div
+                        className="bg-gradient-to-r from-blue-600 to-blue-400 h-2 rounded-full transition-all"
+                        style={{ width: `${statAccuracy}%` }}
+                      />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
       </div>
     </div>

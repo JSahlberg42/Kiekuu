@@ -1,4 +1,4 @@
-import { collection, query, where, getDocs, addDoc, getDoc, doc, updateDoc } from 'firebase/firestore';
+import { collection, query, where, getDocs, addDoc, getDoc, doc, updateDoc, increment } from 'firebase/firestore';
 import { db } from './firebase';
 import { calculatePoints, checkAndUpdateUserRank, getPlatformConfig } from './gamificationService';
 import { logFirestoreErrorContext } from '../utils/firestoreDiagnostics';
@@ -102,9 +102,17 @@ export const getQuestionsByCategory = async (categoryName, difficulty = null) =>
       // Apply difficulty filter if specified
       if (difficulty && data.difficulty !== difficulty) return;
       
+      const rawCorrectIndex = data.correctAnswerIndex ?? data.correctIndex;
+      const normalizedCorrectAnswerIndex = Number.isInteger(rawCorrectIndex)
+        ? rawCorrectIndex
+        : typeof rawCorrectIndex === 'string'
+          ? parseInt(rawCorrectIndex, 10)
+          : rawCorrectIndex;
+
       questions.push({
         id: doc.id,
         ...data,
+        correctAnswerIndex: normalizedCorrectAnswerIndex,
       });
     });
     
@@ -112,6 +120,46 @@ export const getQuestionsByCategory = async (categoryName, difficulty = null) =>
   } catch (error) {
     logFirestoreErrorContext('getQuestionsByCategory', error);
     console.error('Error fetching questions by category:', error);
+    throw error;
+  }
+};
+
+/**
+ * Get questions for a specific category ID
+ * @param {string} categoryId - Category ID
+ * @param {string} difficulty - Optional: filter by difficulty
+ * @returns {Promise<Array>} Array of questions
+ */
+export const getQuestionsByCategoryId = async (categoryId, difficulty = null) => {
+  try {
+    const questionsRef = collection(db, 'questions');
+    const q = query(questionsRef, where('categoryId', '==', categoryId));
+    const snapshot = await getDocs(q);
+    const questions = [];
+
+    snapshot.forEach(doc => {
+      const data = doc.data();
+      if (data.published === false) return;
+      if (difficulty && data.difficulty !== difficulty) return;
+
+      const rawCorrectIndex = data.correctAnswerIndex ?? data.correctIndex;
+      const normalizedCorrectAnswerIndex = Number.isInteger(rawCorrectIndex)
+        ? rawCorrectIndex
+        : typeof rawCorrectIndex === 'string'
+          ? parseInt(rawCorrectIndex, 10)
+          : rawCorrectIndex;
+
+      questions.push({
+        id: doc.id,
+        ...data,
+        correctAnswerIndex: normalizedCorrectAnswerIndex,
+      });
+    });
+
+    return questions;
+  } catch (error) {
+    logFirestoreErrorContext('getQuestionsByCategoryId', error);
+    console.error('Error fetching questions by category ID:', error);
     throw error;
   }
 };
@@ -126,8 +174,17 @@ export const getQuestionsByCategory = async (categoryName, difficulty = null) =>
  * @param {number} [timeSpent=0] - Time spent on question in seconds
  * @returns {Promise<Object>} Answer record with earned points
  */
-export const submitAnswer = async (userId, questionId, selectedIndex, isCorrect, difficulty = 'perustaso', timeSpent = 0) => {
+export const submitAnswer = async (
+  userId,
+  questionId,
+  selectedIndex,
+  isCorrect,
+  difficulty = 'perustaso',
+  timeSpent = 0,
+  meta = {}
+) => {
   try {
+    const { categoryId, categoryName, currentProgress } = meta;
     const config = await getPlatformConfig();
     const points = calculatePoints(difficulty, isCorrect, config);
 
@@ -140,6 +197,8 @@ export const submitAnswer = async (userId, questionId, selectedIndex, isCorrect,
       timeSpent,
       submittedAt: new Date().toISOString(),
       points,
+      categoryId: categoryId || null,
+      categoryName: categoryName || null,
     };
 
     const docRef = await addDoc(answerRef, answer);
@@ -149,10 +208,16 @@ export const submitAnswer = async (userId, questionId, selectedIndex, isCorrect,
       questionsAnswered: 1,
       correctAnswers: isCorrect ? 1 : 0,
       totalPoints: points,
+    }, {
+      currentProgress,
+      categoryId,
+      categoryName,
     });
 
     // Check if user earned a new rank
-    await checkAndUpdateUserRank(userId, updatedProgress, config);
+    if (updatedProgress) {
+      await checkAndUpdateUserRank(userId, updatedProgress, config);
+    }
 
     return {
       id: docRef.id,
@@ -171,36 +236,59 @@ export const submitAnswer = async (userId, questionId, selectedIndex, isCorrect,
  * @param {Object} updates - Progress updates { questionsAnswered, correctAnswers, totalPoints }
  * @returns {Promise<Object>} Updated progress object
  */
-export const updateUserProgress = async (userId, updates) => {
+export const updateUserProgress = async (userId, updates, options = {}) => {
   try {
+    const { currentProgress, categoryId, categoryName } = options;
+    const totalPoints = updates.totalPoints || 0;
+    const answeredDelta = updates.questionsAnswered || 0;
+    const correctDelta = updates.correctAnswers || 0;
+
     const userRef = doc(db, 'users', userId);
+    const progressUpdates = {
+      'progress.totalScore': increment(totalPoints),
+      'progress.questionsAnswered': increment(answeredDelta),
+      'progress.correctAnswers': increment(correctDelta),
+      lastActivity: new Date().toISOString(),
+    };
+
+    const categoryUpdates = categoryId
+      ? {
+          [`progressByCategory.${categoryId}.categoryId`]: categoryId,
+          [`progressByCategory.${categoryId}.name`]: categoryName || categoryId,
+          [`progressByCategory.${categoryId}.answered`]: increment(answeredDelta),
+          [`progressByCategory.${categoryId}.correct`]: increment(correctDelta),
+        }
+      : {};
+
+    // Wait for Firestore update to complete successfully before returning
+    // If update fails, this will throw and be caught below
+    await updateDoc(userRef, {
+      ...progressUpdates,
+      ...categoryUpdates,
+    });
+
+    // Firestore update succeeded - return optimistically calculated progress if available
+    if (currentProgress) {
+      return {
+        ...currentProgress,
+        totalScore: (currentProgress.totalScore || 0) + totalPoints,
+        questionsAnswered: (currentProgress.questionsAnswered || 0) + answeredDelta,
+        correctAnswers: (currentProgress.correctAnswers || 0) + correctDelta,
+      };
+    }
+
+    // No cached progress provided - fetch updated document from Firestore
     const userDoc = await getDoc(userRef);
-    
     if (!userDoc.exists()) {
       throw new Error('User document not found');
     }
-    
-    const currentProgress = userDoc.data().progress || {
-      currentLevel: 'harjoittelija',
-      totalScore: 0,
-      questionsAnswered: 0,
-      correctAnswers: 0,
-    };
-    
-    const newProgress = {
-      ...currentProgress,
-      totalScore: (currentProgress.totalScore || 0) + (updates.totalPoints || 0),
-      questionsAnswered: (currentProgress.questionsAnswered || 0) + (updates.questionsAnswered || 0),
-      correctAnswers: (currentProgress.correctAnswers || 0) + (updates.correctAnswers || 0),
-    };
-    
-    // Update user document with new progress
-    await updateDoc(userRef, {
-      progress: newProgress,
-      lastActivity: new Date().toISOString(),
-    });
 
-    return newProgress;
+    return userDoc.data().progress || {
+      currentLevel: 'harjoittelija',
+      totalScore: totalPoints,
+      questionsAnswered: answeredDelta,
+      correctAnswers: correctDelta,
+    };
   } catch (error) {
     logFirestoreErrorContext('updateUserProgress', error);
     console.error('Error updating user progress:', error);
@@ -261,19 +349,18 @@ export const getUserStatistics = async (userId) => {
     }
     
     const userData = userDoc.data();
-    const answers = await getUserAnswers(userId);
-    
-    const totalAnswered = answers.length;
-    const correctAnswers = answers.filter(a => a.isCorrect).length;
+    const progress = userData.progress || {};
+    const totalAnswered = progress.questionsAnswered || 0;
+    const correctAnswers = progress.correctAnswers || 0;
     const accuracy = totalAnswered > 0 ? Math.round((correctAnswers / totalAnswered) * 100) : 0;
-    
+
     return {
       rank: userData.rank || 'harjoittelija',
-      totalScore: userData.progress?.totalScore || 0,
-      questionsAnswered: userData.progress?.questionsAnswered || totalAnswered,
+      totalScore: progress.totalScore || 0,
+      questionsAnswered: totalAnswered,
       correctAnswers,
       accuracy,
-      totalPoints: userData.progress?.totalScore || answers.reduce((sum, a) => sum + (a.points || 0), 0),
+      totalPoints: progress.totalScore || 0,
       lastActivity: userData.lastActivity || userData.createdAt,
     };
   } catch (error) {
@@ -290,75 +377,199 @@ export const getUserStatistics = async (userId) => {
  */
 export const getCategoryStatistics = async (userId) => {
   try {
+    const userRef = doc(db, 'users', userId);
+    const userDoc = await getDoc(userRef);
+
+    if (!userDoc.exists()) {
+      return [];
+    }
+
+    const progressByCategory = userDoc.data().progressByCategory || {};
+    const cachedStats = Object.values(progressByCategory)
+      .filter(stat => stat && stat.answered > 0)
+      .map(stat => ({
+        category: stat.name || stat.categoryId,
+        answered: stat.answered || 0,
+        correct: stat.correct || 0,
+        accuracy: stat.answered > 0 ? Math.round((stat.correct / stat.answered) * 100) : 0,
+      }));
+
+    if (cachedStats.length > 0) {
+      return cachedStats;
+    }
+
     const answers = await getUserAnswers(userId);
-    const quizzes = await getAvailableQuizzes();
-    
-    const stats = {};
-    
-    // Initialize stats for each category
-    quizzes.forEach(quiz => {
-      stats[quiz.name] = {
-        category: quiz.name,
-        answered: 0,
-        correct: 0,
-        accuracy: 0,
-      };
-    });
-    
-    // Get question details and category mapping
-    const allQuestions = {};
-    const categoryMap = {};
-    const [questionsSnapshot, categoriesSnapshot] = await Promise.all([
-      getDocs(collection(db, 'questions')),
-      getDocs(collection(db, 'categories')),
-    ]);
-    
-    // Map category IDs to names
-    categoriesSnapshot.forEach(doc => {
-      categoryMap[doc.id] = doc.data().name || doc.id;
-    });
-    
-    // Store question data
-    questionsSnapshot.forEach(doc => {
-      allQuestions[doc.id] = doc.data();
-    });
-    
-    // Calculate stats per category
-    answers.forEach(answer => {
-      const question = allQuestions[answer.questionId];
-      if (question) {
-        // Get category name from categoryId
-        const categoryId = question.categoryId;
-        const categoryName = categoryMap[categoryId] || 'Muut';
-        
-        // Initialize if not already initialized
-        if (!stats[categoryName]) {
-          stats[categoryName] = {
-            category: categoryName,
+    if (answers.length === 0) {
+      return [];
+    }
+
+    const hasCategoryInfo = answers.some(answer => answer.categoryId || answer.categoryName);
+    let statsByCategoryId = {};
+
+    if (hasCategoryInfo) {
+      answers.forEach(answer => {
+        const categoryId = answer.categoryId || answer.categoryName || 'Muut';
+        const categoryName = answer.categoryName || answer.categoryId || 'Muut';
+
+        if (!statsByCategoryId[categoryId]) {
+          statsByCategoryId[categoryId] = {
+            categoryId,
+            name: categoryName,
             answered: 0,
             correct: 0,
-            accuracy: 0,
           };
         }
-        
-        stats[categoryName].answered++;
+
+        statsByCategoryId[categoryId].answered += 1;
         if (answer.isCorrect) {
-          stats[categoryName].correct++;
+          statsByCategoryId[categoryId].correct += 1;
         }
-      }
-    });
-    
-    // Calculate accuracy percentages
-    Object.values(stats).forEach(stat => {
-      stat.accuracy = stat.answered > 0 
-        ? Math.round((stat.correct / stat.answered) * 100)
-        : 0;
-    });
-    
-    return Object.values(stats).filter(s => s.answered > 0);
+      });
+    } else {
+      const allQuestions = {};
+      const categoryMap = {};
+      const [questionsSnapshot, categoriesSnapshot] = await Promise.all([
+        getDocs(collection(db, 'questions')),
+        getDocs(collection(db, 'categories')),
+      ]);
+
+      categoriesSnapshot.forEach(doc => {
+        categoryMap[doc.id] = doc.data().name || doc.id;
+      });
+
+      questionsSnapshot.forEach(doc => {
+        allQuestions[doc.id] = doc.data();
+      });
+
+      answers.forEach(answer => {
+        const question = allQuestions[answer.questionId];
+        if (!question) return;
+
+        const categoryId = question.categoryId || 'Muut';
+        const categoryName = categoryMap[categoryId] || 'Muut';
+
+        if (!statsByCategoryId[categoryId]) {
+          statsByCategoryId[categoryId] = {
+            categoryId,
+            name: categoryName,
+            answered: 0,
+            correct: 0,
+          };
+        }
+
+        statsByCategoryId[categoryId].answered += 1;
+        if (answer.isCorrect) {
+          statsByCategoryId[categoryId].correct += 1;
+        }
+      });
+    }
+
+    // Return computed stats (read-only - cache is built incrementally via submitAnswer)
+    return Object.values(statsByCategoryId)
+      .filter(stat => stat.answered > 0)
+      .map(stat => ({
+        category: stat.name || stat.categoryId,
+        answered: stat.answered,
+        correct: stat.correct,
+        accuracy: stat.answered > 0 ? Math.round((stat.correct / stat.answered) * 100) : 0,
+      }));
   } catch (error) {
     logFirestoreErrorContext('getCategoryStatistics', error);
     console.error('Error fetching category statistics:', error);
     return [];
+  }
+};
+
+/**
+ * Rebuild category statistics cache for a user (admin utility)
+ * This should be called explicitly when needed to backfill cache for existing users,
+ * not automatically during normal read operations.
+ * @param {string} userId - User ID
+ * @returns {Promise<Object>} Updated cache object
+ */
+export const rebuildCategoryStatsCache = async (userId) => {
+  try {
+    const userRef = doc(db, 'users', userId);
+    const answers = await getUserAnswers(userId);
+    
+    if (answers.length === 0) {
+      return {};
+    }
+
+    const hasCategoryInfo = answers.some(answer => answer.categoryId || answer.categoryName);
+    const statsByCategoryId = {};
+
+    if (hasCategoryInfo) {
+      answers.forEach(answer => {
+        const categoryId = answer.categoryId || answer.categoryName || 'Muut';
+        const categoryName = answer.categoryName || answer.categoryId || 'Muut';
+
+        if (!statsByCategoryId[categoryId]) {
+          statsByCategoryId[categoryId] = {
+            categoryId,
+            name: categoryName,
+            answered: 0,
+            correct: 0,
+          };
+        }
+
+        statsByCategoryId[categoryId].answered += 1;
+        if (answer.isCorrect) {
+          statsByCategoryId[categoryId].correct += 1;
+        }
+      });
+    } else {
+      const allQuestions = {};
+      const categoryMap = {};
+      const [questionsSnapshot, categoriesSnapshot] = await Promise.all([
+        getDocs(collection(db, 'questions')),
+        getDocs(collection(db, 'categories')),
+      ]);
+
+      categoriesSnapshot.forEach(doc => {
+        categoryMap[doc.id] = doc.data().name || doc.id;
+      });
+
+      questionsSnapshot.forEach(doc => {
+        allQuestions[doc.id] = doc.data();
+      });
+
+      answers.forEach(answer => {
+        const question = allQuestions[answer.questionId];
+        if (!question) return;
+
+        const categoryId = question.categoryId || 'Muut';
+        const categoryName = categoryMap[categoryId] || 'Muut';
+
+        if (!statsByCategoryId[categoryId]) {
+          statsByCategoryId[categoryId] = {
+            categoryId,
+            name: categoryName,
+            answered: 0,
+            correct: 0,
+          };
+        }
+
+        statsByCategoryId[categoryId].answered += 1;
+        if (answer.isCorrect) {
+          statsByCategoryId[categoryId].correct += 1;
+        }
+      });
+    }
+
+    const progressByCategoryUpdate = Object.values(statsByCategoryId).reduce((acc, stat) => {
+      acc[stat.categoryId] = stat;
+      return acc;
+    }, {});
+
+    if (Object.keys(progressByCategoryUpdate).length > 0) {
+      await updateDoc(userRef, { progressByCategory: progressByCategoryUpdate });
+    }
+
+    return progressByCategoryUpdate;
+  } catch (error) {
+    logFirestoreErrorContext('rebuildCategoryStatsCache', error);
+    console.error('Error rebuilding category stats cache:', error);
+    throw error;
   }
 };

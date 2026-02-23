@@ -1,16 +1,21 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { getQuestionsByCategory, submitAnswer } from '../services/quizService';
+import { getQuestionsByCategory, getQuestionsByCategoryId, submitAnswer } from '../services/quizService';
 import { isFirestoreOfflineError, logFirestoreErrorContext } from '../utils/firestoreDiagnostics';
 import { getRandomizedQuestions, calculatePoints, DEFAULT_DIFFICULTY_POINTS, DEFAULT_DIFFICULTY_PENALTIES } from '../services/gamificationService';
 import logo from '../assets/images/Kiekuu_logo.jpg';
 
+// Animation duration for correct answer flash (matches animate-pulse duration)
+const FLASH_ANIMATION_DURATION_MS = 200;
+
 function QuizTake() {
-  const { user } = useAuth();
+  const { user, userData } = useAuth();
+  const submittingRef = useRef(false);
   const [searchParams] = useSearchParams();
 
-  const categoryId = searchParams.get('category') || '';
+  const categoryId = searchParams.get('categoryId') || '';
+  const categoryName = searchParams.get('category') || '';
   const difficulty = searchParams.get('difficulty') || null;
 
   const [questions, setQuestions] = useState([]);
@@ -23,6 +28,7 @@ function QuizTake() {
   const [totalPoints, setTotalPoints] = useState(0);
   const [lastPointDelta, setLastPointDelta] = useState(null);
   const [startTime] = useState(Date.now());
+  const [flashAnswerIndex, setFlashAnswerIndex] = useState(null);
 
   useEffect(() => {
     const loadQuestions = async () => {
@@ -34,7 +40,9 @@ function QuizTake() {
 
       try {
         setLoading(true);
-        const data = await getQuestionsByCategory(categoryId, difficulty);
+        const data = categoryId
+          ? await getQuestionsByCategoryId(categoryId, difficulty)
+          : await getQuestionsByCategory(categoryName, difficulty);
         if (data.length === 0) {
           setError('Kysymyksiä ei löytynyt');
         } else {
@@ -56,6 +64,10 @@ function QuizTake() {
 
     loadQuestions();
   }, [categoryId, difficulty]);
+
+  useEffect(() => {
+    setFlashAnswerIndex(null);
+  }, [currentQuestionIndex]);
 
   if (loading) {
     return (
@@ -98,34 +110,50 @@ function QuizTake() {
     return count + (answerIndex === q.correctAnswerIndex ? 1 : 0);
   }, 0);
 
-  const handleSelectAnswer = (answerIndex) => {
-    if (!submitting && !quizComplete) {
-      setSelectedAnswers({
-        ...selectedAnswers,
-        [currentQuestionIndex]: answerIndex,
-      });
-    }
-  };
-
-  const handleNext = async () => {
-    if (!isAnswered) {
-      alert('Valitse vastaus ennen jatkamista');
+  const handleSelectAnswer = async (answerIndex) => {
+    if (submitting || quizComplete || isAnswered || submittingRef.current) {
       return;
     }
 
     try {
+      submittingRef.current = true;
       setSubmitting(true);
-      const answerIndex = selectedAnswers[currentQuestionIndex];
+      setSelectedAnswers(prev => ({
+        ...prev,
+        [currentQuestionIndex]: answerIndex,
+      }));
+
       const isCorrect = answerIndex === currentQuestion.correctAnswerIndex;
       const qDifficulty = currentQuestion.difficulty || 'perustaso';
 
+      if (isCorrect) {
+        setFlashAnswerIndex(answerIndex);
+      }
+
       // Submit answer to database (difficulty-based points, negative for wrong)
-      await submitAnswer(user.uid, currentQuestion.id, answerIndex, isCorrect, qDifficulty);
+      await submitAnswer(
+        user.uid,
+        currentQuestion.id,
+        answerIndex,
+        isCorrect,
+        qDifficulty,
+        0,
+        {
+          categoryId: currentQuestion.categoryId || categoryId || null,
+          categoryName: categoryName || currentQuestion.categoryName || currentQuestion.categoryId || null,
+          currentProgress: userData?.progress || null,
+        }
+      );
 
       // Calculate the point delta for feedback display
       const delta = calculatePoints(qDifficulty, isCorrect);
       setLastPointDelta(delta);
       setTotalPoints(prev => prev + delta);
+
+      if (isCorrect) {
+        await new Promise(resolve => setTimeout(resolve, FLASH_ANIMATION_DURATION_MS));
+        setFlashAnswerIndex(null);
+      }
 
       // Move to next question or complete quiz
       if (currentQuestionIndex < questions.length - 1) {
@@ -141,7 +169,14 @@ function QuizTake() {
           ? 'Yhteysongelma. Tarkista verkkoyhteys ja yritä uudelleen.'
           : 'Vastauksen lähettäminen epäonnistui'
       );
+      setFlashAnswerIndex(null);
+      setSelectedAnswers(prev => {
+        const updated = { ...prev };
+        delete updated[currentQuestionIndex];
+        return updated;
+      });
     } finally {
+      submittingRef.current = false;
       setSubmitting(false);
     }
   };
@@ -157,6 +192,18 @@ function QuizTake() {
   if (quizComplete) {
     const totalTime = Math.round((Date.now() - startTime) / 1000);
     const accuracy = Math.round((correctAnswers / questions.length) * 100);
+    const wrongAnswers = Object.entries(selectedAnswers)
+      .map(([index, answerIndex]) => {
+        const question = questions[parseInt(index, 10)];
+        if (!question || answerIndex === question.correctAnswerIndex) {
+          return null;
+        }
+        return {
+          question,
+          selectedIndex: answerIndex,
+        };
+      })
+      .filter(Boolean);
 
     return (
       <div className="min-h-screen bg-slate-950">
@@ -197,7 +244,7 @@ function QuizTake() {
                   <span className="font-semibold">Oikeat vastaukset:</span> {correctAnswers}/{questions.length}
                 </p>
                 <p className="text-slate-300">
-                  <span className="font-semibold">Kategoria:</span> {categoryId}
+                  <span className="font-semibold">Kategoria:</span> {categoryName || categoryId}
                 </p>
                 {difficulty && (
                   <p className="text-slate-300">
@@ -206,6 +253,60 @@ function QuizTake() {
                 )}
               </div>
             </div>
+
+            {/* Wrong Answer Review */}
+            {wrongAnswers.length > 0 && (
+              <div className="bg-slate-900 rounded-lg p-4 mb-8 text-left">
+                <h3 className="text-lg font-semibold text-slate-50 mb-4">Väärät vastaukset</h3>
+                <div className="space-y-4">
+                  {wrongAnswers.map(({ question, selectedIndex }, idx) => {
+                    const correctIndex = question.correctAnswerIndex;
+                    const correctAnswer = question.options?.[correctIndex] || '-';
+                    const selectedAnswer = question.options?.[selectedIndex] || '-';
+                    const source = question.source || null;
+
+                    return (
+                      <div key={question.id || idx} className="border border-slate-800 rounded-lg p-4">
+                        <p className="text-slate-100 font-semibold mb-2 break-words">
+                          {question.question}
+                        </p>
+                        <p className="text-sm text-red-300 mb-1 break-words">
+                          Sinun vastauksesi: {selectedAnswer}
+                        </p>
+                        <p className="text-sm text-green-300 mb-2 break-words">
+                          Oikea vastaus: {correctAnswer}
+                        </p>
+                        {question.explanation && (
+                          <div className="bg-slate-800 border border-slate-700 rounded-lg p-3 mb-2">
+                            <p className="text-xs text-slate-400 mb-1">Selitys:</p>
+                            <p className="text-sm text-slate-200 break-words">{question.explanation}</p>
+                          </div>
+                        )}
+                        {source && (source.title || source.page || source.url) && (
+                          <div className="text-xs text-slate-500 break-words">
+                            Lähde: {source.title || 'Tuntematon'}
+                            {source.page && `, s. ${source.page}`}
+                            {source.url && (
+                              <span>
+                                {' '}
+                                <a
+                                  href={source.url}
+                                  className="text-blue-400 hover:text-blue-300 underline"
+                                  target="_blank"
+                                  rel="noreferrer"
+                                >
+                                  {source.url}
+                                </a>
+                              </span>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
 
             {/* Actions */}
             <div className="flex gap-4">
@@ -243,7 +344,7 @@ function QuizTake() {
             ← Takaisin
           </Link>
           <div className="text-center">
-            <p className="text-slate-300 font-medium">{categoryId}</p>
+            <p className="text-slate-300 font-medium">{categoryName || categoryId}</p>
             <p className="text-slate-500 text-sm">{currentQuestionIndex + 1} / {questions.length}</p>
           </div>
           <div className="w-20 text-right">
@@ -288,7 +389,7 @@ function QuizTake() {
             </span>
           </div>
 
-          <h2 className="text-2xl font-bold text-slate-50 mb-6">
+          <h2 className="text-2xl font-bold text-slate-50 mb-6 break-words">
             {currentQuestion.question}
           </h2>
 
@@ -315,12 +416,14 @@ function QuizTake() {
                 textColor = 'text-white';
               }
 
+              const shouldFlash = flashAnswerIndex === index;
+
               return (
                 <button
                   key={index}
                   onClick={() => handleSelectAnswer(index)}
                   disabled={submitting || quizComplete}
-                  className={`w-full p-4 border-2 rounded-lg text-left transition-all ${bgColor} ${textColor} disabled:cursor-not-allowed`}
+                  className={`w-full p-4 border-2 rounded-lg text-left transition-all ${bgColor} ${textColor} disabled:cursor-not-allowed ${shouldFlash ? 'ring-2 ring-green-400 ring-offset-2 ring-offset-slate-900 animate-pulse' : ''}`}
                 >
                   <span className="font-semibold mr-3">
                     {String.fromCharCode(65 + index)}.
@@ -331,37 +434,8 @@ function QuizTake() {
             })}
           </div>
 
-          {/* Hint or explanation if available */}
-          {currentQuestion.explanation && (quizComplete || submitting) && (
-            <div className="mt-6 p-4 bg-slate-800 border border-slate-700 rounded-lg">
-              <p className="text-sm text-slate-400 mb-2">Selitys:</p>
-              <p className="text-slate-300">{currentQuestion.explanation}</p>
-            </div>
-          )}
         </div>
 
-        {/* Action Buttons */}
-        <div className="flex gap-4">
-          <button
-            onClick={() => {
-              if (currentQuestionIndex > 0) {
-                setCurrentQuestionIndex(currentQuestionIndex - 1);
-              }
-            }}
-            disabled={currentQuestionIndex === 0 || submitting}
-            className="px-6 py-3 bg-slate-800 hover:bg-slate-700 disabled:bg-slate-900 disabled:text-slate-600 text-slate-300 rounded-lg font-semibold transition-colors"
-          >
-            Edellinen
-          </button>
-          <div className="flex-1"></div>
-          <button
-            onClick={handleNext}
-            disabled={!isAnswered || submitting}
-            className="px-8 py-3 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 disabled:from-slate-700 disabled:to-slate-700 disabled:text-slate-500 text-white rounded-lg font-semibold transition-all disabled:cursor-not-allowed"
-          >
-            {submitting ? 'Lähetetään...' : currentQuestionIndex === questions.length - 1 ? 'Valmis' : 'Seuraava'}
-          </button>
-        </div>
       </main>
     </div>
   );

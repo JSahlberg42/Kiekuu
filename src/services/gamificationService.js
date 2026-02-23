@@ -165,13 +165,19 @@ export const shuffleArray = (arr) => {
 export const shuffleQuestionOptions = (question) => {
   if (!question.options || question.options.length === 0) return question;
 
+  const rawCorrectIndex = question.correctAnswerIndex ?? question.correctIndex;
+  const normalizedCorrectAnswerIndex = Number.isInteger(rawCorrectIndex)
+    ? rawCorrectIndex
+    : typeof rawCorrectIndex === 'string'
+      ? parseInt(rawCorrectIndex, 10)
+      : rawCorrectIndex;
   const indexed = question.options.map((opt, i) => ({ opt, i }));
   shuffleArray(indexed);
 
   return {
     ...question,
     options: indexed.map(({ opt }) => opt),
-    correctAnswerIndex: indexed.findIndex(({ i }) => i === question.correctAnswerIndex),
+    correctAnswerIndex: indexed.findIndex(({ i }) => i === normalizedCorrectAnswerIndex),
   };
 };
 
