@@ -12,6 +12,8 @@ function QuestionManagement() {
   const [categories, setCategories] = useState([]);
   const [filteredQuestions, setFilteredQuestions] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState('all');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [sortOption, setSortOption] = useState('newest');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [addingQuestion, setAddingQuestion] = useState(false);
@@ -27,12 +29,67 @@ function QuestionManagement() {
   }, [authLoading, userData]);
 
   useEffect(() => {
-    if (selectedCategory === 'all') {
-      setFilteredQuestions(questions);
-    } else {
-      setFilteredQuestions(questions.filter(q => q.categoryId === selectedCategory));
-    }
-  }, [selectedCategory, questions]);
+    const normalizedQuery = searchQuery.trim().toLowerCase();
+    const categoryMap = categories.reduce((acc, category) => {
+      acc[category.id] = category.name || '';
+      return acc;
+    }, {});
+
+    const matchesSearch = (question) => {
+      if (!normalizedQuery) return true;
+
+      const categoryName = categoryMap[question.categoryId] || '';
+      const createdByName = question.createdBy?.displayName || '';
+      const createdByEmail = question.createdBy?.email || '';
+      const optionsText = (question.options || []).join(' ');
+
+      const haystack = [
+        question.question,
+        optionsText,
+        question.explanation,
+        categoryName,
+        createdByName,
+        createdByEmail,
+      ]
+        .filter(Boolean)
+        .join(' ')
+        .toLowerCase();
+
+      return haystack.includes(normalizedQuery);
+    };
+
+    const sortQuestions = (list) => {
+      switch (sortOption) {
+        case 'oldest':
+          return [...list].sort((a, b) => new Date(a.createdAt || 0) - new Date(b.createdAt || 0));
+        case 'question-asc':
+          return [...list].sort((a, b) => (a.question || '').localeCompare(b.question || '', 'fi'));
+        case 'question-desc':
+          return [...list].sort((a, b) => (b.question || '').localeCompare(a.question || '', 'fi'));
+        case 'category-asc':
+          return [...list].sort((a, b) => {
+            const aName = categoryMap[a.categoryId] || '';
+            const bName = categoryMap[b.categoryId] || '';
+            return aName.localeCompare(bName, 'fi');
+          });
+        case 'category-desc':
+          return [...list].sort((a, b) => {
+            const aName = categoryMap[a.categoryId] || '';
+            const bName = categoryMap[b.categoryId] || '';
+            return bName.localeCompare(aName, 'fi');
+          });
+        case 'newest':
+        default:
+          return [...list].sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
+      }
+    };
+
+    const filtered = questions
+      .filter(q => selectedCategory === 'all' || q.categoryId === selectedCategory)
+      .filter(matchesSearch);
+
+    setFilteredQuestions(sortQuestions(filtered));
+  }, [selectedCategory, questions, categories, searchQuery, sortOption]);
 
   const fetchData = async () => {
     try {
@@ -179,39 +236,78 @@ function QuestionManagement() {
         )}
 
         {/* Filters and Actions */}
-        <div className="flex flex-col sm:flex-row gap-4 mb-6">
-          <div className="flex-1">
-            <select
-              value={selectedCategory}
-              onChange={(e) => setSelectedCategory(e.target.value)}
-              className="w-full px-4 py-3 border border-slate-800 rounded-xl bg-slate-900 text-slate-50 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 min-h-[44px]"
-              aria-label="Suodata kategorian mukaan"
-            >
-              <option value="all">Kaikki kategoriat ({questions.length})</option>
-              {categories.map(category => (
-                <option key={category.id} value={category.id}>
-                  {category.name} ({questions.filter(q => q.categoryId === category.id).length})
-                </option>
-              ))}
-            </select>
+        <div className="flex flex-col gap-4 mb-6">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+            <div>
+              <label htmlFor="question-search" className="block text-xs font-medium uppercase tracking-widest text-slate-400 mb-2">
+                Haku
+              </label>
+              <input
+                id="question-search"
+                type="search"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Hae kysymyksistä, vaihtoehdoista tai tekijästä"
+                className="w-full px-4 py-3 border border-slate-800 rounded-xl bg-slate-900 text-slate-50 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 min-h-[44px]"
+              />
+            </div>
+            <div>
+              <label htmlFor="question-category-filter" className="block text-xs font-medium uppercase tracking-widest text-slate-400 mb-2">
+                Kategoria
+              </label>
+              <select
+                id="question-category-filter"
+                value={selectedCategory}
+                onChange={(e) => setSelectedCategory(e.target.value)}
+                className="w-full px-4 py-3 border border-slate-800 rounded-xl bg-slate-900 text-slate-50 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 min-h-[44px]"
+                aria-label="Suodata kategorian mukaan"
+              >
+                <option value="all">Kaikki kategoriat ({questions.length})</option>
+                {categories.map(category => (
+                  <option key={category.id} value={category.id}>
+                    {category.name} ({questions.filter(q => q.categoryId === category.id).length})
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label htmlFor="question-sort" className="block text-xs font-medium uppercase tracking-widest text-slate-400 mb-2">
+                Järjestys
+              </label>
+              <select
+                id="question-sort"
+                value={sortOption}
+                onChange={(e) => setSortOption(e.target.value)}
+                className="w-full px-4 py-3 border border-slate-800 rounded-xl bg-slate-900 text-slate-50 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 min-h-[44px]"
+              >
+                <option value="newest">Uusimmat ensin</option>
+                <option value="oldest">Vanhimmat ensin</option>
+                <option value="question-asc">Kysymys A–Z</option>
+                <option value="question-desc">Kysymys Z–A</option>
+                <option value="category-asc">Kategoria A–Z</option>
+                <option value="category-desc">Kategoria Z–A</option>
+              </select>
+            </div>
           </div>
-          <button
-            onClick={() => setGeneratingWithAI(true)}
-            className="px-6 py-3 bg-purple-600 hover:bg-purple-700 active:bg-purple-800 text-slate-50 rounded-xl font-semibold transition-colors min-h-[44px] flex items-center justify-center gap-2"
-            aria-label="Generoi kysymyksiä tekoälyllä"
-          >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-            </svg>
-            AI-generaattori
-          </button>
-          <button
-            onClick={() => setAddingQuestion(true)}
-            className="px-6 py-3 bg-orange-500 hover:bg-orange-600 active:bg-orange-700 text-slate-50 rounded-xl font-semibold transition-colors min-h-[44px]"
-            aria-label="Lisää uusi kysymys"
-          >
-            + Lisää kysymys
-          </button>
+          <div className="flex flex-col sm:flex-row gap-4">
+            <button
+              onClick={() => setGeneratingWithAI(true)}
+              className="px-6 py-3 bg-purple-600 hover:bg-purple-700 active:bg-purple-800 text-slate-50 rounded-xl font-semibold transition-colors min-h-[44px] flex items-center justify-center gap-2"
+              aria-label="Generoi kysymyksiä tekoälyllä"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+              </svg>
+              AI-generaattori
+            </button>
+            <button
+              onClick={() => setAddingQuestion(true)}
+              className="px-6 py-3 bg-orange-500 hover:bg-orange-600 active:bg-orange-700 text-slate-50 rounded-xl font-semibold transition-colors min-h-[44px]"
+              aria-label="Lisää uusi kysymys"
+            >
+              + Lisää kysymys
+            </button>
+          </div>
         </div>
 
         {/* Questions List */}
@@ -227,6 +323,10 @@ function QuestionManagement() {
           ) : (
             filteredQuestions.map((question) => {
               const category = categories.find(c => c.id === question.categoryId);
+              const createdAtLabel = question.createdAt
+                ? new Date(question.createdAt).toLocaleDateString('fi-FI')
+                : '-';
+              const createdByName = question.createdBy?.displayName || question.createdBy?.email || '-';
               return (
                 <div
                   key={question.id}
@@ -248,6 +348,12 @@ function QuestionManagement() {
                       <h3 className="text-base sm:text-lg font-semibold text-slate-50 mb-3 break-words">
                         {question.question}
                       </h3>
+
+                      {/* Metadata */}
+                      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-400 mb-3">
+                        <span>Luonut: {createdByName}</span>
+                        <span>Luotu: {createdAtLabel}</span>
+                      </div>
                       
                       {/* Options */}
                       <div className="space-y-2 mb-3">
