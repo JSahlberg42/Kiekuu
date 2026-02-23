@@ -17,8 +17,14 @@ export const getClientNetworkInfo = () => {
   };
 };
 
+const isDiagnosticsEnabled = () => {
+  if (import.meta.env.DEV) return true;
+  const rawValue = import.meta.env.VITE_DIAGNOSTICS_ENABLED ?? import.meta.env.VITE_DIAGNOSTICS;
+  return rawValue === 'true' || rawValue === '1';
+};
+
 export const logFirestoreErrorContext = (label, error) => {
-  if (!import.meta.env.DEV && import.meta.env.VITE_DIAGNOSTICS !== 'true') {
+  if (!isDiagnosticsEnabled()) {
     return;
   }
 
