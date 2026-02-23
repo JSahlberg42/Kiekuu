@@ -323,6 +323,7 @@ function QuestionManagement() {
           onSave={handleCreateQuestion}
           loading={actionLoading}
           title="Lisää uusi kysymys"
+          initialCategoryId={selectedCategory !== 'all' ? selectedCategory : ''}
         />
       )}
 
@@ -361,13 +362,13 @@ function QuestionManagement() {
 }
 
 // Question Form Modal Component
-function QuestionFormModal({ question, categories, onClose, onSave, loading, title }) {
+function QuestionFormModal({ question, categories, onClose, onSave, loading, title, initialCategoryId = '' }) {
   const [formData, setFormData] = useState({
     question: question?.question || '',
     options: question?.options || ['', '', '', ''],
     correctIndex: question?.correctIndex ?? 0,
     explanation: question?.explanation || '',
-    categoryId: question?.categoryId || '',
+    categoryId: question?.categoryId || initialCategoryId,
     source: {
       title: question?.source?.title || '',
       page: question?.source?.page || '',
