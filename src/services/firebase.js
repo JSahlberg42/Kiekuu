@@ -1,6 +1,6 @@
 import { initializeApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
-import { initializeFirestore, persistentLocalCache } from 'firebase/firestore';
+import { initializeFirestore, memoryLocalCache } from 'firebase/firestore';
 import { initializeAppCheck, ReCaptchaEnterpriseProvider, getToken } from 'firebase/app-check';
 
 const firebaseConfig = {
@@ -33,9 +33,11 @@ if (import.meta.env.VITE_RECAPTCHA_ENTERPRISE_KEY) {
 
 // Initialize services
 export const auth = getAuth(app);
-// Enable offline persistence so cached documents are served when the client is offline
+// Use in-memory cache (no IndexedDB lock) to avoid the startup race condition where
+// persistentLocalCache's tab-manager lock acquisition causes "client is offline" errors
+// for users who are actually online.
 export const db = initializeFirestore(app, {
-  localCache: persistentLocalCache(),
+  localCache: memoryLocalCache(),
 });
 
 // Debug utility for checking App Check token in development
