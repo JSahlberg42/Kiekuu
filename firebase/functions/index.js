@@ -78,8 +78,12 @@ exports.classifyFeedback = onDocumentCreated('feedback/{feedbackId}', async (eve
   });
 
   try {
+    const projectId = process.env.GCLOUD_PROJECT || 
+                      process.env.GCP_PROJECT || 
+                      admin.app().options.projectId;
+    
     const vertexAI = new VertexAI({
-      project: process.env.GCLOUD_PROJECT,
+      project: projectId,
       location: vertexRegion,
     });
     const generativeModel = vertexAI.getGenerativeModel({
