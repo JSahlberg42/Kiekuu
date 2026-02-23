@@ -23,6 +23,7 @@ function QuizTake() {
   const [totalPoints, setTotalPoints] = useState(0);
   const [lastPointDelta, setLastPointDelta] = useState(null);
   const [startTime] = useState(Date.now());
+  const [flashAnswerIndex, setFlashAnswerIndex] = useState(null);
 
   useEffect(() => {
     const loadQuestions = async () => {
@@ -56,6 +57,10 @@ function QuizTake() {
 
     loadQuestions();
   }, [categoryId, difficulty]);
+
+  useEffect(() => {
+    setFlashAnswerIndex(null);
+  }, [currentQuestionIndex]);
 
   if (loading) {
     return (
@@ -113,6 +118,10 @@ function QuizTake() {
       const isCorrect = answerIndex === currentQuestion.correctAnswerIndex;
       const qDifficulty = currentQuestion.difficulty || 'perustaso';
 
+      if (isCorrect) {
+        setFlashAnswerIndex(answerIndex);
+      }
+
       // Submit answer to database (difficulty-based points, negative for wrong)
       await submitAnswer(user.uid, currentQuestion.id, answerIndex, isCorrect, qDifficulty);
 
@@ -120,6 +129,11 @@ function QuizTake() {
       const delta = calculatePoints(qDifficulty, isCorrect);
       setLastPointDelta(delta);
       setTotalPoints(prev => prev + delta);
+
+      if (isCorrect) {
+        await new Promise(resolve => setTimeout(resolve, 200));
+        setFlashAnswerIndex(null);
+      }
 
       // Move to next question or complete quiz
       if (currentQuestionIndex < questions.length - 1) {
@@ -135,6 +149,7 @@ function QuizTake() {
           ? 'Yhteysongelma. Tarkista verkkoyhteys ja yritä uudelleen.'
           : 'Vastauksen lähettäminen epäonnistui'
       );
+      setFlashAnswerIndex(null);
       setSelectedAnswers(prev => {
         const updated = { ...prev };
         delete updated[currentQuestionIndex];
@@ -314,12 +329,14 @@ function QuizTake() {
                 textColor = 'text-white';
               }
 
+              const shouldFlash = flashAnswerIndex === index;
+
               return (
                 <button
                   key={index}
                   onClick={() => handleSelectAnswer(index)}
                   disabled={submitting || quizComplete}
-                  className={`w-full p-4 border-2 rounded-lg text-left transition-all ${bgColor} ${textColor} disabled:cursor-not-allowed`}
+                  className={`w-full p-4 border-2 rounded-lg text-left transition-all ${bgColor} ${textColor} disabled:cursor-not-allowed ${shouldFlash ? 'ring-2 ring-green-400 ring-offset-2 ring-offset-slate-900 animate-pulse' : ''}`}
                 >
                   <span className="font-semibold mr-3">
                     {String.fromCharCode(65 + index)}.
