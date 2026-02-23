@@ -1,16 +1,17 @@
 import { useEffect, useState } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { getQuestionsByCategory, submitAnswer } from '../services/quizService';
+import { getQuestionsByCategory, getQuestionsByCategoryId, submitAnswer } from '../services/quizService';
 import { isFirestoreOfflineError, logFirestoreErrorContext } from '../utils/firestoreDiagnostics';
 import { getRandomizedQuestions, calculatePoints, DEFAULT_DIFFICULTY_POINTS, DEFAULT_DIFFICULTY_PENALTIES } from '../services/gamificationService';
 import logo from '../assets/images/Kiekuu_logo.jpg';
 
 function QuizTake() {
-  const { user } = useAuth();
+  const { user, userData } = useAuth();
   const [searchParams] = useSearchParams();
 
-  const categoryId = searchParams.get('category') || '';
+  const categoryId = searchParams.get('categoryId') || '';
+  const categoryName = searchParams.get('category') || '';
   const difficulty = searchParams.get('difficulty') || null;
 
   const [questions, setQuestions] = useState([]);
@@ -35,7 +36,9 @@ function QuizTake() {
 
       try {
         setLoading(true);
-        const data = await getQuestionsByCategory(categoryId, difficulty);
+        const data = categoryId
+          ? await getQuestionsByCategoryId(categoryId, difficulty)
+          : await getQuestionsByCategory(categoryName, difficulty);
         if (data.length === 0) {
           setError('Kysymyksiä ei löytynyt');
         } else {
@@ -123,7 +126,19 @@ function QuizTake() {
       }
 
       // Submit answer to database (difficulty-based points, negative for wrong)
-      await submitAnswer(user.uid, currentQuestion.id, answerIndex, isCorrect, qDifficulty);
+      await submitAnswer(
+        user.uid,
+        currentQuestion.id,
+        answerIndex,
+        isCorrect,
+        qDifficulty,
+        0,
+        {
+          categoryId: currentQuestion.categoryId || categoryId || null,
+          categoryName: categoryName || currentQuestion.categoryName || currentQuestion.categoryId || null,
+          currentProgress: userData?.progress || null,
+        }
+      );
 
       // Calculate the point delta for feedback display
       const delta = calculatePoints(qDifficulty, isCorrect);
@@ -211,7 +226,7 @@ function QuizTake() {
                   <span className="font-semibold">Oikeat vastaukset:</span> {correctAnswers}/{questions.length}
                 </p>
                 <p className="text-slate-300">
-                  <span className="font-semibold">Kategoria:</span> {categoryId}
+                  <span className="font-semibold">Kategoria:</span> {categoryName || categoryId}
                 </p>
                 {difficulty && (
                   <p className="text-slate-300">
@@ -257,7 +272,7 @@ function QuizTake() {
             ← Takaisin
           </Link>
           <div className="text-center">
-            <p className="text-slate-300 font-medium">{categoryId}</p>
+            <p className="text-slate-300 font-medium">{categoryName || categoryId}</p>
             <p className="text-slate-500 text-sm">{currentQuestionIndex + 1} / {questions.length}</p>
           </div>
           <div className="w-20 text-right">

@@ -57,6 +57,7 @@ function QuizBrowser() {
   const handleStartQuiz = (quiz) => {
     if (isCategoryLocked(quiz)) return;
     const params = new URLSearchParams();
+    params.append('categoryId', quiz.id);
     params.append('category', quiz.name);
     if (selectedDifficulty !== 'kaikki') {
       params.append('difficulty', selectedDifficulty);
