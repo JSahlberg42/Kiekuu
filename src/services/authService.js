@@ -112,6 +112,7 @@ export const resetPassword = async (email) => {
  * Get user data from Firestore
  * @param {string} uid - User ID
  * @returns {Promise<Object|null>} User data or null if not found
+ * @throws {FirebaseError} Re-throws network/offline errors so callers can stop retrying
  */
 export const getUserData = async (uid) => {
   try {
@@ -122,7 +123,17 @@ export const getUserData = async (uid) => {
     return null;
   } catch (error) {
     console.error('Get user data error:', error);
-    return null; // Return null instead of throwing
+    // Re-throw network errors (offline / server unreachable) so the caller can
+    // detect them and avoid pointless retries.
+    // Firebase Firestore uses code 'unavailable' for offline/network errors.
+    if (
+      error?.code === 'unavailable' ||
+      error?.code === 'firestore/unavailable' ||
+      error?.message?.includes('offline')
+    ) {
+      throw error;
+    }
+    return null;
   }
 };
 

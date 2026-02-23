@@ -1,5 +1,6 @@
-import { collection, query, where, getDocs, addDoc, getDoc, doc, updateDoc, arrayUnion } from 'firebase/firestore';
+import { collection, query, where, getDocs, addDoc, getDoc, doc, updateDoc } from 'firebase/firestore';
 import { db } from './firebase';
+import { calculatePoints, checkAndUpdateUserRank, getPlatformConfig } from './gamificationService';
 
 /**
  * Get all available quizzes/questions for a user
@@ -13,23 +14,23 @@ export const getAvailableQuizzes = async () => {
       getDocs(collection(db, 'categories')),
     ]);
     
-    // Create a map of category ID -> category name
+    // Create a map of category ID -> category data
     const categoryMap = {};
-    categoriesSnapshot.forEach(doc => {
-      categoryMap[doc.id] = doc.data().name || doc.id;
+    categoriesSnapshot.forEach(docSnap => {
+      categoryMap[docSnap.id] = docSnap.data();
     });
 
     const quizzes = [];
     const quizMap = {};
     
-    questionsSnapshot.forEach(doc => {
-      const data = doc.data();
+    questionsSnapshot.forEach(docSnap => {
+      const data = docSnap.data();
       // Skip unpublished questions only if explicitly marked as false
       if (data.published === false) return;
       
-      // Get category name from categoryId
       const categoryId = data.categoryId || 'unknown';
-      const categoryName = categoryMap[categoryId] || 'Muut';
+      const categoryData = categoryMap[categoryId] || {};
+      const categoryName = categoryData.name || 'Muut';
       
       // Group questions by category
       if (!quizMap[categoryName]) {
@@ -39,11 +40,13 @@ export const getAvailableQuizzes = async () => {
           questions: [],
           totalQuestions: 0,
           difficulties: new Set(),
+          requiredRankId: categoryData.requiredRankId || null,
+          requiredRankScore: null,
         };
       }
       
       quizMap[categoryName].questions.push({
-        id: doc.id,
+        id: docSnap.id,
         ...data,
       });
       quizMap[categoryName].difficulties.add(data.difficulty || 'perustaso');
@@ -116,31 +119,38 @@ export const getQuestionsByCategory = async (categoryName, difficulty = null) =>
  * @param {string} questionId - Question ID
  * @param {number} selectedIndex - Index of selected option (0-3)
  * @param {boolean} isCorrect - Whether answer is correct
- * @param {number} timeSpent - Time spent on question in seconds
- * @returns {Promise<Object>} Answer record
+ * @param {string} [difficulty='perustaso'] - Question difficulty level
+ * @param {number} [timeSpent=0] - Time spent on question in seconds
+ * @returns {Promise<Object>} Answer record with earned points
  */
-export const submitAnswer = async (userId, questionId, selectedIndex, isCorrect, timeSpent = 0) => {
+export const submitAnswer = async (userId, questionId, selectedIndex, isCorrect, difficulty = 'perustaso', timeSpent = 0) => {
   try {
+    const config = await getPlatformConfig();
+    const points = calculatePoints(difficulty, isCorrect, config);
+
     const answerRef = collection(db, 'users', userId, 'answers');
-    
     const answer = {
       questionId,
       selectedIndex,
       isCorrect,
+      difficulty,
       timeSpent,
       submittedAt: new Date().toISOString(),
-      points: isCorrect ? 10 : 0,
+      points,
     };
-    
+
     const docRef = await addDoc(answerRef, answer);
-    
-    // Update user progress
-    await updateUserProgress(userId, {
+
+    // Update user progress and check rank advancement
+    const updatedProgress = await updateUserProgress(userId, {
       questionsAnswered: 1,
       correctAnswers: isCorrect ? 1 : 0,
-      totalPoints: isCorrect ? 10 : 0,
+      totalPoints: points,
     });
-    
+
+    // Check if user earned a new rank
+    await checkAndUpdateUserRank(userId, updatedProgress, config);
+
     return {
       id: docRef.id,
       ...answer,
@@ -154,8 +164,8 @@ export const submitAnswer = async (userId, questionId, selectedIndex, isCorrect,
 /**
  * Update user progress
  * @param {string} userId - User ID
- * @param {Object} updates - Progress updates
- * @returns {Promise<void>}
+ * @param {Object} updates - Progress updates { questionsAnswered, correctAnswers, totalPoints }
+ * @returns {Promise<Object>} Updated progress object
  */
 export const updateUserProgress = async (userId, updates) => {
   try {
@@ -185,6 +195,8 @@ export const updateUserProgress = async (userId, updates) => {
       progress: newProgress,
       lastActivity: new Date().toISOString(),
     });
+
+    return newProgress;
   } catch (error) {
     console.error('Error updating user progress:', error);
     throw error;
@@ -221,15 +233,25 @@ export const getUserAnswers = async (userId) => {
 /**
  * Get user statistics
  * @param {string} userId - User ID
- * @returns {Promise<Object>} User statistics
+ * @returns {Promise<Object>} User statistics (returns safe defaults on error)
  */
 export const getUserStatistics = async (userId) => {
+  const defaultStats = {
+    rank: 'harjoittelija',
+    totalScore: 0,
+    questionsAnswered: 0,
+    correctAnswers: 0,
+    accuracy: 0,
+    totalPoints: 0,
+    lastActivity: null,
+  };
+
   try {
     const userRef = doc(db, 'users', userId);
     const userDoc = await getDoc(userRef);
     
     if (!userDoc.exists()) {
-      throw new Error('User document not found');
+      return defaultStats;
     }
     
     const userData = userDoc.data();
@@ -250,7 +272,7 @@ export const getUserStatistics = async (userId) => {
     };
   } catch (error) {
     console.error('Error fetching user statistics:', error);
-    throw error;
+    return defaultStats;
   }
 };
 

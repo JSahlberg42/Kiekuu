@@ -159,6 +159,11 @@ function RankManagement() {
                       <span className="px-3 py-1 bg-orange-500/20 text-orange-500 rounded-lg text-sm font-medium flex-shrink-0">
                         {rank.requiredScore} pistettä
                       </span>
+                      {rank.minAccuracy != null && (
+                        <span className="px-3 py-1 bg-blue-500/20 text-blue-400 rounded-lg text-sm font-medium flex-shrink-0">
+                          ≥{rank.minAccuracy}% tarkkuus
+                        </span>
+                      )}
                     </div>
                     {rank.description && (
                       <p className="text-sm text-slate-400 mb-2 break-words">
@@ -240,16 +245,24 @@ function RankFormModal({ rank, onClose, onSave, loading, title }) {
     name: rank?.name || '',
     description: rank?.description || '',
     requiredScore: rank?.requiredScore || 0,
+    minAccuracy: rank?.minAccuracy ?? '',
     icon: rank?.icon || '',
     color: rank?.color || '#ef4444',
   });
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    onSave({
+    const data = {
       ...formData,
       requiredScore: parseInt(formData.requiredScore, 10),
-    });
+    };
+    // Only include minAccuracy if provided, otherwise omit so platform-wide default applies
+    if (formData.minAccuracy !== '' && formData.minAccuracy !== null) {
+      data.minAccuracy = parseInt(formData.minAccuracy, 10);
+    } else {
+      delete data.minAccuracy;
+    }
+    onSave(data);
   };
 
   return (
@@ -293,6 +306,23 @@ function RankFormModal({ rank, onClose, onSave, loading, title }) {
               className="w-full px-4 py-3 border border-slate-800 rounded-xl bg-slate-950 text-slate-50 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 min-h-[44px]"
               required
               aria-required="true"
+            />
+          </div>
+
+          <div>
+            <label htmlFor="rank-min-accuracy" className="block text-xs font-medium uppercase tracking-widest text-slate-400 mb-2">
+              Vähimmäistarkkuus arvonnousuun (%) — tyhjä = käytä alustan oletusta
+            </label>
+            <input
+              type="number"
+              id="rank-min-accuracy"
+              value={formData.minAccuracy}
+              onChange={(e) => setFormData({ ...formData, minAccuracy: e.target.value })}
+              min="0"
+              max="100"
+              placeholder="esim. 70"
+              className="w-full px-4 py-3 border border-slate-800 rounded-xl bg-slate-950 text-slate-50 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 min-h-[44px]"
+              aria-label="Vähimmäistarkkuus arvonnousuun"
             />
           </div>
 

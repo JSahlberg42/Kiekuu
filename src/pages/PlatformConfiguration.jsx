@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { Navigate } from 'react-router-dom';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { db } from '../services/firebase';
+import { DEFAULT_DIFFICULTY_POINTS, DEFAULT_DIFFICULTY_PENALTIES } from '../services/gamificationService';
 
 function PlatformConfiguration() {
   const { userData, loading: authLoading } = useAuth();
@@ -17,6 +18,20 @@ function PlatformConfiguration() {
     maintenanceMode: false,
     allowAnonymousUsers: true,
     maxQuestionsPerQuiz: 10,
+    // Gamification settings
+    minAccuracyForRankUp: 60,
+    pointsPerDifficulty: {
+      perustaso: 10,
+      keskitaso: 20,
+      edistynyt: 30,
+      mestari: 50,
+    },
+    penaltyPerDifficulty: {
+      perustaso: 2,
+      keskitaso: 5,
+      edistynyt: 10,
+      mestari: 15,
+    },
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -231,6 +246,93 @@ function PlatformConfiguration() {
                   className="w-full px-4 py-3 border border-slate-800 rounded-xl bg-slate-950 text-slate-50 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 min-h-[44px]"
                   required
                 />
+              </div>
+            </div>
+          </div>
+
+          {/* Gamification Settings */}
+          <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 sm:p-8">
+            <h2 className="text-lg sm:text-xl font-bold text-slate-50 mb-2">
+              Pelillistämisasetukset
+            </h2>
+            <p className="text-xs text-slate-400 mb-6">
+              Pisteytys, rangaistukset ja arvonnousuvaatimukset
+            </p>
+
+            <div className="space-y-5">
+              {/* Min accuracy for rank up */}
+              <div>
+                <label htmlFor="min-accuracy" className="block text-xs font-medium uppercase tracking-widest text-slate-400 mb-2">
+                  Vähimmäistarkkuus arvonnousuun (%)
+                </label>
+                <input
+                  type="number"
+                  id="min-accuracy"
+                  value={config.minAccuracyForRankUp}
+                  onChange={(e) => handleInputChange('minAccuracyForRankUp', parseInt(e.target.value))}
+                  min="0"
+                  max="100"
+                  className="w-full px-4 py-3 border border-slate-800 rounded-xl bg-slate-950 text-slate-50 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 min-h-[44px]"
+                />
+                <p className="mt-1 text-xs text-slate-500">Käyttäjän kokonaistarkkuuden täytyy olla vähintään tämä arvo arvonnousua varten.</p>
+              </div>
+
+              {/* Points per difficulty */}
+              <div>
+                <p className="block text-xs font-medium uppercase tracking-widest text-slate-400 mb-3">
+                  Pisteet oikeasta vastauksesta (vaikeustason mukaan)
+                </p>
+                <div className="grid grid-cols-2 gap-3">
+                  {[
+                    { key: 'perustaso', label: 'Perustaso' },
+                    { key: 'keskitaso', label: 'Keskitaso' },
+                    { key: 'edistynyt', label: 'Edistynyt' },
+                    { key: 'mestari', label: 'Mestari' },
+                  ].map(({ key, label }) => (
+                    <div key={key}>
+                      <label className="block text-xs text-slate-400 mb-1">{label}</label>
+                      <input
+                        type="number"
+                        value={config.pointsPerDifficulty?.[key] ?? DEFAULT_DIFFICULTY_POINTS[key]}
+                        onChange={(e) => handleInputChange('pointsPerDifficulty', {
+                          ...config.pointsPerDifficulty,
+                          [key]: parseInt(e.target.value),
+                        })}
+                        min="1"
+                        className="w-full px-3 py-2 border border-slate-800 rounded-xl bg-slate-950 text-slate-50 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 min-h-[44px]"
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Penalty per difficulty */}
+              <div>
+                <p className="block text-xs font-medium uppercase tracking-widest text-slate-400 mb-3">
+                  Rangaistuspisteet väärästä vastauksesta (vaikeustason mukaan)
+                </p>
+                <div className="grid grid-cols-2 gap-3">
+                  {[
+                    { key: 'perustaso', label: 'Perustaso' },
+                    { key: 'keskitaso', label: 'Keskitaso' },
+                    { key: 'edistynyt', label: 'Edistynyt' },
+                    { key: 'mestari', label: 'Mestari' },
+                  ].map(({ key, label }) => (
+                    <div key={key}>
+                      <label className="block text-xs text-slate-400 mb-1">{label}</label>
+                      <input
+                        type="number"
+                        value={config.penaltyPerDifficulty?.[key] ?? DEFAULT_DIFFICULTY_PENALTIES[key]}
+                        onChange={(e) => handleInputChange('penaltyPerDifficulty', {
+                          ...config.penaltyPerDifficulty,
+                          [key]: parseInt(e.target.value),
+                        })}
+                        min="0"
+                        className="w-full px-3 py-2 border border-slate-800 rounded-xl bg-slate-950 text-slate-50 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 min-h-[44px]"
+                      />
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
           </div>

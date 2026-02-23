@@ -34,6 +34,7 @@ export const AuthProvider = ({ children }) => {
         const maxRetries = 4;
         const retryDelays = [100, 200, 300, 400]; // Fast delays: total ~1 second max
         let data = null;
+        let isOffline = false;
         
         while (retries < maxRetries) {
           try {
@@ -48,14 +49,18 @@ export const AuthProvider = ({ children }) => {
               await new Promise(resolve => setTimeout(resolve, retryDelays[retries]));
             }
           } catch (error) {
+            // Network/offline error — no point retrying, stop immediately
             console.error('Error fetching user data:', error);
+            isOffline = true;
+            break;
           }
           
           retries++;
         }
         
         // If still no data after retries, create document as fallback
-        if (!data) {
+        // Skip the Firestore write when offline to avoid cascading errors
+        if (!data && !isOffline) {
           try {
             const fallbackData = {
               uid: firebaseUser.uid,

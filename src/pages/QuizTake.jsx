@@ -1,13 +1,13 @@
 import { useEffect, useState } from 'react';
-import { useSearchParams, useNavigate, Link } from 'react-router-dom';
+import { useSearchParams, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { getQuestionsByCategory, submitAnswer } from '../services/quizService';
+import { getRandomizedQuestions, calculatePoints, DEFAULT_DIFFICULTY_POINTS, DEFAULT_DIFFICULTY_PENALTIES } from '../services/gamificationService';
 import logo from '../assets/images/Kiekuu_logo.jpg';
 
 function QuizTake() {
   const { user } = useAuth();
   const [searchParams] = useSearchParams();
-  const navigate = useNavigate();
 
   const categoryId = searchParams.get('category') || '';
   const difficulty = searchParams.get('difficulty') || null;
@@ -19,7 +19,8 @@ function QuizTake() {
   const [error, setError] = useState(null);
   const [submitting, setSubmitting] = useState(false);
   const [quizComplete, setQuizComplete] = useState(false);
-  const [score, setScore] = useState(0);
+  const [totalPoints, setTotalPoints] = useState(0);
+  const [lastPointDelta, setLastPointDelta] = useState(null);
   const [startTime] = useState(Date.now());
 
   useEffect(() => {
@@ -36,7 +37,8 @@ function QuizTake() {
         if (data.length === 0) {
           setError('Kysymyksiä ei löytynyt');
         } else {
-          setQuestions(data);
+          // Randomize question order and shuffle each question's answer options
+          setQuestions(getRandomizedQuestions(data, 10, difficulty));
         }
       } catch (err) {
         setError('Kysymysten lataaminen epäonnistui');
@@ -109,13 +111,15 @@ function QuizTake() {
       setSubmitting(true);
       const answerIndex = selectedAnswers[currentQuestionIndex];
       const isCorrect = answerIndex === currentQuestion.correctAnswerIndex;
+      const qDifficulty = currentQuestion.difficulty || 'perustaso';
 
-      // Submit answer to database
-      await submitAnswer(user.uid, currentQuestion.id, answerIndex, isCorrect);
+      // Submit answer to database (difficulty-based points, negative for wrong)
+      await submitAnswer(user.uid, currentQuestion.id, answerIndex, isCorrect, qDifficulty);
 
-      if (isCorrect) {
-        setScore(score + 1);
-      }
+      // Calculate the point delta for feedback display
+      const delta = calculatePoints(qDifficulty, isCorrect);
+      setLastPointDelta(delta);
+      setTotalPoints(prev => prev + delta);
 
       // Move to next question or complete quiz
       if (currentQuestionIndex < questions.length - 1) {
@@ -141,8 +145,7 @@ function QuizTake() {
   // Quiz Complete Screen
   if (quizComplete) {
     const totalTime = Math.round((Date.now() - startTime) / 1000);
-    const accuracy = Math.round((score / questions.length) * 100);
-    const totalPoints = score * 10;
+    const accuracy = Math.round((correctAnswers / questions.length) * 100);
 
     return (
       <div className="min-h-screen bg-slate-950">
@@ -164,7 +167,7 @@ function QuizTake() {
             <div className="grid grid-cols-3 gap-4 mb-8">
               <div className="bg-slate-800 rounded-lg p-4">
                 <p className="text-slate-400 text-sm mb-2">Pisteet</p>
-                <p className="text-3xl font-bold text-blue-400">{totalPoints}</p>
+                <p className={`text-3xl font-bold ${totalPoints >= 0 ? 'text-blue-400' : 'text-red-400'}`}>{totalPoints > 0 ? `+${totalPoints}` : totalPoints}</p>
               </div>
               <div className="bg-slate-800 rounded-lg p-4">
                 <p className="text-slate-400 text-sm mb-2">Tarkkuus</p>
@@ -180,7 +183,7 @@ function QuizTake() {
             <div className="bg-slate-900 rounded-lg p-4 mb-8 text-left">
               <div className="space-y-2">
                 <p className="text-slate-300">
-                  <span className="font-semibold">Oikeat vastaukset:</span> {score}/{questions.length}
+                  <span className="font-semibold">Oikeat vastaukset:</span> {correctAnswers}/{questions.length}
                 </p>
                 <p className="text-slate-300">
                   <span className="font-semibold">Kategoria:</span> {categoryId}
@@ -216,6 +219,9 @@ function QuizTake() {
 
   const options = getAnswerOptions();
   const progress = ((currentQuestionIndex + 1) / questions.length) * 100;
+  const qDifficulty = currentQuestion.difficulty || 'perustaso';
+  const potentialPoints = DEFAULT_DIFFICULTY_POINTS[qDifficulty] ?? 10;
+  const potentialPenalty = DEFAULT_DIFFICULTY_PENALTIES[qDifficulty] ?? 2;
 
   return (
     <div className="min-h-screen bg-slate-950">
@@ -229,8 +235,13 @@ function QuizTake() {
             <p className="text-slate-300 font-medium">{categoryId}</p>
             <p className="text-slate-500 text-sm">{currentQuestionIndex + 1} / {questions.length}</p>
           </div>
-          <div className="w-16 text-right">
-            <p className="text-slate-300 font-semibold">{score} pist.</p>
+          <div className="w-20 text-right">
+            <p className={`font-semibold ${totalPoints >= 0 ? 'text-slate-300' : 'text-red-400'}`}>{totalPoints > 0 ? `+${totalPoints}` : totalPoints} pist.</p>
+            {lastPointDelta !== null && (
+              <p className={`text-xs font-bold ${lastPointDelta >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                {lastPointDelta > 0 ? `+${lastPointDelta}` : lastPointDelta}
+              </p>
+            )}
           </div>
         </div>
       </nav>
@@ -251,6 +262,21 @@ function QuizTake() {
       <main className="max-w-4xl mx-auto px-4 py-8">
         {/* Question */}
         <div className="bg-slate-900 border border-slate-800 rounded-lg p-8 mb-8">
+          {/* Difficulty badge and point info */}
+          <div className="flex items-center gap-3 mb-4">
+            <span className={`px-2 py-1 rounded text-xs font-semibold uppercase tracking-wide ${
+              qDifficulty === 'perustaso' ? 'bg-green-900 text-green-300' :
+              qDifficulty === 'keskitaso' ? 'bg-yellow-900 text-yellow-300' :
+              qDifficulty === 'edistynyt' ? 'bg-orange-900 text-orange-300' :
+              'bg-red-900 text-red-300'
+            }`}>
+              {qDifficulty}
+            </span>
+            <span className="text-xs text-slate-500">
+              +{potentialPoints} oikein / -{potentialPenalty} väärin
+            </span>
+          </div>
+
           <h2 className="text-2xl font-bold text-slate-50 mb-6">
             {currentQuestion.question}
           </h2>
@@ -272,10 +298,10 @@ function QuizTake() {
               }
 
               let textColor = 'text-slate-300 hover:text-slate-200';
-              if (isSelected || (showResult && isCorrect)) {
-                textColor = 'text-white';
-              } else if (showResult && isSelected) {
+              if (showResult && isSelected && !isCorrect) {
                 textColor = 'text-red-100';
+              } else if (isSelected || (showResult && isCorrect)) {
+                textColor = 'text-white';
               }
 
               return (

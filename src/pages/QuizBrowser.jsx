@@ -2,21 +2,27 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { getAvailableQuizzes } from '../services/quizService';
+import { getAllRanks } from '../services/rankService';
 import logo from '../assets/images/Kiekuu_logo.jpg';
 
 function QuizBrowser() {
-  const { user, userData } = useAuth();
+  const { userData } = useAuth();
   const [quizzes, setQuizzes] = useState([]);
+  const [ranks, setRanks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [selectedDifficulty, setSelectedDifficulty] = useState('kaikki');
 
   useEffect(() => {
-    const loadQuizzes = async () => {
+    const loadData = async () => {
       try {
         setLoading(true);
-        const data = await getAvailableQuizzes();
+        const [data, fetchedRanks] = await Promise.all([
+          getAvailableQuizzes(),
+          getAllRanks(),
+        ]);
         setQuizzes(data);
+        setRanks(fetchedRanks);
       } catch (err) {
         setError('Kyselyiden lataaminen epäonnistui');
         console.error('Error loading quizzes:', err);
@@ -25,12 +31,33 @@ function QuizBrowser() {
       }
     };
 
-    loadQuizzes();
+    loadData();
   }, []);
 
-  const handleStartQuiz = (categoryId) => {
+  const userScore = userData?.progress?.totalScore ?? 0;
+
+  /**
+   * Determine whether the user has access to a category.
+   * Access is granted when:
+   *   - The category has no requiredRankId, OR
+   *   - The user's totalScore >= the required rank's requiredScore
+   */
+  const isCategoryLocked = (quiz) => {
+    if (!quiz.requiredRankId) return false;
+    const requiredRank = ranks.find(r => r.id === quiz.requiredRankId);
+    if (!requiredRank) return false;
+    return userScore < requiredRank.requiredScore;
+  };
+
+  const getRequiredRankName = (quiz) => {
+    if (!quiz.requiredRankId) return null;
+    return ranks.find(r => r.id === quiz.requiredRankId)?.name || null;
+  };
+
+  const handleStartQuiz = (quiz) => {
+    if (isCategoryLocked(quiz)) return;
     const params = new URLSearchParams();
-    params.append('category', categoryId);
+    params.append('category', quiz.name);
     if (selectedDifficulty !== 'kaikki') {
       params.append('difficulty', selectedDifficulty);
     }
@@ -73,51 +100,31 @@ function QuizBrowser() {
         {/* Header */}
         <div className="mb-8">
           <h2 className="text-4xl font-bold text-slate-50 mb-2">Valitse kategoria</h2>
-          <p className="text-slate-400">Taso: <span className="font-semibold text-slate-300">{userData?.rank || 'harjoittelija'}</span></p>
+          <p className="text-slate-400">
+            Taso: <span className="font-semibold text-slate-300">{userData?.rank || 'harjoittelija'}</span>
+            {' · '}Pisteet: <span className="font-semibold text-blue-400">{userScore}</span>
+          </p>
         </div>
 
         {/* Difficulty Filter */}
         <div className="mb-8 flex gap-2 flex-wrap">
-          <button
-            onClick={() => setSelectedDifficulty('kaikki')}
-            className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-              selectedDifficulty === 'kaikki'
-                ? 'bg-blue-600 text-white'
-                : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
-            }`}
-          >
-            Kaikki tasot
-          </button>
-          <button
-            onClick={() => setSelectedDifficulty('perustaso')}
-            className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-              selectedDifficulty === 'perustaso'
-                ? 'bg-green-600 text-white'
-                : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
-            }`}
-          >
-            Perustaso
-          </button>
-          <button
-            onClick={() => setSelectedDifficulty('keskitaso')}
-            className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-              selectedDifficulty === 'keskitaso'
-                ? 'bg-yellow-600 text-white'
-                : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
-            }`}
-          >
-            Keskitaso
-          </button>
-          <button
-            onClick={() => setSelectedDifficulty('edistynyt')}
-            className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-              selectedDifficulty === 'edistynyt'
-                ? 'bg-red-600 text-white'
-                : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
-            }`}
-          >
-            Edistynyt
-          </button>
+          {[
+            { key: 'kaikki', label: 'Kaikki tasot', active: 'bg-blue-600', inactive: 'bg-slate-800 text-slate-300 hover:bg-slate-700' },
+            { key: 'perustaso', label: 'Perustaso', active: 'bg-green-600', inactive: 'bg-slate-800 text-slate-300 hover:bg-slate-700' },
+            { key: 'keskitaso', label: 'Keskitaso', active: 'bg-yellow-600', inactive: 'bg-slate-800 text-slate-300 hover:bg-slate-700' },
+            { key: 'edistynyt', label: 'Edistynyt', active: 'bg-orange-600', inactive: 'bg-slate-800 text-slate-300 hover:bg-slate-700' },
+            { key: 'mestari', label: 'Mestari', active: 'bg-red-600', inactive: 'bg-slate-800 text-slate-300 hover:bg-slate-700' },
+          ].map(({ key, label, active, inactive }) => (
+            <button
+              key={key}
+              onClick={() => setSelectedDifficulty(key)}
+              className={`px-4 py-2 rounded-lg font-medium transition-colors text-white ${
+                selectedDifficulty === key ? active : inactive
+              }`}
+            >
+              {label}
+            </button>
+          ))}
         </div>
 
         {/* Loading State */}
@@ -147,19 +154,37 @@ function QuizBrowser() {
 
               if (filteredQuestions.length === 0) return null;
 
+              const locked = isCategoryLocked(quiz);
+              const requiredRankName = getRequiredRankName(quiz);
+
               return (
                 <div
                   key={quiz.id}
-                  className="bg-slate-900 border border-slate-800 rounded-lg p-6 hover:border-slate-700 transition-all cursor-pointer"
-                  onClick={() => handleStartQuiz(quiz.name)}
+                  className={`bg-slate-900 border rounded-lg p-6 transition-all ${
+                    locked
+                      ? 'border-slate-700 opacity-70 cursor-not-allowed'
+                      : 'border-slate-800 hover:border-slate-700 cursor-pointer'
+                  }`}
+                  onClick={() => !locked && handleStartQuiz(quiz)}
                 >
-                  {/* Category Icon */}
-                  <div className="mb-4 p-4 bg-gradient-to-br from-blue-600 to-purple-600 rounded-lg w-12 h-12 flex items-center justify-center text-white text-xl font-bold">
-                    {quiz.name.charAt(0).toUpperCase()}
+                  {/* Category Icon / Lock Icon */}
+                  <div className={`mb-4 p-4 rounded-lg w-12 h-12 flex items-center justify-center text-white text-xl font-bold ${
+                    locked
+                      ? 'bg-slate-700'
+                      : 'bg-gradient-to-br from-blue-600 to-purple-600'
+                  }`}>
+                    {locked ? '🔒' : quiz.name.charAt(0).toUpperCase()}
                   </div>
 
                   {/* Category Title */}
                   <h3 className="text-xl font-bold text-slate-50 mb-2">{quiz.name}</h3>
+
+                  {/* Lock notice */}
+                  {locked && requiredRankName && (
+                    <p className="text-sm text-amber-400 mb-2 flex items-center gap-1">
+                      <span>🔒</span> Vaatii tason: <span className="font-semibold">{requiredRankName}</span>
+                    </p>
+                  )}
 
                   {/* Stats */}
                   <div className="mb-4 space-y-1 text-sm text-slate-400">
@@ -169,10 +194,15 @@ function QuizBrowser() {
 
                   {/* Start Button */}
                   <button
-                    onClick={() => handleStartQuiz(quiz.name)}
-                    className="w-full mt-4 px-4 py-2 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white rounded-lg font-semibold transition-all"
+                    onClick={(e) => { e.stopPropagation(); handleStartQuiz(quiz); }}
+                    disabled={locked}
+                    className={`w-full mt-4 px-4 py-2 text-white rounded-lg font-semibold transition-all ${
+                      locked
+                        ? 'bg-slate-700 cursor-not-allowed text-slate-500'
+                        : 'bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800'
+                    }`}
                   >
-                    Aloita
+                    {locked ? 'Lukittu' : 'Aloita'}
                   </button>
                 </div>
               );
@@ -192,3 +222,4 @@ function QuizBrowser() {
 }
 
 export default QuizBrowser;
+
