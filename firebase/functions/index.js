@@ -7,9 +7,16 @@ admin.initializeApp();
 const vertexRegion = process.env.VERTEX_AI_LOCATION || 'us-central1';
 const vertexModel = process.env.VERTEX_AI_MODEL || 'gemini-2.5-flash';
 
-const buildPrompt = ({ rating, message }) => {
+const FEEDBACK_SCHEMA = {
+  sentiment: ['positive', 'neutral', 'negative'],
+  topics: 'array_of_strings',
+  priority: ['low', 'medium', 'high'],
+  summary: 'string',
+  action: 'string',
+};
+
+const buildSchemaPrompt = () => {
   return [
-    'Classify the feedback into JSON only.',
     'Schema: {',
     '  "sentiment": "positive" | "neutral" | "negative",',
     '  "topics": ["short_topic"],',
@@ -17,6 +24,25 @@ const buildPrompt = ({ rating, message }) => {
     '  "summary": "short_summary",',
     '  "action": "short_action_suggestion"',
     '}',
+  ].join('\n');
+};
+
+const validateAnalysis = (analysis) => {
+  if (!analysis || typeof analysis !== 'object') return false;
+  
+  if (!FEEDBACK_SCHEMA.sentiment.includes(analysis.sentiment)) return false;
+  if (!Array.isArray(analysis.topics)) return false;
+  if (!FEEDBACK_SCHEMA.priority.includes(analysis.priority)) return false;
+  if (typeof analysis.summary !== 'string') return false;
+  if (typeof analysis.action !== 'string') return false;
+  
+  return true;
+};
+
+const buildPrompt = ({ rating, message }) => {
+  return [
+    'Classify the feedback into JSON only.',
+    buildSchemaPrompt(),
     `Rating: ${rating ?? 'unknown'}`,
     `Feedback: """${message || ''}"""`,
   ].join('\n');
@@ -75,9 +101,14 @@ exports.classifyFeedback = onDocumentCreated('feedback/{feedbackId}', async (eve
 
     if (jsonString) {
       try {
-        analysis = JSON.parse(jsonString);
+        const parsed = JSON.parse(jsonString);
+        if (validateAnalysis(parsed)) {
+          analysis = parsed;
+        } else {
+          console.warn('AI response validation failed:', parsed);
+        }
       } catch (parseError) {
-        analysis = null;
+        console.error('JSON parse error:', parseError);
       }
     }
 
