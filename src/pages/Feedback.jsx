@@ -58,7 +58,7 @@ function Feedback() {
       setPublishNameApproved(false);
     } catch (submitError) {
       console.error('Feedback submit failed:', submitError);
-      setError('Palautteen lahetys epaonnistui.');
+      setError('Palautteen lähetys epäonnistui.');
     } finally {
       setLoading(false);
     }

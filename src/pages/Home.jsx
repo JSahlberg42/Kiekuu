@@ -215,7 +215,7 @@ function Home() {
                 onClick={() => setShowFeedbackPrompt(false)}
                 className="flex-1 px-4 py-3 bg-slate-800 hover:bg-slate-700 text-slate-50 rounded-xl font-semibold transition-colors"
               >
-                Ehka myohemmin
+                Ehkä myöhemmin
               </button>
               <Link
                 to="/feedback"
