@@ -74,29 +74,7 @@ export const signInWithGoogle = async () => {
   try {
     const provider = new GoogleAuthProvider();
     const userCredential = await signInWithPopup(auth, provider);
-    const user = userCredential.user;
-
-    // Check if user document exists, if not create it
-    const userDoc = await getDoc(doc(db, 'users', user.uid));
-    
-    if (!userDoc.exists()) {
-      await setDoc(doc(db, 'users', user.uid), {
-        uid: user.uid,
-        email: user.email,
-        displayName: user.displayName,
-        photoURL: user.photoURL,
-        role: 'user',
-        rank: 'harjoittelija',
-        createdAt: new Date().toISOString(),
-        progress: {
-          currentLevel: 'harjoittelija',
-          totalScore: 0,
-          questionsAnswered: 0,
-        },
-      });
-    }
-
-    return user;
+    return userCredential.user;
   } catch (error) {
     console.error('Google sign in error:', error);
     throw error;

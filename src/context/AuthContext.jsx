@@ -59,6 +59,9 @@ export const AuthProvider = ({ children }) => {
           try {
             const fallbackData = {
               uid: firebaseUser.uid,
+              email: firebaseUser.email || null,
+              displayName: firebaseUser.displayName || null,
+              photoURL: firebaseUser.photoURL || null,
               isAnonymous: firebaseUser.isAnonymous,
               role: 'user',
               rank: 'harjoittelija',
