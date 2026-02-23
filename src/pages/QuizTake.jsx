@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { getQuestionsByCategory, getQuestionsByCategoryId, submitAnswer } from '../services/quizService';
@@ -8,6 +8,7 @@ import logo from '../assets/images/Kiekuu_logo.jpg';
 
 function QuizTake() {
   const { user, userData } = useAuth();
+  const submittingRef = useRef(false);
   const [searchParams] = useSearchParams();
 
   const categoryId = searchParams.get('categoryId') || '';
@@ -107,11 +108,12 @@ function QuizTake() {
   }, 0);
 
   const handleSelectAnswer = async (answerIndex) => {
-    if (submitting || quizComplete || isAnswered) {
+    if (submitting || quizComplete || isAnswered || submittingRef.current) {
       return;
     }
 
     try {
+      submittingRef.current = true;
       setSubmitting(true);
       setSelectedAnswers(prev => ({
         ...prev,
@@ -171,6 +173,7 @@ function QuizTake() {
         return updated;
       });
     } finally {
+      submittingRef.current = false;
       setSubmitting(false);
     }
   };
