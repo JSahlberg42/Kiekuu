@@ -1,20 +1,31 @@
+import { Suspense, lazy } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import Landing from './pages/Landing';
 import Login from './pages/Login';
 import SignUp from './pages/SignUp';
-import Home from './pages/Home';
-import QuizBrowser from './pages/QuizBrowser';
-import QuizTake from './pages/QuizTake';
-import Progress from './pages/Progress';
-import AdminDashboard from './pages/AdminDashboard';
-import UserManagement from './pages/UserManagement';
-import CategoryManagement from './pages/CategoryManagement';
-import RankManagement from './pages/RankManagement';
-import QuestionManagement from './pages/QuestionManagement';
-import Statistics from './pages/Statistics';
-import PlatformConfiguration from './pages/PlatformConfiguration';
+const Home = lazy(() => import('./pages/Home'));
+const QuizBrowser = lazy(() => import('./pages/QuizBrowser'));
+const QuizTake = lazy(() => import('./pages/QuizTake'));
+const Progress = lazy(() => import('./pages/Progress'));
+
+const AdminDashboard = lazy(() => import('./pages/AdminDashboard'));
+const UserManagement = lazy(() => import('./pages/UserManagement'));
+const CategoryManagement = lazy(() => import('./pages/CategoryManagement'));
+const RankManagement = lazy(() => import('./pages/RankManagement'));
+const QuestionManagement = lazy(() => import('./pages/QuestionManagement'));
+const Statistics = lazy(() => import('./pages/Statistics'));
+const PlatformConfiguration = lazy(() => import('./pages/PlatformConfiguration'));
+
+const routeFallback = (
+  <div className="min-h-screen bg-slate-950 flex items-center justify-center" role="status" aria-live="polite">
+    <div className="text-center">
+      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500 mx-auto" aria-hidden="true"></div>
+      <p className="mt-4 text-sm sm:text-base text-slate-400">Ladataan...</p>
+    </div>
+  </div>
+);
 
 function App() {
   return (
@@ -28,7 +39,9 @@ function App() {
             path="/"
             element={
               <ProtectedRoute>
-                <Home />
+                <Suspense fallback={routeFallback}>
+                  <Home />
+                </Suspense>
               </ProtectedRoute>
             }
           />
@@ -36,7 +49,9 @@ function App() {
             path="/quiz"
             element={
               <ProtectedRoute>
-                <QuizBrowser />
+                <Suspense fallback={routeFallback}>
+                  <QuizBrowser />
+                </Suspense>
               </ProtectedRoute>
             }
           />
@@ -44,7 +59,9 @@ function App() {
             path="/quiz/take"
             element={
               <ProtectedRoute>
-                <QuizTake />
+                <Suspense fallback={routeFallback}>
+                  <QuizTake />
+                </Suspense>
               </ProtectedRoute>
             }
           />
@@ -52,7 +69,9 @@ function App() {
             path="/progress"
             element={
               <ProtectedRoute>
-                <Progress />
+                <Suspense fallback={routeFallback}>
+                  <Progress />
+                </Suspense>
               </ProtectedRoute>
             }
           />
@@ -60,7 +79,9 @@ function App() {
             path="/admin"
             element={
               <ProtectedRoute adminOnly>
-                <AdminDashboard />
+                <Suspense fallback={routeFallback}>
+                  <AdminDashboard />
+                </Suspense>
               </ProtectedRoute>
             }
           />
@@ -68,7 +89,9 @@ function App() {
             path="/admin/users"
             element={
               <ProtectedRoute adminOnly>
-                <UserManagement />
+                <Suspense fallback={routeFallback}>
+                  <UserManagement />
+                </Suspense>
               </ProtectedRoute>
             }
           />
@@ -76,7 +99,9 @@ function App() {
             path="/admin/categories"
             element={
               <ProtectedRoute adminOnly>
-                <CategoryManagement />
+                <Suspense fallback={routeFallback}>
+                  <CategoryManagement />
+                </Suspense>
               </ProtectedRoute>
             }
           />
@@ -84,7 +109,9 @@ function App() {
             path="/admin/ranks"
             element={
               <ProtectedRoute adminOnly>
-                <RankManagement />
+                <Suspense fallback={routeFallback}>
+                  <RankManagement />
+                </Suspense>
               </ProtectedRoute>
             }
           />
@@ -92,7 +119,9 @@ function App() {
             path="/admin/questions"
             element={
               <ProtectedRoute adminOnly>
-                <QuestionManagement />
+                <Suspense fallback={routeFallback}>
+                  <QuestionManagement />
+                </Suspense>
               </ProtectedRoute>
             }
           />
@@ -100,7 +129,9 @@ function App() {
             path="/admin/statistics"
             element={
               <ProtectedRoute adminOnly>
-                <Statistics />
+                <Suspense fallback={routeFallback}>
+                  <Statistics />
+                </Suspense>
               </ProtectedRoute>
             }
           />
@@ -108,7 +139,9 @@ function App() {
             path="/admin/settings"
             element={
               <ProtectedRoute adminOnly>
-                <PlatformConfiguration />
+                <Suspense fallback={routeFallback}>
+                  <PlatformConfiguration />
+                </Suspense>
               </ProtectedRoute>
             }
           />
