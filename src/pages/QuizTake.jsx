@@ -6,6 +6,9 @@ import { isFirestoreOfflineError, logFirestoreErrorContext } from '../utils/fire
 import { getRandomizedQuestions, calculatePoints, DEFAULT_DIFFICULTY_POINTS, DEFAULT_DIFFICULTY_PENALTIES } from '../services/gamificationService';
 import logo from '../assets/images/Kiekuu_logo.jpg';
 
+// Animation duration for correct answer flash (matches animate-pulse duration)
+const FLASH_ANIMATION_DURATION_MS = 200;
+
 function QuizTake() {
   const { user, userData } = useAuth();
   const submittingRef = useRef(false);
@@ -148,7 +151,7 @@ function QuizTake() {
       setTotalPoints(prev => prev + delta);
 
       if (isCorrect) {
-        await new Promise(resolve => setTimeout(resolve, 200));
+        await new Promise(resolve => setTimeout(resolve, FLASH_ANIMATION_DURATION_MS));
         setFlashAnswerIndex(null);
       }
 
