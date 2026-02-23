@@ -135,14 +135,14 @@ function Feedback() {
                     key={value}
                     type="button"
                     onClick={() => setRating(value)}
-                    className={`w-12 h-12 rounded-lg border text-lg font-semibold transition-colors ${
+                    className={`w-12 h-12 rounded-lg border text-2xl transition-colors ${
                       rating >= value
-                        ? 'bg-amber-400/20 border-amber-400 text-amber-300'
-                        : 'bg-slate-950 border-slate-800 text-slate-500 hover:border-slate-600'
+                        ? 'bg-amber-400/20 border-amber-400 text-amber-400'
+                        : 'bg-slate-950 border-slate-800 text-slate-600 hover:border-slate-600 hover:text-slate-500'
                     }`}
                     aria-label={`Valitse ${value} tahti`}
                   >
-                    {value}
+                    ★
                   </button>
                 ))}
               </div>
