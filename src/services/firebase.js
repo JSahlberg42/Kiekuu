@@ -2,6 +2,7 @@ import { initializeApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
 import { initializeFirestore, memoryLocalCache } from 'firebase/firestore';
 import { initializeAppCheck, ReCaptchaEnterpriseProvider, getToken } from 'firebase/app-check';
+import { getAnalytics, isSupported as isAnalyticsSupported } from 'firebase/analytics';
 
 const normalizeEnv = (value) => (typeof value === 'string' ? value.trim() : value);
 
@@ -12,6 +13,7 @@ const firebaseConfig = {
   storageBucket: normalizeEnv(import.meta.env.VITE_FIREBASE_STORAGE_BUCKET),
   messagingSenderId: normalizeEnv(import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID),
   appId: normalizeEnv(import.meta.env.VITE_FIREBASE_APP_ID),
+  measurementId: normalizeEnv(import.meta.env.VITE_FIREBASE_MEASUREMENT_ID),
 };
 
 const isDiagnosticsEnabled = () => {
@@ -88,6 +90,16 @@ export const appCheckStatus = {
   hasRecaptchaKey: Boolean(recaptchaKey),
   usingDebugToken: Boolean(import.meta.env.DEV),
 };
+
+// Initialize Firebase Analytics (only where supported, e.g. not in SSR/Node)
+export let analytics = null;
+isAnalyticsSupported().then((supported) => {
+  if (supported && firebaseConfig.measurementId) {
+    analytics = getAnalytics(app);
+  }
+}).catch(() => {
+  // Analytics not supported in this environment — silently skip
+});
 
 // Debug utility for checking App Check token in development
 export async function debugAppCheckToken() {

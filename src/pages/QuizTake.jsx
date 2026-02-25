@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { getQuestionsByCategory, getQuestionsByCategoryId, submitAnswer } from '../services/quizService';
 import { isFirestoreOfflineError, logFirestoreErrorContext } from '../utils/firestoreDiagnostics';
 import { getRandomizedQuestions, calculatePoints, DEFAULT_DIFFICULTY_POINTS, DEFAULT_DIFFICULTY_PENALTIES } from '../services/gamificationService';
+import { logAnswerSubmitted, logQuizCompleted } from '../services/analyticsService';
 import logo from '../assets/images/Kiekuu_logo.jpg';
 
 // Animation duration for correct answer flash (matches animate-pulse duration)
@@ -145,6 +146,8 @@ function QuizTake() {
         }
       );
 
+      logAnswerSubmitted(categoryName || categoryId, qDifficulty, isCorrect);
+
       // Calculate the point delta for feedback display
       const delta = calculatePoints(qDifficulty, isCorrect);
       setLastPointDelta(delta);
@@ -159,6 +162,19 @@ function QuizTake() {
       if (currentQuestionIndex < questions.length - 1) {
         setCurrentQuestionIndex(currentQuestionIndex + 1);
       } else {
+        const totalTime = Math.round((Date.now() - startTime) / 1000);
+        const newCorrectAnswers = Object.entries({ ...selectedAnswers, [currentQuestionIndex]: answerIndex }).reduce(
+          (count, [idx, aIdx]) => count + (questions[parseInt(idx)]?.correctAnswerIndex === aIdx ? 1 : 0),
+          0
+        );
+        logQuizCompleted(
+          categoryName || categoryId,
+          difficulty,
+          totalPoints + calculatePoints(qDifficulty, isCorrect),
+          newCorrectAnswers,
+          questions.length,
+          totalTime
+        );
         setQuizComplete(true);
       }
     } catch (err) {
