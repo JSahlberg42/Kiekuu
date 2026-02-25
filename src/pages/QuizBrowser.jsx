@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { getAvailableQuizzes } from '../services/quizService';
 import { getAllRanks } from '../services/rankService';
+import { logQuizStarted } from '../services/analyticsService';
 import logo from '../assets/images/Kiekuu_logo.jpg';
 
 function QuizBrowser() {
@@ -56,6 +57,7 @@ function QuizBrowser() {
 
   const handleStartQuiz = (quiz) => {
     if (isCategoryLocked(quiz)) return;
+    logQuizStarted(quiz.id, quiz.name, selectedDifficulty !== 'kaikki' ? selectedDifficulty : null);
     const params = new URLSearchParams();
     params.append('categoryId', quiz.id);
     params.append('category', quiz.name);

@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { signUp, signInWithGoogle } from '../services/authService';import logo from '../assets/images/Kiekuu_logo.jpg';
+import { signUp, signInWithGoogle } from '../services/authService';
+import { logSignUp } from '../services/analyticsService';
+import logo from '../assets/images/Kiekuu_logo.jpg';
 function SignUp() {
   const [formData, setFormData] = useState({
     displayName: '',
@@ -38,6 +40,7 @@ function SignUp() {
 
     try {
       await signUp(formData.email, formData.password, formData.displayName);
+      logSignUp('email');
       navigate('/');
     } catch (err) {
       setError(getErrorMessage(err.code));
@@ -52,6 +55,7 @@ function SignUp() {
 
     try {
       await signInWithGoogle();
+      logSignUp('google');
       navigate('/');
     } catch (err) {
       if (err.code === 'auth/popup-closed-by-user') {
