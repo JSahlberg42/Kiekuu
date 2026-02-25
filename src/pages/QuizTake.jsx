@@ -131,8 +131,9 @@ function QuizTake() {
         setFlashAnswerIndex(answerIndex);
       }
 
-      // Submit answer to database (difficulty-based points, negative for wrong)
-      await submitAnswer(
+      // Submit answer to database in the background (non-blocking so the quiz
+      // always advances regardless of network conditions)
+      submitAnswer(
         user.uid,
         currentQuestion.id,
         answerIndex,
@@ -144,7 +145,10 @@ function QuizTake() {
           categoryName: categoryName || currentQuestion.categoryName || currentQuestion.categoryId || null,
           currentProgress: userData?.progress || null,
         }
-      );
+      ).catch(err => {
+        logFirestoreErrorContext('submitAnswer', err);
+        console.error('Error submitting answer:', err);
+      });
 
       logAnswerSubmitted(categoryName || categoryId, qDifficulty, isCorrect);
 
@@ -153,8 +157,9 @@ function QuizTake() {
       setLastPointDelta(delta);
       setTotalPoints(prev => prev + delta);
 
+      // Brief pause to display correct/incorrect feedback before advancing
+      await new Promise(resolve => setTimeout(resolve, FLASH_ANIMATION_DURATION_MS));
       if (isCorrect) {
-        await new Promise(resolve => setTimeout(resolve, FLASH_ANIMATION_DURATION_MS));
         setFlashAnswerIndex(null);
       }
 
@@ -170,7 +175,7 @@ function QuizTake() {
         logQuizCompleted(
           categoryName || categoryId,
           difficulty,
-          totalPoints + calculatePoints(qDifficulty, isCorrect),
+          totalPoints + delta,
           newCorrectAnswers,
           questions.length,
           totalTime
@@ -178,13 +183,8 @@ function QuizTake() {
         setQuizComplete(true);
       }
     } catch (err) {
-      logFirestoreErrorContext('submitAnswer', err);
-      console.error('Error submitting answer:', err);
-      alert(
-        isFirestoreOfflineError(err)
-          ? 'Yhteysongelma. Tarkista verkkoyhteys ja yritä uudelleen.'
-          : 'Vastauksen lähettäminen epäonnistui'
-      );
+      logFirestoreErrorContext('handleSelectAnswer', err);
+      console.error('Error handling answer selection:', err);
       setFlashAnswerIndex(null);
       setSelectedAnswers(prev => {
         const updated = { ...prev };
