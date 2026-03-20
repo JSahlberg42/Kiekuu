@@ -14,7 +14,7 @@ Sovellus pyrkii noudattamaan  **Pelastusopiston sopimushenkilöstön opetussuunn
 - **Frontend:** React + Vite (JavaScript)
 - **Tyylittely:** Tailwind CSS + shadcn/ui (Mobile-First approach)
 - **Backend:** Firebase (Auth, Firestore, Cloud Functions)
-- **AI-moottori:** Vertex AI for Firebase (Gemini 1.5 Flash)
+- **AI-moottori:** Vertex AI for Firebase (Gemini 3 Flash)
 - **Design Philosophy:** Mobile-first responsive design for optimal UX on all devices
 
 ---
