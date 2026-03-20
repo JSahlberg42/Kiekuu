@@ -3,12 +3,25 @@ import { db } from './firebase';
 import { calculatePoints, checkAndUpdateUserRank, getPlatformConfig } from './gamificationService';
 import { logFirestoreErrorContext } from '../utils/firestoreDiagnostics';
 
+// Simple in-memory cache for available quizzes
+let quizCache = {
+  data: null,
+  timestamp: 0
+};
+const CACHE_DURATION_MS = 5 * 60 * 1000; // 5 minutes
+
 /**
  * Get all available quizzes/questions for a user
  * @returns {Promise<Array>} Array of quiz cards with metadata
  */
 export const getAvailableQuizzes = async () => {
   try {
+    // Check cache validity
+    const now = Date.now();
+    if (quizCache.data && (now - quizCache.timestamp < CACHE_DURATION_MS)) {
+      return quizCache.data;
+    }
+
     // Fetch all questions and categories
     const [questionsSnapshot, categoriesSnapshot] = await Promise.all([
       getDocs(collection(db, 'questions')),
@@ -59,6 +72,12 @@ export const getAvailableQuizzes = async () => {
       cat.difficulties = Array.from(cat.difficulties);
       quizzes.push(cat);
     });
+    
+    // Update cache
+    quizCache = {
+      data: quizzes,
+      timestamp: Date.now()
+    };
     
     return quizzes;
   } catch (error) {

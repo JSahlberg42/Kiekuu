@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { getAvailableQuizzes } from '../services/quizService';
 import { getAllRanks } from '../services/rankService';
@@ -7,6 +7,7 @@ import logo from '../assets/images/Kiekuu_logo.jpg';
 
 function QuizBrowser() {
   const { userData } = useAuth();
+  const navigate = useNavigate();
   const [quizzes, setQuizzes] = useState([]);
   const [ranks, setRanks] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -62,7 +63,7 @@ function QuizBrowser() {
     if (selectedDifficulty !== 'kaikki') {
       params.append('difficulty', selectedDifficulty);
     }
-    window.location.href = `/quiz/take?${params.toString()}`;
+    navigate(`/quiz/take?${params.toString()}`);
   };
 
   return (
