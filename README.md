@@ -17,6 +17,13 @@ Sovellus pyrkii noudattamaan  **Pelastusopiston sopimushenkilöstön opetussuunn
 - **AI-moottori:** Vertex AI for Firebase (Gemini 1.5 Flash)
 - **Design Philosophy:** Mobile-first responsive design for optimal UX on all devices
 
+---
+
+## 🏗️ Development
+For detailed instructions on how to set up your development environment and follow project guidelines, please refer to the **[DEVELOPMENT.md](./DEVELOPMENT.md)** file.
+
+---
+
 ## 📈 Tasojärjestelmä (Arvot)
 1. **Harjoittelija:** Palokuntatoiminnan perusteet, työturvallisuus ja yksikkötunnusten perusteet.
 2. **Nuorempi sammutusmies:** Pelastustoiminnan peruskurssin alkuosa ja perustaidot.
