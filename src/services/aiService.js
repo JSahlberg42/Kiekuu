@@ -185,7 +185,7 @@ export const fetchContentFromUrl = async (url) => {
     throw lastError;
   } catch (error) {
     console.error('Error fetching URL content:', error);
-    throw new Error('URL-haku epäonnistui. CORS-rajoitusten vuoksi URL-haku ei toimi kaikilla sivustoilla. Kopioi sisältö manuaalisesti "Teksti"-välilehdellä.');
+    throw new Error('URL-haku epäonnistui. CORS-rajoitusten vuoksi URL-haku ei toimi kaikilla sivustoilla. Kopioi sisältö manuaalisesti "Teksti"-välilehdellä.', { cause: error });
   }
 };
 
@@ -212,8 +212,8 @@ export const readFileContent = async (file) => {
             mimeType: 'application/pdf',
             data: base64
           });
-        } catch (error) {
-          reject(new Error('Virhe PDF-tiedoston lukemisessa'));
+        } catch (err) {
+          reject(new Error('Virhe PDF-tiedoston lukemisessa', { cause: err }));
         }
       };
       
@@ -229,8 +229,8 @@ export const readFileContent = async (file) => {
           const text = e.target.result;
           // Limit to reasonable length
           resolve(text.substring(0, 50000));
-        } catch (error) {
-          reject(new Error('Virhe tiedoston lukemisessa'));
+        } catch (err) {
+          reject(new Error('Virhe tiedoston lukemisessa', { cause: err }));
         }
       };
       

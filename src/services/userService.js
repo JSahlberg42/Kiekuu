@@ -1,6 +1,5 @@
 import { collection, getDocs, doc, updateDoc, deleteDoc, query, where, getDoc } from 'firebase/firestore';
 import { db } from './firebase';
-import { getAuth, deleteUser as deleteAuthUser } from 'firebase/auth';
 
 /**
  * Fetch all users from Firestore
