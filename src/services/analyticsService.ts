@@ -5,11 +5,8 @@ import { analytics } from './firebase';
  * Safely log a Firebase Analytics event.
  * If analytics is not initialized (e.g. missing measurementId or unsupported
  * environment) the call is silently ignored so the rest of the app keeps working.
- *
- * @param {string} eventName - Firebase Analytics event name
- * @param {object} [params]  - Optional event parameters
  */
-function log(eventName, params) {
+function log(eventName: string, params?: Record<string, unknown>): void {
   if (!analytics) return;
   try {
     logEvent(analytics, eventName, params);
@@ -21,24 +18,19 @@ function log(eventName, params) {
 // ─── Authentication events ────────────────────────────────────────────────────
 
 /** Called after a successful login. */
-export function logLogin(method) {
+export function logLogin(method: string): void {
   log('login', { method });
 }
 
 /** Called after a successful account creation. */
-export function logSignUp(method) {
+export function logSignUp(method: string): void {
   log('sign_up', { method });
 }
 
 // ─── Quiz events ──────────────────────────────────────────────────────────────
 
-/**
- * Called when the user starts a quiz session.
- * @param {string} categoryId   - Category identifier
- * @param {string} categoryName - Human-readable category name
- * @param {string|null} difficulty - Selected difficulty filter, or null for all
- */
-export function logQuizStarted(categoryId, categoryName, difficulty) {
+/** Called when the user starts a quiz session. */
+export function logQuizStarted(categoryId: string, categoryName: string, difficulty: string | null): void {
   log('quiz_started', {
     category_id: categoryId,
     category_name: categoryName,
@@ -46,13 +38,8 @@ export function logQuizStarted(categoryId, categoryName, difficulty) {
   });
 }
 
-/**
- * Called when the user submits an answer.
- * @param {string} categoryName - Human-readable category name
- * @param {string} difficulty   - Question difficulty level
- * @param {boolean} isCorrect   - Whether the answer was correct
- */
-export function logAnswerSubmitted(categoryName, difficulty, isCorrect) {
+/** Called when the user submits an answer. */
+export function logAnswerSubmitted(categoryName: string, difficulty: string, isCorrect: boolean): void {
   log('answer_submitted', {
     category_name: categoryName,
     difficulty,
@@ -60,16 +47,15 @@ export function logAnswerSubmitted(categoryName, difficulty, isCorrect) {
   });
 }
 
-/**
- * Called when the user completes a quiz.
- * @param {string} categoryName    - Human-readable category name
- * @param {string|null} difficulty - Difficulty filter used
- * @param {number} score           - Total points earned in this session
- * @param {number} correctAnswers  - Number of correct answers
- * @param {number} totalQuestions  - Total number of questions
- * @param {number} timeSeconds     - Time taken in seconds
- */
-export function logQuizCompleted(categoryName, difficulty, score, correctAnswers, totalQuestions, timeSeconds) {
+/** Called when the user completes a quiz. */
+export function logQuizCompleted(
+  categoryName: string,
+  difficulty: string | null,
+  score: number,
+  correctAnswers: number,
+  totalQuestions: number,
+  timeSeconds: number,
+): void {
   log('quiz_completed', {
     category_name: categoryName,
     difficulty: difficulty || 'kaikki',
