@@ -7,7 +7,6 @@ import { Navigate } from 'react-router-dom';
 function UserManagement() {
   const { userData, loading: authLoading } = useAuth();
   const [users, setUsers] = useState([]);
-  const [filteredUsers, setFilteredUsers] = useState([]);
   const [searchEmail, setSearchEmail] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -16,30 +15,11 @@ function UserManagement() {
   const [viewingProgressUser, setViewingProgressUser] = useState(null);
   const [actionLoading, setActionLoading] = useState(false);
 
-  useEffect(() => {
-    if (!authLoading && userData?.role === 'admin') {
-      fetchUsers();
-    }
-  }, [authLoading, userData]);
-
-  useEffect(() => {
-    if (searchEmail.trim() === '') {
-      setFilteredUsers(users);
-    } else {
-      const filtered = users.filter(user =>
-        user.email?.toLowerCase().includes(searchEmail.toLowerCase())
-      );
-      setFilteredUsers(filtered);
-    }
-  }, [searchEmail, users]);
-
   const fetchUsers = async () => {
     try {
-      setLoading(true);
-      setError('');
       const fetchedUsers = await getAllUsers();
       setUsers(fetchedUsers);
-      setFilteredUsers(fetchedUsers);
+      setError('');
     } catch (err) {
       setError('Virhe käyttäjien hakemisessa');
       console.error(err);
@@ -47,6 +27,35 @@ function UserManagement() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (authLoading || userData?.role !== 'admin') return;
+    let cancelled = false;
+    getAllUsers()
+      .then((fetchedUsers) => {
+        if (cancelled) return;
+        setUsers(fetchedUsers);
+        setError('');
+      })
+      .catch((err) => {
+        if (cancelled) return;
+        setError('Virhe käyttäjien hakemisessa');
+        console.error(err);
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [authLoading, userData]);
+
+  const normalizedSearchEmail = searchEmail.trim().toLowerCase();
+  const filteredUsers = normalizedSearchEmail === ''
+    ? users
+    : users.filter(user =>
+        user.email?.toLowerCase().includes(normalizedSearchEmail)
+      );
 
   const handleEditUser = async (userId, updates) => {
     try {

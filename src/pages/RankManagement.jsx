@@ -14,15 +14,8 @@ function RankManagement() {
   const [deletingRank, setDeletingRank] = useState(null);
   const [actionLoading, setActionLoading] = useState(false);
 
-  useEffect(() => {
-    if (!authLoading && userData?.role === 'admin') {
-      fetchRanks();
-    }
-  }, [authLoading, userData]);
-
   const fetchRanks = async () => {
     try {
-      setLoading(true);
       setError('');
       const fetchedRanks = await getAllRanks();
       setRanks(fetchedRanks);
@@ -33,6 +26,27 @@ function RankManagement() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (authLoading || userData?.role !== 'admin') return;
+    let cancelled = false;
+    getAllRanks()
+      .then((fetchedRanks) => {
+        if (cancelled) return;
+        setRanks(fetchedRanks);
+      })
+      .catch((err) => {
+        if (cancelled) return;
+        setError('Virhe arvojen hakemisessa');
+        console.error(err);
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [authLoading, userData]);
 
   const handleCreateRank = async (rankData) => {
     try {

@@ -17,28 +17,26 @@ function CategoryManagement() {
   const [actionLoading, setActionLoading] = useState(false);
 
   useEffect(() => {
-    if (!authLoading && userData?.role === 'admin') {
-      fetchData();
-    }
+    if (authLoading || userData?.role !== 'admin') return;
+    let cancelled = false;
+    Promise.all([getAllCategories(), getAllRanks()])
+      .then(([fetchedCategories, fetchedRanks]) => {
+        if (cancelled) return;
+        setCategories(fetchedCategories);
+        setRanks(fetchedRanks);
+      })
+      .catch((err) => {
+        if (cancelled) return;
+        setError('Virhe tietojen hakemisessa');
+        console.error(err);
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [authLoading, userData]);
-
-  const fetchData = async () => {
-    try {
-      setLoading(true);
-      setError('');
-      const [fetchedCategories, fetchedRanks] = await Promise.all([
-        getAllCategories(),
-        getAllRanks()
-      ]);
-      setCategories(fetchedCategories);
-      setRanks(fetchedRanks);
-    } catch (err) {
-      setError('Virhe tietojen hakemisessa');
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const fetchCategories = async () => {
     try {
