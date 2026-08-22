@@ -244,7 +244,7 @@ exports.submitQuizAnswer = onCall({ enforceAppCheck: true }, async (request) => 
           earned = rank;
         }
       }
-      if (earned && userData.rankId !== earned.id) {
+      if (earned && (userData.rankId !== earned.id || userData.rank !== earned.name)) {
         await db.collection('users').doc(uid).update({
           rank: earned.name,
           rankId: earned.id,
