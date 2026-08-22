@@ -1,13 +1,22 @@
-import { createContext, useContext, useEffect, useState } from 'react';
-import PropTypes from 'prop-types';
-import { onAuthStateChanged } from 'firebase/auth';
+import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
+import { onAuthStateChanged, type User } from 'firebase/auth';
 import { doc, setDoc } from 'firebase/firestore';
 import { auth, db } from '../services/firebase';
 import { getUserData } from '../services/authService';
+import type { UserDoc } from '../types/models';
 
-const AuthContext = createContext({});
+export interface AuthContextValue {
+  user: User | null;
+  userData: UserDoc | null;
+  loading: boolean;
+  userDataLoading: boolean;
+  isAuthenticated: boolean;
+  isAdmin: boolean;
+}
 
-export const useAuth = () => {
+const AuthContext = createContext<AuthContextValue | undefined>(undefined);
+
+export const useAuth = (): AuthContextValue => {
   const context = useContext(AuthContext);
   if (!context) {
     throw new Error('useAuth must be used within AuthProvider');
@@ -15,9 +24,13 @@ export const useAuth = () => {
   return context;
 };
 
-export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(null);
-  const [userData, setUserData] = useState(null);
+interface AuthProviderProps {
+  children: ReactNode;
+}
+
+export const AuthProvider = ({ children }: AuthProviderProps) => {
+  const [user, setUser] = useState<User | null>(null);
+  const [userData, setUserData] = useState<UserDoc | null>(null);
   const [loading, setLoading] = useState(true);
   const [userDataLoading, setUserDataLoading] = useState(false);
 
@@ -33,9 +46,9 @@ export const AuthProvider = ({ children }) => {
         let retries = 0;
         const maxRetries = 4;
         const retryDelays = [100, 200, 300, 400]; // Fast delays: total ~1 second max
-        let data = null;
+        let data: UserDoc | null = null;
         let isOffline = false;
-        
+
         while (retries < maxRetries) {
           try {
             data = await getUserData(firebaseUser.uid);
@@ -43,10 +56,10 @@ export const AuthProvider = ({ children }) => {
               setUserData(data);
               break;
             }
-            
+
             // Document not found, wait before retry
             if (retries < maxRetries - 1) {
-              await new Promise(resolve => setTimeout(resolve, retryDelays[retries]));
+              await new Promise((resolve) => setTimeout(resolve, retryDelays[retries]));
             }
           } catch (error) {
             // Network/offline error — no point retrying, stop immediately
@@ -54,15 +67,15 @@ export const AuthProvider = ({ children }) => {
             isOffline = true;
             break;
           }
-          
+
           retries++;
         }
-        
+
         // If still no data after retries, create document as fallback
         // Skip the Firestore write when offline to avoid cascading errors
         if (!data && !isOffline) {
           try {
-            const fallbackData = {
+            const fallbackData: UserDoc = {
               uid: firebaseUser.uid,
               email: firebaseUser.email || null,
               displayName: firebaseUser.displayName || null,
@@ -95,7 +108,7 @@ export const AuthProvider = ({ children }) => {
     return unsubscribe;
   }, []);
 
-  const value = {
+  const value: AuthContextValue = {
     user,
     userData,
     loading,
@@ -109,10 +122,6 @@ export const AuthProvider = ({ children }) => {
       {children}
     </AuthContext.Provider>
   );
-};
-
-AuthProvider.propTypes = {
-  children: PropTypes.node.isRequired,
 };
 
 export default AuthContext;
