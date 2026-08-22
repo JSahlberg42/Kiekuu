@@ -10,7 +10,6 @@ function QuestionManagement() {
   const { user, userData, loading: authLoading } = useAuth();
   const [questions, setQuestions] = useState([]);
   const [categories, setCategories] = useState([]);
-  const [filteredQuestions, setFilteredQuestions] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [sortOption, setSortOption] = useState('newest');
@@ -23,42 +22,58 @@ function QuestionManagement() {
   const [actionLoading, setActionLoading] = useState(false);
 
   useEffect(() => {
-    if (!authLoading && userData?.role === 'admin') {
-      fetchData();
-    }
+    if (authLoading || userData?.role !== 'admin') return;
+    let cancelled = false;
+    Promise.all([getAllQuestions(), getAllCategories()])
+      .then(([fetchedQuestions, fetchedCategories]) => {
+        if (cancelled) return;
+        setQuestions(fetchedQuestions);
+        setCategories(fetchedCategories);
+        setError('');
+      })
+      .catch((err) => {
+        if (cancelled) return;
+        setError('Virhe tietojen hakemisessa');
+        console.error(err);
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [authLoading, userData]);
 
-  useEffect(() => {
-    const normalizedQuery = searchQuery.trim().toLowerCase();
-    const categoryMap = categories.reduce((acc, category) => {
-      acc[category.id] = category.name || '';
-      return acc;
-    }, {});
+  const normalizedQuery = searchQuery.trim().toLowerCase();
+  const categoryMap = categories.reduce((acc, category) => {
+    acc[category.id] = category.name || '';
+    return acc;
+  }, {});
 
-    const matchesSearch = (question) => {
-      if (!normalizedQuery) return true;
+  const matchesSearch = (question) => {
+    if (!normalizedQuery) return true;
 
-      const categoryName = categoryMap[question.categoryId] || '';
-      const createdByName = question.createdBy?.displayName || '';
-      const createdByEmail = question.createdBy?.email || '';
-      const optionsText = (question.options || []).join(' ');
+    const categoryName = categoryMap[question.categoryId] || '';
+    const createdByName = question.createdBy?.displayName || '';
+    const createdByEmail = question.createdBy?.email || '';
+    const optionsText = (question.options || []).join(' ');
 
-      const haystack = [
-        question.question,
-        optionsText,
-        question.explanation,
-        categoryName,
-        createdByName,
-        createdByEmail,
-      ]
-        .filter(Boolean)
-        .join(' ')
-        .toLowerCase();
+    const haystack = [
+      question.question,
+      optionsText,
+      question.explanation,
+      categoryName,
+      createdByName,
+      createdByEmail,
+    ]
+      .filter(Boolean)
+      .join(' ')
+      .toLowerCase();
 
-      return haystack.includes(normalizedQuery);
-    };
+    return haystack.includes(normalizedQuery);
+  };
 
-    const sortQuestions = (list) => {
+  const sortQuestions = (list) => {
       switch (sortOption) {
         case 'oldest':
           return [...list].sort((a, b) => new Date(a.createdAt || 0) - new Date(b.createdAt || 0));
@@ -82,35 +97,15 @@ function QuestionManagement() {
         default:
           return [...list].sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
       }
-    };
+};
 
-    const filtered = questions
-      .filter(q => selectedCategory === 'all' || q.categoryId === selectedCategory)
-      .filter(matchesSearch);
+const filteredQuestions = sortQuestions(
+  questions
+    .filter(q => selectedCategory === 'all' || q.categoryId === selectedCategory)
+    .filter(matchesSearch)
+);
 
-    setFilteredQuestions(sortQuestions(filtered));
-  }, [selectedCategory, questions, categories, searchQuery, sortOption]);
-
-  const fetchData = async () => {
-    try {
-      setLoading(true);
-      setError('');
-      const [fetchedQuestions, fetchedCategories] = await Promise.all([
-        getAllQuestions(),
-        getAllCategories()
-      ]);
-      setQuestions(fetchedQuestions);
-      setCategories(fetchedCategories);
-      setFilteredQuestions(fetchedQuestions);
-    } catch (err) {
-      setError('Virhe tietojen hakemisessa');
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const fetchQuestions = async () => {
+const fetchQuestions = async () => {
     try {
       setError('');
       const fetchedQuestions = await getAllQuestions();

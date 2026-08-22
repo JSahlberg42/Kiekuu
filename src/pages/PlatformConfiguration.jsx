@@ -39,29 +39,28 @@ function PlatformConfiguration() {
   const [success, setSuccess] = useState('');
 
   useEffect(() => {
-    if (!authLoading && userData?.role === 'admin') {
-      fetchConfiguration();
-    }
+    if (authLoading || userData?.role !== 'admin') return;
+    let cancelled = false;
+    const configRef = doc(db, 'config', 'platform');
+    getDoc(configRef)
+      .then((configDoc) => {
+        if (cancelled) return;
+        if (configDoc.exists()) {
+          setConfig((prev) => ({ ...prev, ...configDoc.data() }));
+        }
+      })
+      .catch((err) => {
+        if (cancelled) return;
+        setError('Virhe asetusten hakemisessa');
+        console.error(err);
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [authLoading, userData]);
-
-  const fetchConfiguration = async () => {
-    try {
-      setLoading(true);
-      setError('');
-      
-      const configRef = doc(db, 'config', 'platform');
-      const configDoc = await getDoc(configRef);
-      
-      if (configDoc.exists()) {
-        setConfig({ ...config, ...configDoc.data() });
-      }
-    } catch (err) {
-      setError('Virhe asetusten hakemisessa');
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleSave = async (e) => {
     e.preventDefault();

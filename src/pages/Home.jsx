@@ -5,24 +5,20 @@ import { logOut } from '../services/authService';
 import LinkAccountModal from '../components/LinkAccountModal';import logo from '../assets/images/Kiekuu_logo.jpg';
 function Home() {
   const { user, userData } = useAuth();
-  const [showLinkModal, setShowLinkModal] = useState(false);
+  const [linkModalDismissed, setLinkModalDismissed] = useState(false);
   const [showFeedbackPrompt, setShowFeedbackPrompt] = useState(false);
 
-  console.log('Home component rendering:', { 
-    user: user ? `${user.uid} (anonymous: ${user.isAnonymous})` : 'null', 
-    userData: userData ? `role: ${userData.role}, rank: ${userData.rank}` : 'null' 
+  console.log('Home component rendering:', {
+    user: user ? `${user.uid} (anonymous: ${user.isAnonymous})` : 'null',
+    userData: userData ? `role: ${userData.role}, rank: ${userData.rank}` : 'null'
   });
 
-  // Check if user is anonymous and should be prompted to create account
-  useEffect(() => {
-    if (user?.isAnonymous && userData?.progress?.questionsAnswered > 0) {
-      // Show modal after first level completion (you can adjust this condition)
-      const firstLevelComplete = userData?.progress?.currentLevel !== 'harjoittelija';
-      if (firstLevelComplete) {
-        setShowLinkModal(true);
-      }
-    }
-  }, [user, userData]);
+  // Prompt anonymous users to create an account once they complete the first level
+  const shouldShowLinkModal =
+    linkModalDismissed === false &&
+    !!user?.isAnonymous &&
+    userData?.progress?.questionsAnswered > 0 &&
+    userData?.progress?.currentLevel !== 'harjoittelija';
 
   useEffect(() => {
     if (!user || user.isAnonymous || !userData?.rank) return;
@@ -30,7 +26,9 @@ function Home() {
     const storageKey = `kiekuu:lastRank:${user.uid}`;
     const previousRank = localStorage.getItem(storageKey);
     if (previousRank && previousRank !== userData.rank) {
-      setShowFeedbackPrompt(true);
+      // Deferred one tick so the prompt does not cascade synchronously
+      // off this effect's render (react-hooks/set-state-in-effect)
+      Promise.resolve().then(() => setShowFeedbackPrompt(true));
     }
     localStorage.setItem(storageKey, userData.rank);
   }, [user, userData?.rank]);
@@ -44,7 +42,7 @@ function Home() {
   };
 
   const handleLinkSuccess = () => {
-    setShowLinkModal(false);
+    setLinkModalDismissed(true);
     // Refresh the page or update user data
   };
 
@@ -191,8 +189,8 @@ function Home() {
       </main>
 
       <LinkAccountModal
-        isOpen={showLinkModal}
-        onClose={() => setShowLinkModal(false)}
+        isOpen={shouldShowLinkModal}
+        onClose={() => setLinkModalDismissed(true)}
         onSuccess={handleLinkSuccess}
       />
 

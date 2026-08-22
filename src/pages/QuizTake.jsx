@@ -10,6 +10,10 @@ import logo from '../assets/images/Kiekuu_logo.jpg';
 // Animation duration for correct answer flash (matches animate-pulse duration)
 const FLASH_ANIMATION_DURATION_MS = 200;
 
+// Elapsed seconds helper kept at module scope: clock reads are event-time
+// operations and must not be evaluated during render.
+const secondsSince = (fromMs) => Math.round((Date.now() - fromMs) / 1000);
+
 function QuizTake() {
   const { user, userData } = useAuth();
   const submittingRef = useRef(false);
@@ -28,8 +32,9 @@ function QuizTake() {
   const [quizComplete, setQuizComplete] = useState(false);
   const [totalPoints, setTotalPoints] = useState(0);
   const [lastPointDelta, setLastPointDelta] = useState(null);
-  const [startTime] = useState(Date.now());
-  const [flashAnswerIndex, setFlashAnswerIndex] = useState(null);
+  const [startTime] = useState(() => Date.now());
+  const [flashAnswer, setFlashAnswer] = useState(null);
+  const [quizResultTime, setQuizResultTime] = useState(null);
 
   useEffect(() => {
     const loadQuestions = async () => {
@@ -64,11 +69,7 @@ function QuizTake() {
     };
 
     loadQuestions();
-  }, [categoryId, difficulty]);
-
-  useEffect(() => {
-    setFlashAnswerIndex(null);
-  }, [currentQuestionIndex]);
+  }, [categoryId, categoryName, difficulty]);
 
   if (loading) {
     return (
@@ -128,7 +129,7 @@ function QuizTake() {
       const qDifficulty = currentQuestion.difficulty || 'perustaso';
 
       if (isCorrect) {
-        setFlashAnswerIndex(answerIndex);
+        setFlashAnswer({ questionIndex: currentQuestionIndex, answerIndex });
       }
 
       // Submit answer to database in the background (non-blocking so the quiz
@@ -159,15 +160,12 @@ function QuizTake() {
 
       // Brief pause to display correct/incorrect feedback before advancing
       await new Promise(resolve => setTimeout(resolve, FLASH_ANIMATION_DURATION_MS));
-      if (isCorrect) {
-        setFlashAnswerIndex(null);
-      }
 
       // Move to next question or complete quiz
       if (currentQuestionIndex < questions.length - 1) {
         setCurrentQuestionIndex(currentQuestionIndex + 1);
       } else {
-        const totalTime = Math.round((Date.now() - startTime) / 1000);
+        const totalTime = secondsSince(startTime);
         const newCorrectAnswers = Object.entries({ ...selectedAnswers, [currentQuestionIndex]: answerIndex }).reduce(
           (count, [idx, aIdx]) => count + (questions[parseInt(idx)]?.correctAnswerIndex === aIdx ? 1 : 0),
           0
@@ -180,12 +178,13 @@ function QuizTake() {
           questions.length,
           totalTime
         );
+        setQuizResultTime(totalTime);
         setQuizComplete(true);
       }
     } catch (err) {
       logFirestoreErrorContext('handleSelectAnswer', err);
       console.error('Error handling answer selection:', err);
-      setFlashAnswerIndex(null);
+      setFlashAnswer(null);
       setSelectedAnswers(prev => {
         const updated = { ...prev };
         delete updated[currentQuestionIndex];
@@ -206,7 +205,6 @@ function QuizTake() {
 
   // Quiz Complete Screen
   if (quizComplete) {
-    const totalTime = Math.round((Date.now() - startTime) / 1000);
     const accuracy = Math.round((correctAnswers / questions.length) * 100);
     const wrongAnswers = Object.entries(selectedAnswers)
       .map(([index, answerIndex]) => {
@@ -249,7 +247,7 @@ function QuizTake() {
               </div>
               <div className="bg-slate-800 rounded-lg p-4">
                 <p className="text-slate-400 text-sm mb-2">Aika</p>
-                <p className="text-3xl font-bold text-purple-400">{totalTime}s</p>
+                <p className="text-3xl font-bold text-purple-400">{quizResultTime}s</p>
               </div>
             </div>
 
@@ -432,7 +430,7 @@ function QuizTake() {
                 textColor = 'text-white';
               }
 
-              const shouldFlash = flashAnswerIndex === index;
+              const shouldFlash = flashAnswer?.questionIndex === currentQuestionIndex && flashAnswer.answerIndex === index;
 
               return (
                 <button

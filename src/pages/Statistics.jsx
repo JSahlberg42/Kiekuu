@@ -5,6 +5,49 @@ import { Navigate } from 'react-router-dom';
 import { collection, getDocs, getCountFromServer } from 'firebase/firestore';
 import { db } from '../services/firebase';
 
+// Pure data loader: returns the stats payload, no component state involved.
+const loadPlatformStats = async () => {
+  // Fetch counts
+  const [usersCount, questionsCount, categoriesCount, ranksCount] = await Promise.all([
+    getCountFromServer(collection(db, 'users')),
+    getCountFromServer(collection(db, 'questions')),
+    getCountFromServer(collection(db, 'categories')),
+    getCountFromServer(collection(db, 'ranks')),
+  ]);
+
+  // Fetch detailed user data for distribution
+  const usersSnapshot = await getDocs(collection(db, 'users'));
+  const users = [];
+  const rankDistribution = {};
+
+  usersSnapshot.forEach((doc) => {
+    const userData = { id: doc.id, ...doc.data() };
+    users.push(userData);
+
+    // Count users by rank
+    const userRank = userData.rank || 'harjoittelija';
+    rankDistribution[userRank] = (rankDistribution[userRank] || 0) + 1;
+  });
+
+  // Sort users by creation date (most recent first)
+  const recentUsers = users
+    .sort((a, b) => {
+      const dateA = a.createdAt ? new Date(a.createdAt) : new Date(0);
+      const dateB = b.createdAt ? new Date(b.createdAt) : new Date(0);
+      return dateB - dateA;
+    })
+    .slice(0, 5);
+
+  return {
+    totalUsers: usersCount.data().count,
+    totalQuestions: questionsCount.data().count,
+    totalCategories: categoriesCount.data().count,
+    totalRanks: ranksCount.data().count,
+    usersByRank: rankDistribution,
+    recentUsers,
+  };
+};
+
 function Statistics() {
   const { userData, loading: authLoading } = useAuth();
   const [stats, setStats] = useState({
@@ -20,60 +63,41 @@ function Statistics() {
 
   useEffect(() => {
     if (!authLoading && userData?.role === 'admin') {
-      fetchStatistics();
+      let cancelled = false;
+      loadPlatformStats()
+        .then((payload) => {
+          if (cancelled) return;
+          setStats(payload);
+          setError('');
+        })
+        .catch((err) => {
+          if (cancelled) return;
+          setError('Virhe tilastojen hakemisessa');
+          console.error(err);
+        })
+        .finally(() => {
+          if (!cancelled) setLoading(false);
+        });
+      return () => {
+        cancelled = true;
+      };
     }
   }, [authLoading, userData]);
 
-  const fetchStatistics = async () => {
-    try {
-      setLoading(true);
-      setError('');
-
-      // Fetch counts
-      const [usersCount, questionsCount, categoriesCount, ranksCount] = await Promise.all([
-        getCountFromServer(collection(db, 'users')),
-        getCountFromServer(collection(db, 'questions')),
-        getCountFromServer(collection(db, 'categories')),
-        getCountFromServer(collection(db, 'ranks')),
-      ]);
-
-      // Fetch detailed user data for distribution
-      const usersSnapshot = await getDocs(collection(db, 'users'));
-      const users = [];
-      const rankDistribution = {};
-
-      usersSnapshot.forEach((doc) => {
-        const userData = { id: doc.id, ...doc.data() };
-        users.push(userData);
-
-        // Count users by rank
-        const userRank = userData.rank || 'harjoittelija';
-        rankDistribution[userRank] = (rankDistribution[userRank] || 0) + 1;
+  const fetchStatistics = () => {
+    setLoading(true);
+    loadPlatformStats()
+      .then((payload) => {
+        setStats(payload);
+        setError('');
+      })
+      .catch((err) => {
+        setError('Virhe tilastojen hakemisessa');
+        console.error(err);
+      })
+      .finally(() => {
+        setLoading(false);
       });
-
-      // Sort users by creation date (most recent first)
-      const recentUsers = users
-        .sort((a, b) => {
-          const dateA = a.createdAt ? new Date(a.createdAt) : new Date(0);
-          const dateB = b.createdAt ? new Date(b.createdAt) : new Date(0);
-          return dateB - dateA;
-        })
-        .slice(0, 5);
-
-      setStats({
-        totalUsers: usersCount.data().count,
-        totalQuestions: questionsCount.data().count,
-        totalCategories: categoriesCount.data().count,
-        totalRanks: ranksCount.data().count,
-        usersByRank: rankDistribution,
-        recentUsers,
-      });
-    } catch (err) {
-      setError('Virhe tilastojen hakemisessa');
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
   };
 
   if (authLoading || loading) {
