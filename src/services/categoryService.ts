@@ -1,25 +1,21 @@
 import { collection, getDocs, doc, addDoc, updateDoc, deleteDoc, getDoc, query, orderBy } from 'firebase/firestore';
 import { db } from './firebase';
+import type { Category } from '../types/models';
+
+type CategoryInput = Omit<Category, 'id' | 'createdAt' | 'updatedAt'>;
 
 /**
  * Fetch all categories from Firestore
- * @returns {Promise<Array>} Array of category objects with id
  */
-export const getAllCategories = async () => {
+export const getAllCategories = async (): Promise<Category[]> => {
   try {
-    const categoriesRef = collection(db, 'categories');
-    const q = query(categoriesRef, orderBy('name', 'asc'));
+    const q = query(collection(db, 'categories'), orderBy('name', 'asc'));
     const querySnapshot = await getDocs(q);
-    
-    const categories = [];
-    querySnapshot.forEach((doc) => {
-      categories.push({
-        id: doc.id,
-        ...doc.data(),
-      });
-    });
-    
-    return categories;
+
+    return querySnapshot.docs.map((docSnap) => ({
+      id: docSnap.id,
+      ...(docSnap.data() as Omit<Category, 'id'>),
+    }));
   } catch (error) {
     console.error('Error fetching categories:', error);
     throw error;
@@ -28,22 +24,19 @@ export const getAllCategories = async () => {
 
 /**
  * Get category by ID
- * @param {string} categoryId - Category ID
- * @returns {Promise<Object>} Category object
  */
-export const getCategoryById = async (categoryId) => {
+export const getCategoryById = async (categoryId: string): Promise<Category> => {
   try {
     const categoryRef = doc(db, 'categories', categoryId);
     const categoryDoc = await getDoc(categoryRef);
-    
+
     if (categoryDoc.exists()) {
       return {
         id: categoryDoc.id,
-        ...categoryDoc.data(),
+        ...(categoryDoc.data() as Omit<Category, 'id'>),
       };
-    } else {
-      throw new Error('Category not found');
     }
+    throw new Error('Category not found');
   } catch (error) {
     console.error('Error fetching category:', error);
     throw error;
@@ -52,18 +45,16 @@ export const getCategoryById = async (categoryId) => {
 
 /**
  * Create a new category
- * @param {Object} categoryData - Category data (name, description, icon, color)
- * @returns {Promise<string>} Created category ID
  */
-export const createCategory = async (categoryData) => {
+export const createCategory = async (categoryData: CategoryInput): Promise<string> => {
   try {
-    const categoriesRef = collection(db, 'categories');
-    const docRef = await addDoc(categoriesRef, {
+    const now = new Date().toISOString();
+    const docRef = await addDoc(collection(db, 'categories'), {
       ...categoryData,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
+      createdAt: now,
+      updatedAt: now,
     });
-    
+
     return docRef.id;
   } catch (error) {
     console.error('Error creating category:', error);
@@ -73,11 +64,11 @@ export const createCategory = async (categoryData) => {
 
 /**
  * Update category data
- * @param {string} categoryId - Category ID
- * @param {Object} updates - Object containing fields to update
- * @returns {Promise<void>}
  */
-export const updateCategory = async (categoryId, updates) => {
+export const updateCategory = async (
+  categoryId: string,
+  updates: Partial<Omit<Category, 'id'>>,
+): Promise<void> => {
   try {
     const categoryRef = doc(db, 'categories', categoryId);
     await updateDoc(categoryRef, {
@@ -92,10 +83,8 @@ export const updateCategory = async (categoryId, updates) => {
 
 /**
  * Delete category from Firestore
- * @param {string} categoryId - Category ID
- * @returns {Promise<void>}
  */
-export const deleteCategory = async (categoryId) => {
+export const deleteCategory = async (categoryId: string): Promise<void> => {
   try {
     const categoryRef = doc(db, 'categories', categoryId);
     await deleteDoc(categoryRef);

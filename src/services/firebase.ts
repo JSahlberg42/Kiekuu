@@ -1,12 +1,12 @@
-import { initializeApp } from 'firebase/app';
+import { initializeApp, type FirebaseOptions } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
 import { initializeFirestore, memoryLocalCache } from 'firebase/firestore';
-import { initializeAppCheck, ReCaptchaEnterpriseProvider, getToken } from 'firebase/app-check';
-import { getAnalytics, isSupported as isAnalyticsSupported } from 'firebase/analytics';
+import { initializeAppCheck, ReCaptchaEnterpriseProvider, getToken, type AppCheck } from 'firebase/app-check';
+import { getAnalytics, isSupported as isAnalyticsSupported, type Analytics } from 'firebase/analytics';
 
-const normalizeEnv = (value) => (typeof value === 'string' ? value.trim() : value);
+const normalizeEnv = (value?: string) => value?.trim();
 
-const firebaseConfig = {
+const firebaseConfig: FirebaseOptions & { measurementId?: string } = {
   apiKey: normalizeEnv(import.meta.env.VITE_FIREBASE_API_KEY),
   authDomain: normalizeEnv(import.meta.env.VITE_FIREBASE_AUTH_DOMAIN),
   projectId: normalizeEnv(import.meta.env.VITE_FIREBASE_PROJECT_ID),
@@ -44,7 +44,7 @@ if (import.meta.env.DEV) {
     import.meta.env.VITE_APPCHECK_DEBUG_TOKEN || true;
 }
 
-let appCheck = null;
+let appCheck: AppCheck | null = null;
 const recaptchaKey = import.meta.env.VITE_RECAPTCHA_ENTERPRISE_KEY;
 
 if (recaptchaKey) {
@@ -92,7 +92,7 @@ export const appCheckStatus = {
 };
 
 // Initialize Firebase Analytics (only where supported, e.g. not in SSR/Node)
-export let analytics = null;
+export let analytics: Analytics | null = null;
 isAnalyticsSupported().then((supported) => {
   if (supported && firebaseConfig.measurementId) {
     analytics = getAnalytics(app);
@@ -102,17 +102,17 @@ isAnalyticsSupported().then((supported) => {
 });
 
 // Debug utility for checking App Check token in development
-export async function debugAppCheckToken() {
+export async function debugAppCheckToken(): Promise<string | null> {
   if (!appCheck) {
     console.warn('⚠️  App Check is not initialized. Set VITE_RECAPTCHA_ENTERPRISE_KEY in .env.local to enable it.');
     return null;
   }
   try {
-    const token = await getToken(appCheck);
+    const { token } = await getToken(appCheck);
     console.log('🔐 App Check Token:', token);
     return token;
   } catch (error) {
-    console.error('❌ Failed to get App Check token:', error.message);
+    console.error('❌ Failed to get App Check token:', error instanceof Error ? error.message : error);
     return null;
   }
 }
@@ -120,7 +120,7 @@ export async function debugAppCheckToken() {
 // Expose debug function globally for browser console
 if (typeof window !== 'undefined' && isDiagnosticsEnabled()) {
   window.__debugAppCheck = debugAppCheckToken;
-  window.__firebaseAppOptions = app.options;
+  window.__firebaseAppOptions = app.options as Record<string, unknown>;
   console.log('💡 Run window.__debugAppCheck() in browser console to check App Check token');
   console.log('🔎 Firebase app options:', app.options);
 }
