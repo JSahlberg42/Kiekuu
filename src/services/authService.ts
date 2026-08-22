@@ -9,19 +9,17 @@ import {
   signOut,
   sendPasswordResetEmail,
   updateProfile,
+  type User,
 } from 'firebase/auth';
 import { doc, setDoc, getDoc, updateDoc } from 'firebase/firestore';
 import { auth, db } from './firebase';
 import { isFirestoreOfflineError, logFirestoreErrorContext } from '../utils/firestoreDiagnostics';
+import type { UserDoc } from '../types/models';
 
 /**
  * Sign up a new user with email and password
- * @param {string} email - User email
- * @param {string} password - User password
- * @param {string} displayName - User display name
- * @returns {Promise<Object>} User object
  */
-export const signUp = async (email, password, displayName) => {
+export const signUp = async (email: string, password: string, displayName: string): Promise<User> => {
   try {
     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
     const user = userCredential.user;
@@ -53,11 +51,8 @@ export const signUp = async (email, password, displayName) => {
 
 /**
  * Sign in user with email and password
- * @param {string} email - User email
- * @param {string} password - User password
- * @returns {Promise<Object>} User object
  */
-export const signIn = async (email, password) => {
+export const signIn = async (email: string, password: string): Promise<User> => {
   try {
     const userCredential = await signInWithEmailAndPassword(auth, email, password);
     return userCredential.user;
@@ -69,9 +64,8 @@ export const signIn = async (email, password) => {
 
 /**
  * Sign in with Google
- * @returns {Promise<Object>} User object
  */
-export const signInWithGoogle = async () => {
+export const signInWithGoogle = async (): Promise<User> => {
   try {
     const provider = new GoogleAuthProvider();
     const userCredential = await signInWithPopup(auth, provider);
@@ -84,9 +78,8 @@ export const signInWithGoogle = async () => {
 
 /**
  * Sign out current user
- * @returns {Promise<void>}
  */
-export const logOut = async () => {
+export const logOut = async (): Promise<void> => {
   try {
     await signOut(auth);
   } catch (error) {
@@ -97,10 +90,8 @@ export const logOut = async () => {
 
 /**
  * Send password reset email
- * @param {string} email - User email
- * @returns {Promise<void>}
  */
-export const resetPassword = async (email) => {
+export const resetPassword = async (email: string): Promise<void> => {
   try {
     await sendPasswordResetEmail(auth, email);
   } catch (error) {
@@ -111,15 +102,13 @@ export const resetPassword = async (email) => {
 
 /**
  * Get user data from Firestore
- * @param {string} uid - User ID
- * @returns {Promise<Object|null>} User data or null if not found
  * @throws {FirebaseError} Re-throws network/offline errors so callers can stop retrying
  */
-export const getUserData = async (uid) => {
+export const getUserData = async (uid: string): Promise<UserDoc | null> => {
   try {
     const userDoc = await getDoc(doc(db, 'users', uid));
     if (userDoc.exists()) {
-      return userDoc.data();
+      return userDoc.data() as UserDoc;
     }
     return null;
   } catch (error) {
@@ -137,10 +126,8 @@ export const getUserData = async (uid) => {
 
 /**
  * Check if user has admin role
- * @param {string} uid - User ID
- * @returns {Promise<boolean>}
  */
-export const isAdmin = async (uid) => {
+export const isAdmin = async (uid: string): Promise<boolean> => {
   try {
     const userData = await getUserData(uid);
     return userData?.role === 'admin';
@@ -152,9 +139,8 @@ export const isAdmin = async (uid) => {
 
 /**
  * Sign in anonymously to start playing without registration
- * @returns {Promise<Object>} User object
  */
-export const signInAnonymouslyUser = async () => {
+export const signInAnonymouslyUser = async (): Promise<User> => {
   try {
     console.log('Creating anonymous user...');
     const userCredential = await signInAnonymously(auth);
@@ -162,7 +148,7 @@ export const signInAnonymouslyUser = async () => {
     console.log('Anonymous user created:', user.uid);
 
     // Create anonymous user document in Firestore
-    const userData = {
+    const userData: UserDoc = {
       uid: user.uid,
       isAnonymous: true,
       role: 'user',
@@ -174,12 +160,12 @@ export const signInAnonymouslyUser = async () => {
         questionsAnswered: 0,
       },
     };
-    
+
     // Wait up to 2 seconds for Firestore write, then continue regardless
     // This prevents the loading spinner from hanging indefinitely
     const writePromise = setDoc(doc(db, 'users', user.uid), userData);
     const timeoutPromise = new Promise((resolve) => setTimeout(resolve, 2000));
-    
+
     Promise.race([writePromise, timeoutPromise])
       .then(() => console.log('Firestore document created successfully'))
       .catch((error) => console.error('Firestore write error:', error));
@@ -194,15 +180,20 @@ export const signInAnonymouslyUser = async () => {
 
 /**
  * Link anonymous account with email/password
- * @param {string} email - User email
- * @param {string} password - User password
- * @param {string} displayName - User display name
- * @returns {Promise<Object>} Updated user object
  */
-export const linkAnonymousAccount = async (email, password, displayName) => {
+export const linkAnonymousAccount = async (
+  email: string,
+  password: string,
+  displayName: string,
+): Promise<User> => {
   try {
+    const currentUser = auth.currentUser;
+    if (!currentUser) {
+      throw new Error('Ei kirjautunutta käyttäjää');
+    }
+
     const credential = EmailAuthProvider.credential(email, password);
-    const userCredential = await linkWithCredential(auth.currentUser, credential);
+    const userCredential = await linkWithCredential(currentUser, credential);
     const user = userCredential.user;
 
     // Update profile with display name
