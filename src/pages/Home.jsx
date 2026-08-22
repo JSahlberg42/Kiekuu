@@ -55,7 +55,7 @@ function Home() {
           <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center py-4 sm:h-16 gap-4 sm:gap-0">
             <div className="flex items-center justify-center sm:justify-start gap-3">
               <div 
-                className="w-10 h-10 sm:w-12 sm:h-12 bg-center bg-no-repeat bg-contain flex-shrink-0 opacity-90"
+                className="w-10 h-10 sm:w-12 sm:h-12 bg-center bg-no-repeat bg-contain shrink-0 opacity-90"
                 style={{ backgroundImage: `url(${logo})`, filter: 'brightness(1.1) contrast(1.05)' }}
                 role="img"
                 aria-label="Kiekuu logo"
@@ -129,10 +129,10 @@ function Home() {
           {/* Start Quiz Card */}
           <Link
             to="/quiz"
-            className="group bg-gradient-to-br from-slate-900 to-slate-800 border border-slate-800 hover:border-blue-600 rounded-xl p-8 transition-all cursor-pointer hover:shadow-lg hover:shadow-blue-500/20"
+            className="group bg-linear-to-br from-slate-900 to-slate-800 border border-slate-800 hover:border-blue-600 rounded-xl p-8 transition-all cursor-pointer hover:shadow-lg hover:shadow-blue-500/20"
           >
             <div className="flex items-start justify-between mb-4">
-              <div className="w-12 h-12 bg-gradient-to-br from-blue-600 to-blue-700 rounded-lg flex items-center justify-center text-white text-xl font-bold group-hover:scale-110 transition-transform">
+              <div className="w-12 h-12 bg-linear-to-br from-blue-600 to-blue-700 rounded-lg flex items-center justify-center text-white text-xl font-bold group-hover:scale-110 transition-transform">
                 ✏️
               </div>
             </div>
@@ -150,10 +150,10 @@ function Home() {
           {/* Progress Card */}
           <Link
             to="/progress"
-            className="group bg-gradient-to-br from-slate-900 to-slate-800 border border-slate-800 hover:border-green-600 rounded-xl p-8 transition-all cursor-pointer hover:shadow-lg hover:shadow-green-500/20"
+            className="group bg-linear-to-br from-slate-900 to-slate-800 border border-slate-800 hover:border-green-600 rounded-xl p-8 transition-all cursor-pointer hover:shadow-lg hover:shadow-green-500/20"
           >
             <div className="flex items-start justify-between mb-4">
-              <div className="w-12 h-12 bg-gradient-to-br from-green-600 to-green-700 rounded-lg flex items-center justify-center text-white text-xl font-bold group-hover:scale-110 transition-transform">
+              <div className="w-12 h-12 bg-linear-to-br from-green-600 to-green-700 rounded-lg flex items-center justify-center text-white text-xl font-bold group-hover:scale-110 transition-transform">
                 📊
               </div>
             </div>

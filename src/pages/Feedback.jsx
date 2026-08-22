@@ -157,7 +157,7 @@ function Feedback() {
                 value={message}
                 onChange={(event) => setMessage(event.target.value)}
                 rows={5}
-                className="w-full px-4 py-3 border border-slate-800 rounded-xl bg-slate-950 text-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
+                className="w-full px-4 py-3 border border-slate-800 rounded-xl bg-slate-950 text-slate-50 focus:outline-hidden focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
                 placeholder="Mitä voisimme parantaa?"
               />
             </div>
@@ -168,7 +168,7 @@ function Feedback() {
                   type="checkbox"
                   checked={publishApproved}
                   onChange={(event) => setPublishApproved(event.target.checked)}
-                  className="w-4 h-4 text-blue-500 focus:ring-blue-500 rounded"
+                  className="w-4 h-4 text-blue-500 focus:ring-blue-500 rounded-sm"
                 />
                 Palautteen saa julkaista sovelluksessa muiden nähtäväksi
               </label>
@@ -177,7 +177,7 @@ function Feedback() {
                   type="checkbox"
                   checked={publishNameApproved}
                   onChange={(event) => setPublishNameApproved(event.target.checked)}
-                  className="w-4 h-4 text-blue-500 focus:ring-blue-500 rounded"
+                  className="w-4 h-4 text-blue-500 focus:ring-blue-500 rounded-sm"
                 />
                 Nimeni saa julkaista palautteen yhteydessä
               </label>

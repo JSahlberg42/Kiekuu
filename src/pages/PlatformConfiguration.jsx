@@ -157,7 +157,7 @@ function PlatformConfiguration() {
                   id="platform-name"
                   value={config.platformName}
                   onChange={(e) => handleInputChange('platformName', e.target.value)}
-                  className="w-full px-4 py-3 border border-slate-800 rounded-xl bg-slate-950 text-slate-50 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 min-h-[44px]"
+                  className="w-full px-4 py-3 border border-slate-800 rounded-xl bg-slate-950 text-slate-50 focus:outline-hidden focus:ring-2 focus:ring-orange-500 focus:border-orange-500 min-h-[44px]"
                   required
                 />
               </div>
@@ -171,7 +171,7 @@ function PlatformConfiguration() {
                   value={config.welcomeMessage}
                   onChange={(e) => handleInputChange('welcomeMessage', e.target.value)}
                   rows={3}
-                  className="w-full px-4 py-3 border border-slate-800 rounded-xl bg-slate-950 text-slate-50 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 resize-none"
+                  className="w-full px-4 py-3 border border-slate-800 rounded-xl bg-slate-950 text-slate-50 focus:outline-hidden focus:ring-2 focus:ring-orange-500 focus:border-orange-500 resize-none"
                 />
               </div>
             </div>
@@ -195,7 +195,7 @@ function PlatformConfiguration() {
                   onChange={(e) => handleInputChange('pointsPerQuestion', parseInt(e.target.value))}
                   min="1"
                   max="100"
-                  className="w-full px-4 py-3 border border-slate-800 rounded-xl bg-slate-950 text-slate-50 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 min-h-[44px]"
+                  className="w-full px-4 py-3 border border-slate-800 rounded-xl bg-slate-950 text-slate-50 focus:outline-hidden focus:ring-2 focus:ring-orange-500 focus:border-orange-500 min-h-[44px]"
                   required
                 />
               </div>
@@ -211,7 +211,7 @@ function PlatformConfiguration() {
                   onChange={(e) => handleInputChange('questionTimeLimit', parseInt(e.target.value))}
                   min="10"
                   max="300"
-                  className="w-full px-4 py-3 border border-slate-800 rounded-xl bg-slate-950 text-slate-50 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 min-h-[44px]"
+                  className="w-full px-4 py-3 border border-slate-800 rounded-xl bg-slate-950 text-slate-50 focus:outline-hidden focus:ring-2 focus:ring-orange-500 focus:border-orange-500 min-h-[44px]"
                   required
                 />
               </div>
@@ -227,7 +227,7 @@ function PlatformConfiguration() {
                   onChange={(e) => handleInputChange('passingScore', parseInt(e.target.value))}
                   min="0"
                   max="100"
-                  className="w-full px-4 py-3 border border-slate-800 rounded-xl bg-slate-950 text-slate-50 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 min-h-[44px]"
+                  className="w-full px-4 py-3 border border-slate-800 rounded-xl bg-slate-950 text-slate-50 focus:outline-hidden focus:ring-2 focus:ring-orange-500 focus:border-orange-500 min-h-[44px]"
                   required
                 />
               </div>
@@ -243,7 +243,7 @@ function PlatformConfiguration() {
                   onChange={(e) => handleInputChange('maxQuestionsPerQuiz', parseInt(e.target.value))}
                   min="1"
                   max="50"
-                  className="w-full px-4 py-3 border border-slate-800 rounded-xl bg-slate-950 text-slate-50 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 min-h-[44px]"
+                  className="w-full px-4 py-3 border border-slate-800 rounded-xl bg-slate-950 text-slate-50 focus:outline-hidden focus:ring-2 focus:ring-orange-500 focus:border-orange-500 min-h-[44px]"
                   required
                 />
               </div>
@@ -272,7 +272,7 @@ function PlatformConfiguration() {
                   onChange={(e) => handleInputChange('minAccuracyForRankUp', parseInt(e.target.value))}
                   min="0"
                   max="100"
-                  className="w-full px-4 py-3 border border-slate-800 rounded-xl bg-slate-950 text-slate-50 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 min-h-[44px]"
+                  className="w-full px-4 py-3 border border-slate-800 rounded-xl bg-slate-950 text-slate-50 focus:outline-hidden focus:ring-2 focus:ring-orange-500 focus:border-orange-500 min-h-[44px]"
                 />
                 <p className="mt-1 text-xs text-slate-500">Käyttäjän kokonaistarkkuuden täytyy olla vähintään tämä arvo arvonnousua varten.</p>
               </div>
@@ -299,7 +299,7 @@ function PlatformConfiguration() {
                           [key]: parseInt(e.target.value),
                         })}
                         min="1"
-                        className="w-full px-3 py-2 border border-slate-800 rounded-xl bg-slate-950 text-slate-50 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 min-h-[44px]"
+                        className="w-full px-3 py-2 border border-slate-800 rounded-xl bg-slate-950 text-slate-50 focus:outline-hidden focus:ring-2 focus:ring-orange-500 focus:border-orange-500 min-h-[44px]"
                       />
                     </div>
                   ))}
@@ -328,7 +328,7 @@ function PlatformConfiguration() {
                           [key]: parseInt(e.target.value),
                         })}
                         min="0"
-                        className="w-full px-3 py-2 border border-slate-800 rounded-xl bg-slate-950 text-slate-50 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 min-h-[44px]"
+                        className="w-full px-3 py-2 border border-slate-800 rounded-xl bg-slate-950 text-slate-50 focus:outline-hidden focus:ring-2 focus:ring-orange-500 focus:border-orange-500 min-h-[44px]"
                       />
                     </div>
                   ))}
@@ -356,7 +356,7 @@ function PlatformConfiguration() {
                     onChange={(e) => handleInputChange('enableEmailNotifications', e.target.checked)}
                     className="sr-only peer"
                   />
-                  <div className="w-11 h-6 bg-slate-700 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-orange-500 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-orange-500"></div>
+                  <div className="w-11 h-6 bg-slate-700 peer-focus:outline-hidden peer-focus:ring-2 peer-focus:ring-orange-500 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-orange-500"></div>
                 </label>
               </div>
 
@@ -372,7 +372,7 @@ function PlatformConfiguration() {
                     onChange={(e) => handleInputChange('maintenanceMode', e.target.checked)}
                     className="sr-only peer"
                   />
-                  <div className="w-11 h-6 bg-slate-700 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-orange-500 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-red-600"></div>
+                  <div className="w-11 h-6 bg-slate-700 peer-focus:outline-hidden peer-focus:ring-2 peer-focus:ring-orange-500 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-red-600"></div>
                 </label>
               </div>
 
@@ -388,7 +388,7 @@ function PlatformConfiguration() {
                     onChange={(e) => handleInputChange('allowAnonymousUsers', e.target.checked)}
                     className="sr-only peer"
                   />
-                  <div className="w-11 h-6 bg-slate-700 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-orange-500 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-orange-500"></div>
+                  <div className="w-11 h-6 bg-slate-700 peer-focus:outline-hidden peer-focus:ring-2 peer-focus:ring-orange-500 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-orange-500"></div>
                 </label>
               </div>
             </div>
