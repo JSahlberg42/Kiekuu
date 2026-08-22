@@ -151,29 +151,29 @@ function RankManagement() {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-3 mb-2 flex-wrap">
                       {rank.icon && (
-                        <span className="text-2xl flex-shrink-0" aria-hidden="true">{rank.icon}</span>
+                        <span className="text-2xl shrink-0" aria-hidden="true">{rank.icon}</span>
                       )}
-                      <h3 className="text-lg sm:text-xl font-semibold text-slate-50 break-words">
+                      <h3 className="text-lg sm:text-xl font-semibold text-slate-50 wrap-break-word">
                         {rank.name}
                       </h3>
-                      <span className="px-3 py-1 bg-orange-500/20 text-orange-500 rounded-lg text-sm font-medium flex-shrink-0">
+                      <span className="px-3 py-1 bg-orange-500/20 text-orange-500 rounded-lg text-sm font-medium shrink-0">
                         {rank.requiredScore} pistettä
                       </span>
                       {rank.minAccuracy != null && (
-                        <span className="px-3 py-1 bg-blue-500/20 text-blue-400 rounded-lg text-sm font-medium flex-shrink-0">
+                        <span className="px-3 py-1 bg-blue-500/20 text-blue-400 rounded-lg text-sm font-medium shrink-0">
                           ≥{rank.minAccuracy}% tarkkuus
                         </span>
                       )}
                     </div>
                     {rank.description && (
-                      <p className="text-sm text-slate-400 mb-2 break-words">
+                      <p className="text-sm text-slate-400 mb-2 wrap-break-word">
                         {rank.description}
                       </p>
                     )}
                     {rank.color && (
                       <div className="flex items-center gap-2 text-xs text-slate-500">
                         <div
-                          className="w-4 h-4 rounded flex-shrink-0"
+                          className="w-4 h-4 rounded-sm shrink-0"
                           style={{ backgroundColor: rank.color }}
                           aria-hidden="true"
                         />
@@ -182,7 +182,7 @@ function RankManagement() {
                     )}
                   </div>
 
-                  <div className="flex flex-row sm:flex-col gap-2 sm:gap-3 sm:flex-shrink-0">
+                  <div className="flex flex-row sm:flex-col gap-2 sm:gap-3 sm:shrink-0">
                     <button
                       onClick={() => setEditingRank(rank)}
                       className="flex-1 sm:flex-none px-4 py-2 bg-orange-500 hover:bg-orange-600 active:bg-orange-700 text-slate-50 rounded-xl text-sm font-semibold transition-colors min-h-[44px]"
@@ -287,7 +287,7 @@ function RankFormModal({ rank, onClose, onSave, loading, title }) {
               id="rank-name"
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              className="w-full px-4 py-3 border border-slate-800 rounded-xl bg-slate-950 text-slate-50 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 min-h-[44px]"
+              className="w-full px-4 py-3 border border-slate-800 rounded-xl bg-slate-950 text-slate-50 focus:outline-hidden focus:ring-2 focus:ring-orange-500 focus:border-orange-500 min-h-[44px]"
               required
               aria-required="true"
             />
@@ -303,7 +303,7 @@ function RankFormModal({ rank, onClose, onSave, loading, title }) {
               value={formData.requiredScore}
               onChange={(e) => setFormData({ ...formData, requiredScore: e.target.value })}
               min="0"
-              className="w-full px-4 py-3 border border-slate-800 rounded-xl bg-slate-950 text-slate-50 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 min-h-[44px]"
+              className="w-full px-4 py-3 border border-slate-800 rounded-xl bg-slate-950 text-slate-50 focus:outline-hidden focus:ring-2 focus:ring-orange-500 focus:border-orange-500 min-h-[44px]"
               required
               aria-required="true"
             />
@@ -321,7 +321,7 @@ function RankFormModal({ rank, onClose, onSave, loading, title }) {
               min="0"
               max="100"
               placeholder="esim. 70"
-              className="w-full px-4 py-3 border border-slate-800 rounded-xl bg-slate-950 text-slate-50 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 min-h-[44px]"
+              className="w-full px-4 py-3 border border-slate-800 rounded-xl bg-slate-950 text-slate-50 focus:outline-hidden focus:ring-2 focus:ring-orange-500 focus:border-orange-500 min-h-[44px]"
               aria-label="Vähimmäistarkkuus arvonnousuun"
             />
           </div>
@@ -335,7 +335,7 @@ function RankFormModal({ rank, onClose, onSave, loading, title }) {
               value={formData.description}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
               rows={3}
-              className="w-full px-4 py-3 border border-slate-800 rounded-xl bg-slate-950 text-slate-50 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 resize-none"
+              className="w-full px-4 py-3 border border-slate-800 rounded-xl bg-slate-950 text-slate-50 focus:outline-hidden focus:ring-2 focus:ring-orange-500 focus:border-orange-500 resize-none"
               aria-label="Arvon kuvaus"
             />
           </div>
@@ -350,7 +350,7 @@ function RankFormModal({ rank, onClose, onSave, loading, title }) {
               value={formData.icon}
               onChange={(e) => setFormData({ ...formData, icon: e.target.value })}
               placeholder="⚡"
-              className="w-full px-4 py-3 border border-slate-800 rounded-xl bg-slate-950 text-slate-50 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 min-h-[44px]"
+              className="w-full px-4 py-3 border border-slate-800 rounded-xl bg-slate-950 text-slate-50 focus:outline-hidden focus:ring-2 focus:ring-orange-500 focus:border-orange-500 min-h-[44px]"
               aria-label="Arvon ikoni"
             />
           </div>
@@ -373,7 +373,7 @@ function RankFormModal({ rank, onClose, onSave, loading, title }) {
                 value={formData.color}
                 onChange={(e) => setFormData({ ...formData, color: e.target.value })}
                 placeholder="#ef4444"
-                className="flex-1 px-4 py-3 border border-slate-800 rounded-xl bg-slate-950 text-slate-50 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 min-h-[44px]"
+                className="flex-1 px-4 py-3 border border-slate-800 rounded-xl bg-slate-950 text-slate-50 focus:outline-hidden focus:ring-2 focus:ring-orange-500 focus:border-orange-500 min-h-[44px]"
                 aria-label="Arvon värikoodi"
               />
             </div>
@@ -414,11 +414,11 @@ function DeleteConfirmModal({ rank, onClose, onConfirm, loading }) {
       aria-labelledby="delete-modal-title"
     >
       <div className="bg-slate-900 border border-slate-800 rounded-xl max-w-md w-full p-6 sm:p-8">
-        <h2 id="delete-modal-title" className="text-xl sm:text-2xl font-bold text-red-600 mb-4 break-words">
+        <h2 id="delete-modal-title" className="text-xl sm:text-2xl font-bold text-red-600 mb-4 wrap-break-word">
           Poista arvo
         </h2>
-        <p className="text-sm sm:text-base text-slate-300 mb-6 break-words">
-          Haluatko varmasti poistaa arvon <strong className="text-slate-50 break-words">{rank.name}</strong>?
+        <p className="text-sm sm:text-base text-slate-300 mb-6 wrap-break-word">
+          Haluatko varmasti poistaa arvon <strong className="text-slate-50 wrap-break-word">{rank.name}</strong>?
           <br />
           <br />
           <span className="text-red-500">Tämä toiminto on peruuttamaton.</span>

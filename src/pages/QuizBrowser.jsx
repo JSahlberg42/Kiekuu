@@ -174,7 +174,7 @@ function QuizBrowser() {
                   <div className={`mb-4 p-4 rounded-lg w-12 h-12 flex items-center justify-center text-white text-xl font-bold ${
                     locked
                       ? 'bg-slate-700'
-                      : 'bg-gradient-to-br from-blue-600 to-purple-600'
+                      : 'bg-linear-to-br from-blue-600 to-purple-600'
                   }`}>
                     {locked ? '🔒' : quiz.name.charAt(0).toUpperCase()}
                   </div>
@@ -202,7 +202,7 @@ function QuizBrowser() {
                     className={`w-full mt-4 px-4 py-2 text-white rounded-lg font-semibold transition-all ${
                       locked
                         ? 'bg-slate-700 cursor-not-allowed text-slate-500'
-                        : 'bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800'
+                        : 'bg-linear-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800'
                     }`}
                   >
                     {locked ? 'Lukittu' : 'Aloita'}

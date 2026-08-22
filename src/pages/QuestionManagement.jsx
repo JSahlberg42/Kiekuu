@@ -248,7 +248,7 @@ function QuestionManagement() {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Hae kysymyksistä, vaihtoehdoista tai tekijästä"
-                className="w-full px-4 py-3 border border-slate-800 rounded-xl bg-slate-900 text-slate-50 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 min-h-[44px]"
+                className="w-full px-4 py-3 border border-slate-800 rounded-xl bg-slate-900 text-slate-50 focus:outline-hidden focus:ring-2 focus:ring-orange-500 focus:border-orange-500 min-h-[44px]"
               />
             </div>
             <div>
@@ -259,7 +259,7 @@ function QuestionManagement() {
                 id="question-category-filter"
                 value={selectedCategory}
                 onChange={(e) => setSelectedCategory(e.target.value)}
-                className="w-full px-4 py-3 border border-slate-800 rounded-xl bg-slate-900 text-slate-50 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 min-h-[44px]"
+                className="w-full px-4 py-3 border border-slate-800 rounded-xl bg-slate-900 text-slate-50 focus:outline-hidden focus:ring-2 focus:ring-orange-500 focus:border-orange-500 min-h-[44px]"
                 aria-label="Suodata kategorian mukaan"
               >
                 <option value="all">Kaikki kategoriat ({questions.length})</option>
@@ -278,7 +278,7 @@ function QuestionManagement() {
                 id="question-sort"
                 value={sortOption}
                 onChange={(e) => setSortOption(e.target.value)}
-                className="w-full px-4 py-3 border border-slate-800 rounded-xl bg-slate-900 text-slate-50 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 min-h-[44px]"
+                className="w-full px-4 py-3 border border-slate-800 rounded-xl bg-slate-900 text-slate-50 focus:outline-hidden focus:ring-2 focus:ring-orange-500 focus:border-orange-500 min-h-[44px]"
               >
                 <option value="newest">Uusimmat ensin</option>
                 <option value="oldest">Vanhimmat ensin</option>
@@ -345,7 +345,7 @@ function QuestionManagement() {
                       )}
                       
                       {/* Question Text */}
-                      <h3 className="text-base sm:text-lg font-semibold text-slate-50 mb-3 break-words">
+                      <h3 className="text-base sm:text-lg font-semibold text-slate-50 mb-3 wrap-break-word">
                         {question.question}
                       </h3>
 
@@ -366,12 +366,12 @@ function QuestionManagement() {
                                 : 'bg-slate-800 text-slate-300'
                             }`}
                           >
-                            <span className="font-semibold flex-shrink-0">
+                            <span className="font-semibold shrink-0">
                               {String.fromCharCode(65 + index)}.
                             </span>
-                            <span className="break-words">{option}</span>
+                            <span className="wrap-break-word">{option}</span>
                             {index === question.correctIndex && (
-                              <svg className="w-4 h-4 ml-auto flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <svg className="w-4 h-4 ml-auto shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                               </svg>
                             )}
@@ -383,7 +383,7 @@ function QuestionManagement() {
                       {question.explanation && (
                         <div className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg mb-3">
                           <p className="text-xs font-medium uppercase tracking-widest text-blue-400 mb-1">Selitys</p>
-                          <p className="text-sm text-slate-300 break-words">{question.explanation}</p>
+                          <p className="text-sm text-slate-300 wrap-break-word">{question.explanation}</p>
                         </div>
                       )}
                       
@@ -397,7 +397,7 @@ function QuestionManagement() {
                     </div>
                     
                     {/* Actions */}
-                    <div className="flex flex-row lg:flex-col gap-2 lg:gap-3 lg:flex-shrink-0">
+                    <div className="flex flex-row lg:flex-col gap-2 lg:gap-3 lg:shrink-0">
                       <button
                         onClick={() => setEditingQuestion(question)}
                         className="flex-1 lg:flex-none px-4 py-2 bg-orange-500 hover:bg-orange-600 active:bg-orange-700 text-slate-50 rounded-xl text-sm font-semibold transition-colors min-h-[44px]"
@@ -555,7 +555,7 @@ function QuestionFormModal({ question, categories, onClose, onSave, loading, tit
               id="question-category"
               value={formData.categoryId}
               onChange={(e) => setFormData({ ...formData, categoryId: e.target.value })}
-              className="w-full px-4 py-3 border border-slate-800 rounded-xl bg-slate-950 text-slate-50 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 min-h-[44px]"
+              className="w-full px-4 py-3 border border-slate-800 rounded-xl bg-slate-950 text-slate-50 focus:outline-hidden focus:ring-2 focus:ring-orange-500 focus:border-orange-500 min-h-[44px]"
               required
             >
               <option value="">Valitse kategoria</option>
@@ -577,7 +577,7 @@ function QuestionFormModal({ question, categories, onClose, onSave, loading, tit
               value={formData.question}
               onChange={(e) => setFormData({ ...formData, question: e.target.value })}
               rows={3}
-              className="w-full px-4 py-3 border border-slate-800 rounded-xl bg-slate-950 text-slate-50 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 resize-none"
+              className="w-full px-4 py-3 border border-slate-800 rounded-xl bg-slate-950 text-slate-50 focus:outline-hidden focus:ring-2 focus:ring-orange-500 focus:border-orange-500 resize-none"
               required
               aria-required="true"
             />
@@ -600,7 +600,7 @@ function QuestionFormModal({ question, categories, onClose, onSave, loading, tit
                       className="w-5 h-5 text-orange-500 focus:ring-orange-500 focus:ring-2"
                       aria-label={`Merkitse vastaus ${String.fromCharCode(65 + index)} oikeaksi`}
                     />
-                    <span className="text-slate-300 font-semibold flex-shrink-0">
+                    <span className="text-slate-300 font-semibold shrink-0">
                       {String.fromCharCode(65 + index)}.
                     </span>
                     <input
@@ -608,7 +608,7 @@ function QuestionFormModal({ question, categories, onClose, onSave, loading, tit
                       value={option}
                       onChange={(e) => handleOptionChange(index, e.target.value)}
                       placeholder={`Vastausvaihtoehto ${String.fromCharCode(65 + index)}`}
-                      className="flex-1 px-4 py-3 border border-slate-800 rounded-xl bg-slate-950 text-slate-50 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 min-h-[44px]"
+                      className="flex-1 px-4 py-3 border border-slate-800 rounded-xl bg-slate-950 text-slate-50 focus:outline-hidden focus:ring-2 focus:ring-orange-500 focus:border-orange-500 min-h-[44px]"
                     />
                   </div>
                   {formData.options.length > 2 && (
@@ -646,7 +646,7 @@ function QuestionFormModal({ question, categories, onClose, onSave, loading, tit
               onChange={(e) => setFormData({ ...formData, explanation: e.target.value })}
               rows={3}
               placeholder="Selitä miksi oikea vastaus on oikein..."
-              className="w-full px-4 py-3 border border-slate-800 rounded-xl bg-slate-950 text-slate-50 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 resize-none"
+              className="w-full px-4 py-3 border border-slate-800 rounded-xl bg-slate-950 text-slate-50 focus:outline-hidden focus:ring-2 focus:ring-orange-500 focus:border-orange-500 resize-none"
             />
           </div>
 
@@ -659,7 +659,7 @@ function QuestionFormModal({ question, categories, onClose, onSave, loading, tit
                 value={formData.source.title}
                 onChange={(e) => setFormData({ ...formData, source: { ...formData.source, title: e.target.value } })}
                 placeholder="Lähteen nimi"
-                className="w-full px-4 py-3 border border-slate-800 rounded-xl bg-slate-950 text-slate-50 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 min-h-[44px]"
+                className="w-full px-4 py-3 border border-slate-800 rounded-xl bg-slate-950 text-slate-50 focus:outline-hidden focus:ring-2 focus:ring-orange-500 focus:border-orange-500 min-h-[44px]"
               />
               <div className="grid grid-cols-2 gap-3">
                 <input
@@ -667,14 +667,14 @@ function QuestionFormModal({ question, categories, onClose, onSave, loading, tit
                   value={formData.source.page}
                   onChange={(e) => setFormData({ ...formData, source: { ...formData.source, page: e.target.value } })}
                   placeholder="Sivunumero"
-                  className="px-4 py-3 border border-slate-800 rounded-xl bg-slate-950 text-slate-50 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 min-h-[44px]"
+                  className="px-4 py-3 border border-slate-800 rounded-xl bg-slate-950 text-slate-50 focus:outline-hidden focus:ring-2 focus:ring-orange-500 focus:border-orange-500 min-h-[44px]"
                 />
                 <input
                   type="url"
                   value={formData.source.url}
                   onChange={(e) => setFormData({ ...formData, source: { ...formData.source, url: e.target.value } })}
                   placeholder="URL"
-                  className="px-4 py-3 border border-slate-800 rounded-xl bg-slate-950 text-slate-50 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 min-h-[44px]"
+                  className="px-4 py-3 border border-slate-800 rounded-xl bg-slate-950 text-slate-50 focus:outline-hidden focus:ring-2 focus:ring-orange-500 focus:border-orange-500 min-h-[44px]"
                 />
               </div>
             </div>
@@ -716,11 +716,11 @@ function DeleteConfirmModal({ question, onClose, onConfirm, loading }) {
       aria-labelledby="delete-modal-title"
     >
       <div className="bg-slate-900 border border-slate-800 rounded-xl max-w-md w-full p-6 sm:p-8">
-        <h2 id="delete-modal-title" className="text-xl sm:text-2xl font-bold text-red-600 mb-4 break-words">
+        <h2 id="delete-modal-title" className="text-xl sm:text-2xl font-bold text-red-600 mb-4 wrap-break-word">
           Poista kysymys
         </h2>
-        <p className="text-sm sm:text-base text-slate-300 mb-6 break-words">
-          Haluatko varmasti poistaa kysymyksen: <strong className="text-slate-50 break-words">{question.question}</strong>?
+        <p className="text-sm sm:text-base text-slate-300 mb-6 wrap-break-word">
+          Haluatko varmasti poistaa kysymyksen: <strong className="text-slate-50 wrap-break-word">{question.question}</strong>?
           <br />
           <br />
           <span className="text-red-500">Tämä toiminto on peruuttamaton.</span>
@@ -906,7 +906,7 @@ function AIGenerationModal({ categories, onClose, onGenerate, initialCategoryId 
                 id="ai-category"
                 value={formData.categoryId}
                 onChange={(e) => setFormData({ ...formData, categoryId: e.target.value })}
-                className="w-full px-4 py-3 border border-slate-800 rounded-xl bg-slate-950 text-slate-50 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 min-h-[44px]"
+                className="w-full px-4 py-3 border border-slate-800 rounded-xl bg-slate-950 text-slate-50 focus:outline-hidden focus:ring-2 focus:ring-purple-500 focus:border-purple-500 min-h-[44px]"
                 required
               >
                 <option value="">Valitse kategoria</option>
@@ -931,7 +931,7 @@ function AIGenerationModal({ categories, onClose, onGenerate, initialCategoryId 
                   onChange={(e) => setFormData({ ...formData, questionCount: parseInt(e.target.value) })}
                   min="1"
                   max="20"
-                  className="w-full px-4 py-3 border border-slate-800 rounded-xl bg-slate-950 text-slate-50 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 min-h-[44px]"
+                  className="w-full px-4 py-3 border border-slate-800 rounded-xl bg-slate-950 text-slate-50 focus:outline-hidden focus:ring-2 focus:ring-purple-500 focus:border-purple-500 min-h-[44px]"
                 />
               </div>
               <div>
@@ -942,7 +942,7 @@ function AIGenerationModal({ categories, onClose, onGenerate, initialCategoryId 
                   id="ai-difficulty"
                   value={formData.difficulty}
                   onChange={(e) => setFormData({ ...formData, difficulty: e.target.value })}
-                  className="w-full px-4 py-3 border border-slate-800 rounded-xl bg-slate-950 text-slate-50 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 min-h-[44px]"
+                  className="w-full px-4 py-3 border border-slate-800 rounded-xl bg-slate-950 text-slate-50 focus:outline-hidden focus:ring-2 focus:ring-purple-500 focus:border-purple-500 min-h-[44px]"
                 >
                   <option value="easy">Helppo (Easy)</option>
                   <option value="medium">Keskitaso (Medium)</option>
@@ -1006,7 +1006,7 @@ function AIGenerationModal({ categories, onClose, onGenerate, initialCategoryId 
                   onChange={(e) => setFormData({ ...formData, contextText: e.target.value })}
                   rows={8}
                   placeholder="Liitä tähän oppimateriaaliteksti, josta kysymykset generoidaan..."
-                  className="w-full px-4 py-3 border border-slate-800 rounded-xl bg-slate-950 text-slate-50 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 resize-none"
+                  className="w-full px-4 py-3 border border-slate-800 rounded-xl bg-slate-950 text-slate-50 focus:outline-hidden focus:ring-2 focus:ring-purple-500 focus:border-purple-500 resize-none"
                   required
                 />
                 <p className="mt-2 text-xs text-slate-500">
@@ -1026,7 +1026,7 @@ function AIGenerationModal({ categories, onClose, onGenerate, initialCategoryId 
                   value={formData.contextUrl}
                   onChange={(e) => setFormData({ ...formData, contextUrl: e.target.value })}
                   placeholder="https://esimerkki.fi/oppimateriaali"
-                  className="w-full px-4 py-3 border border-slate-800 rounded-xl bg-slate-950 text-slate-50 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 min-h-[44px]"
+                  className="w-full px-4 py-3 border border-slate-800 rounded-xl bg-slate-950 text-slate-50 focus:outline-hidden focus:ring-2 focus:ring-purple-500 focus:border-purple-500 min-h-[44px]"
                   required
                 />
                 <div className="mt-2 p-3 bg-green-900/20 border border-green-600/30 rounded-lg">
@@ -1047,7 +1047,7 @@ function AIGenerationModal({ categories, onClose, onGenerate, initialCategoryId 
                   id="ai-context-file"
                   onChange={handleFileChange}
                   accept=".txt,.md,.pdf,application/pdf"
-                  className="w-full px-4 py-3 border border-slate-800 rounded-xl bg-slate-950 text-slate-50 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 min-h-[44px] file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-purple-600 file:text-slate-50 file:font-medium hover:file:bg-purple-700"
+                  className="w-full px-4 py-3 border border-slate-800 rounded-xl bg-slate-950 text-slate-50 focus:outline-hidden focus:ring-2 focus:ring-purple-500 focus:border-purple-500 min-h-[44px] file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-purple-600 file:text-slate-50 file:font-medium hover:file:bg-purple-700"
                   required
                 />
                 <p className="mt-2 text-xs text-slate-500">
@@ -1102,7 +1102,7 @@ function AIGenerationModal({ categories, onClose, onGenerate, initialCategoryId 
                     <h4 className="font-semibold text-slate-50 flex-1">{question.question}</h4>
                     <button
                       onClick={() => removeQuestion(index)}
-                      className="p-1 hover:bg-red-600/20 rounded text-red-500"
+                      className="p-1 hover:bg-red-600/20 rounded-sm text-red-500"
                       aria-label="Poista kysymys"
                     >
                       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1124,7 +1124,7 @@ function AIGenerationModal({ categories, onClose, onGenerate, initialCategoryId 
                         <span className="font-semibold">{String.fromCharCode(65 + optIndex)}.</span>
                         <span className="flex-1">{option}</span>
                         {optIndex === question.correctIndex && (
-                          <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                           </svg>
                         )}

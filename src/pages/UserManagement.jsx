@@ -131,7 +131,7 @@ function UserManagement() {
             value={searchEmail}
             onChange={(e) => setSearchEmail(e.target.value)}
             placeholder="esim. kayttaja@example.com"
-            className="w-full px-4 py-3 border border-slate-800 rounded-xl bg-slate-950 text-slate-50 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 min-h-[44px]"
+            className="w-full px-4 py-3 border border-slate-800 rounded-xl bg-slate-950 text-slate-50 placeholder-slate-500 focus:outline-hidden focus:ring-2 focus:ring-orange-500 focus:border-orange-500 min-h-[44px]"
             aria-label="Hae käyttäjiä sähköpostiosoitteella"
           />
           <p className="mt-2 text-xs text-slate-500">
@@ -154,11 +154,11 @@ function UserManagement() {
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-3 mb-2 flex-wrap">
-                      <h3 className="text-base sm:text-lg font-semibold text-slate-50 break-words">
+                      <h3 className="text-base sm:text-lg font-semibold text-slate-50 wrap-break-word">
                         {user.displayName || 'Ei nimeä'}
                       </h3>
                       <span
-                        className={`px-2 py-1 rounded text-xs font-medium uppercase tracking-wide flex-shrink-0 ${
+                        className={`px-2 py-1 rounded text-xs font-medium uppercase tracking-wide shrink-0 ${
                           user.role === 'admin'
                             ? 'bg-amber-400/20 text-amber-400'
                             : 'bg-slate-700 text-slate-300'
@@ -168,7 +168,7 @@ function UserManagement() {
                       </span>
                     </div>
                     <p className="text-sm text-slate-400 mb-1 break-all">{user.email}</p>
-                    <p className="text-xs text-slate-500 break-words">
+                    <p className="text-xs text-slate-500 wrap-break-word">
                       Taso: {user.rank || 'harjoittelija'} | Pisteet: {user.progress?.totalScore || 0}
                     </p>
                   </div>
@@ -269,7 +269,7 @@ function EditUserModal({ user, onClose, onSave, loading }) {
               id="edit-displayName"
               value={formData.displayName}
               onChange={(e) => setFormData({ ...formData, displayName: e.target.value })}
-              className="w-full px-4 py-3 border border-slate-800 rounded-xl bg-slate-950 text-slate-50 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 min-h-[44px]"
+              className="w-full px-4 py-3 border border-slate-800 rounded-xl bg-slate-950 text-slate-50 focus:outline-hidden focus:ring-2 focus:ring-orange-500 focus:border-orange-500 min-h-[44px]"
               required
             />
           </div>
@@ -283,7 +283,7 @@ function EditUserModal({ user, onClose, onSave, loading }) {
               id="edit-email"
               value={formData.email}
               onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-              className="w-full px-4 py-3 border border-slate-800 rounded-xl bg-slate-950 text-slate-50 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 min-h-[44px]"
+              className="w-full px-4 py-3 border border-slate-800 rounded-xl bg-slate-950 text-slate-50 focus:outline-hidden focus:ring-2 focus:ring-orange-500 focus:border-orange-500 min-h-[44px]"
               required
             />
           </div>
@@ -296,7 +296,7 @@ function EditUserModal({ user, onClose, onSave, loading }) {
               id="edit-role"
               value={formData.role}
               onChange={(e) => setFormData({ ...formData, role: e.target.value })}
-              className="w-full px-4 py-3 border border-slate-800 rounded-xl bg-slate-950 text-slate-50 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 min-h-[44px]"
+              className="w-full px-4 py-3 border border-slate-800 rounded-xl bg-slate-950 text-slate-50 focus:outline-hidden focus:ring-2 focus:ring-orange-500 focus:border-orange-500 min-h-[44px]"
             >
               <option value="user">User</option>
               <option value="admin">Admin</option>
@@ -312,7 +312,7 @@ function EditUserModal({ user, onClose, onSave, loading }) {
               id="edit-rank"
               value={formData.rank}
               onChange={(e) => setFormData({ ...formData, rank: e.target.value })}
-              className="w-full px-4 py-3 border border-slate-800 rounded-xl bg-slate-950 text-slate-50 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 min-h-[44px]"
+              className="w-full px-4 py-3 border border-slate-800 rounded-xl bg-slate-950 text-slate-50 focus:outline-hidden focus:ring-2 focus:ring-orange-500 focus:border-orange-500 min-h-[44px]"
             />
           </div>
 
@@ -351,10 +351,10 @@ function DeleteConfirmModal({ user, onClose, onConfirm, loading }) {
       aria-labelledby="delete-modal-title"
     >
       <div className="bg-slate-900 border border-slate-800 rounded-xl max-w-md w-full p-6 sm:p-8">
-        <h2 id="delete-modal-title" className="text-xl sm:text-2xl font-bold text-red-600 mb-4 break-words">
+        <h2 id="delete-modal-title" className="text-xl sm:text-2xl font-bold text-red-600 mb-4 wrap-break-word">
           Poista käyttäjä
         </h2>
-        <p className="text-sm sm:text-base text-slate-300 mb-6 break-words">
+        <p className="text-sm sm:text-base text-slate-300 mb-6 wrap-break-word">
           Haluatko varmasti poistaa käyttäjän <strong className="text-slate-50 break-all">{user.displayName || user.email}</strong>?
           <br />
           <br />
@@ -407,7 +407,7 @@ function UserProgressModal({ user, onClose }) {
             <h2 id="progress-modal-title" className="text-xl sm:text-2xl font-bold text-slate-50">
               Edistyminen
             </h2>
-            <p className="text-sm text-slate-400 break-words">
+            <p className="text-sm text-slate-400 wrap-break-word">
               {user.displayName || user.email || user.id}
             </p>
           </div>
@@ -425,19 +425,19 @@ function UserProgressModal({ user, onClose }) {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
           <div className="bg-slate-950 border border-slate-800 rounded-lg p-4">
             <p className="text-xs text-slate-400 mb-1">Taso</p>
-            <p className="text-lg font-semibold text-blue-400 capitalize break-words">{user.rank || 'harjoittelija'}</p>
+            <p className="text-lg font-semibold text-blue-400 capitalize wrap-break-word">{user.rank || 'harjoittelija'}</p>
           </div>
           <div className="bg-slate-950 border border-slate-800 rounded-lg p-4">
             <p className="text-xs text-slate-400 mb-1">Pisteet</p>
-            <p className="text-lg font-semibold text-green-400 break-words">{totalScore}</p>
+            <p className="text-lg font-semibold text-green-400 wrap-break-word">{totalScore}</p>
           </div>
           <div className="bg-slate-950 border border-slate-800 rounded-lg p-4">
             <p className="text-xs text-slate-400 mb-1">Vastatut</p>
-            <p className="text-lg font-semibold text-purple-400 break-words">{answered}</p>
+            <p className="text-lg font-semibold text-purple-400 wrap-break-word">{answered}</p>
           </div>
           <div className="bg-slate-950 border border-slate-800 rounded-lg p-4">
             <p className="text-xs text-slate-400 mb-1">Tarkkuus</p>
-            <p className="text-lg font-semibold text-yellow-400 break-words">{accuracy}%</p>
+            <p className="text-lg font-semibold text-yellow-400 wrap-break-word">{accuracy}%</p>
           </div>
         </div>
 
@@ -458,14 +458,14 @@ function UserProgressModal({ user, onClose }) {
                 return (
                   <div key={stat.categoryId || stat.name} className="bg-slate-950 border border-slate-800 rounded-lg p-4">
                     <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
-                      <p className="text-sm text-slate-200 break-words">{stat.name || stat.categoryId}</p>
+                      <p className="text-sm text-slate-200 wrap-break-word">{stat.name || stat.categoryId}</p>
                       <p className="text-xs text-slate-400">
                         {stat.answered} vastattu · {stat.correct} oikein
                       </p>
                     </div>
                     <div className="w-full bg-slate-800 rounded-full h-2">
                       <div
-                        className="bg-gradient-to-r from-blue-600 to-blue-400 h-2 rounded-full transition-all"
+                        className="bg-linear-to-r from-blue-600 to-blue-400 h-2 rounded-full transition-all"
                         style={{ width: `${statAccuracy}%` }}
                       />
                     </div>

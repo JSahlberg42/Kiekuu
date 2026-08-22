@@ -251,7 +251,7 @@ function Statistics() {
                         Arvo: <span className="capitalize">{user.rank || 'harjoittelija'}</span>
                       </p>
                     </div>
-                    <div className="ml-4 text-xs text-slate-500 flex-shrink-0">
+                    <div className="ml-4 text-xs text-slate-500 shrink-0">
                       {user.createdAt ? new Date(user.createdAt).toLocaleDateString('fi-FI') : 'N/A'}
                     </div>
                   </div>

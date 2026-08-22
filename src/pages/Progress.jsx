@@ -105,33 +105,33 @@ function ProgressDashboard() {
           <>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
               {/* Rank Card */}
-              <div className="bg-gradient-to-br from-slate-900 to-slate-800 border border-slate-700 rounded-lg p-6 overflow-hidden">
+              <div className="bg-linear-to-br from-slate-900 to-slate-800 border border-slate-700 rounded-lg p-6 overflow-hidden">
                 <p className="text-slate-400 text-sm mb-2">Taso</p>
-                <p className="text-2xl sm:text-3xl font-bold text-blue-400 capitalize break-words">{stats.rank}</p>
+                <p className="text-2xl sm:text-3xl font-bold text-blue-400 capitalize wrap-break-word">{stats.rank}</p>
               </div>
 
               {/* Total Score Card */}
-              <div className="bg-gradient-to-br from-slate-900 to-slate-800 border border-slate-700 rounded-lg p-6 overflow-hidden">
+              <div className="bg-linear-to-br from-slate-900 to-slate-800 border border-slate-700 rounded-lg p-6 overflow-hidden">
                 <p className="text-slate-400 text-sm mb-2">Kokonaispisteet</p>
-                <p className="text-2xl sm:text-3xl font-bold text-green-400 break-words">{stats.totalPoints}</p>
+                <p className="text-2xl sm:text-3xl font-bold text-green-400 wrap-break-word">{stats.totalPoints}</p>
               </div>
 
               {/* Questions Answered Card */}
-              <div className="bg-gradient-to-br from-slate-900 to-slate-800 border border-slate-700 rounded-lg p-6 overflow-hidden">
+              <div className="bg-linear-to-br from-slate-900 to-slate-800 border border-slate-700 rounded-lg p-6 overflow-hidden">
                 <p className="text-slate-400 text-sm mb-2">Vastaukset</p>
-                <p className="text-2xl sm:text-3xl font-bold text-purple-400 break-words">{stats.questionsAnswered}</p>
+                <p className="text-2xl sm:text-3xl font-bold text-purple-400 wrap-break-word">{stats.questionsAnswered}</p>
               </div>
 
               {/* Correct Answers Card */}
-              <div className="bg-gradient-to-br from-slate-900 to-slate-800 border border-slate-700 rounded-lg p-6 overflow-hidden">
+              <div className="bg-linear-to-br from-slate-900 to-slate-800 border border-slate-700 rounded-lg p-6 overflow-hidden">
                 <p className="text-slate-400 text-sm mb-2">Oikeat vastaukset</p>
-                <p className="text-2xl sm:text-3xl font-bold text-yellow-400 break-words">{stats.correctAnswers}</p>
+                <p className="text-2xl sm:text-3xl font-bold text-yellow-400 wrap-break-word">{stats.correctAnswers}</p>
               </div>
 
               {/* Accuracy Card */}
-              <div className="bg-gradient-to-br from-slate-900 to-slate-800 border border-slate-700 rounded-lg p-6 overflow-hidden">
+              <div className="bg-linear-to-br from-slate-900 to-slate-800 border border-slate-700 rounded-lg p-6 overflow-hidden">
                 <p className="text-slate-400 text-sm mb-2">Tarkkuus</p>
-                <p className={`text-2xl sm:text-3xl font-bold break-words ${getAccuracyColor(stats.accuracy)}`}>{stats.accuracy}%</p>
+                <p className={`text-2xl sm:text-3xl font-bold wrap-break-word ${getAccuracyColor(stats.accuracy)}`}>{stats.accuracy}%</p>
               </div>
             </div>
 
@@ -147,12 +147,12 @@ function ProgressDashboard() {
                     >
                       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-4">
                         <div className="min-w-0 flex-1">
-                          <h4 className="text-lg font-semibold text-slate-50 capitalize break-words">{cat.category}</h4>
-                          <p className="text-slate-400 text-sm mt-1 break-words">
+                          <h4 className="text-lg font-semibold text-slate-50 capitalize wrap-break-word">{cat.category}</h4>
+                          <p className="text-slate-400 text-sm mt-1 wrap-break-word">
                             {cat.answered} kysymystä · {cat.correct} oikein
                           </p>
                         </div>
-                        <div className="text-right flex-shrink-0">
+                        <div className="text-right shrink-0">
                           <p className={`text-2xl font-bold whitespace-nowrap ${getAccuracyColor(cat.accuracy)}`}>
                             {cat.accuracy}%
                           </p>
@@ -162,7 +162,7 @@ function ProgressDashboard() {
                       {/* Progress Bar */}
                       <div className="w-full bg-slate-800 rounded-full h-2">
                         <div
-                          className="bg-gradient-to-r from-blue-600 to-blue-400 h-2 rounded-full transition-all"
+                          className="bg-linear-to-r from-blue-600 to-blue-400 h-2 rounded-full transition-all"
                           style={{ width: `${cat.accuracy}%` }}
                         />
                       </div>
@@ -189,7 +189,7 @@ function ProgressDashboard() {
             <div className="text-center py-8">
               <Link
                 to="/quiz"
-                className="inline-block px-8 py-3 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white rounded-lg font-semibold transition-all"
+                className="inline-block px-8 py-3 bg-linear-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white rounded-lg font-semibold transition-all"
               >
                 Ratkaise lisää kyselyitä
               </Link>

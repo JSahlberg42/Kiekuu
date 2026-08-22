@@ -166,18 +166,18 @@ function CategoryManagement() {
               >
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex-1 min-w-0">
-                    <h3 className="text-lg font-semibold text-slate-50 mb-2 break-words">
+                    <h3 className="text-lg font-semibold text-slate-50 mb-2 wrap-break-word">
                       {category.name}
                     </h3>
                     {category.description && (
-                      <p className="text-sm text-slate-400 mb-3 break-words">
+                      <p className="text-sm text-slate-400 mb-3 wrap-break-word">
                         {category.description}
                       </p>
                     )}
                     <div className="space-y-2">
                       {category.requiredRankId && (
                         <div className="flex items-center gap-2 text-xs text-amber-500">
-                          <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                          <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                           </svg>
                           <span className="font-medium">
@@ -188,7 +188,7 @@ function CategoryManagement() {
                       {category.color && (
                         <div className="flex items-center gap-2 text-xs text-slate-500 break-all">
                           <div
-                            className="w-4 h-4 rounded flex-shrink-0"
+                            className="w-4 h-4 rounded-sm shrink-0"
                             style={{ backgroundColor: category.color }}
                             aria-hidden="true"
                           />
@@ -294,7 +294,7 @@ function CategoryFormModal({ category, ranks, onClose, onSave, loading, title })
               id="category-name"
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              className="w-full px-4 py-3 border border-slate-800 rounded-xl bg-slate-950 text-slate-50 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 min-h-[44px]"
+              className="w-full px-4 py-3 border border-slate-800 rounded-xl bg-slate-950 text-slate-50 focus:outline-hidden focus:ring-2 focus:ring-orange-500 focus:border-orange-500 min-h-[44px]"
               required
               aria-required="true"
             />
@@ -309,7 +309,7 @@ function CategoryFormModal({ category, ranks, onClose, onSave, loading, title })
               value={formData.description}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
               rows={3}
-              className="w-full px-4 py-3 border border-slate-800 rounded-xl bg-slate-950 text-slate-50 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 resize-none"
+              className="w-full px-4 py-3 border border-slate-800 rounded-xl bg-slate-950 text-slate-50 focus:outline-hidden focus:ring-2 focus:ring-orange-500 focus:border-orange-500 resize-none"
               aria-label="Kategorian kuvaus"
             />
           </div>
@@ -324,7 +324,7 @@ function CategoryFormModal({ category, ranks, onClose, onSave, loading, title })
               value={formData.icon}
               onChange={(e) => setFormData({ ...formData, icon: e.target.value })}
               placeholder="🔥"
-              className="w-full px-4 py-3 border border-slate-800 rounded-xl bg-slate-950 text-slate-50 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 min-h-[44px]"
+              className="w-full px-4 py-3 border border-slate-800 rounded-xl bg-slate-950 text-slate-50 focus:outline-hidden focus:ring-2 focus:ring-orange-500 focus:border-orange-500 min-h-[44px]"
               aria-label="Kategorian ikoni"
             />
           </div>
@@ -347,7 +347,7 @@ function CategoryFormModal({ category, ranks, onClose, onSave, loading, title })
                 value={formData.color}
                 onChange={(e) => setFormData({ ...formData, color: e.target.value })}
                 placeholder="#f97316"
-                className="flex-1 px-4 py-3 border border-slate-800 rounded-xl bg-slate-950 text-slate-50 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 min-h-[44px]"
+                className="flex-1 px-4 py-3 border border-slate-800 rounded-xl bg-slate-950 text-slate-50 focus:outline-hidden focus:ring-2 focus:ring-orange-500 focus:border-orange-500 min-h-[44px]"
                 aria-label="Kategorian värikoodi"
               />
             </div>
@@ -361,7 +361,7 @@ function CategoryFormModal({ category, ranks, onClose, onSave, loading, title })
               id="category-rank"
               value={formData.requiredRankId}
               onChange={(e) => setFormData({ ...formData, requiredRankId: e.target.value })}
-              className="w-full px-4 py-3 border border-slate-800 rounded-xl bg-slate-950 text-slate-50 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 min-h-[44px]"
+              className="w-full px-4 py-3 border border-slate-800 rounded-xl bg-slate-950 text-slate-50 focus:outline-hidden focus:ring-2 focus:ring-orange-500 focus:border-orange-500 min-h-[44px]"
               aria-label="Kategorian vaadittu arvo"
             >
               <option value="">Ei rajoitusta</option>
@@ -411,11 +411,11 @@ function DeleteConfirmModal({ category, onClose, onConfirm, loading }) {
       aria-labelledby="delete-modal-title"
     >
       <div className="bg-slate-900 border border-slate-800 rounded-xl max-w-md w-full p-6 sm:p-8">
-        <h2 id="delete-modal-title" className="text-xl sm:text-2xl font-bold text-red-600 mb-4 break-words">
+        <h2 id="delete-modal-title" className="text-xl sm:text-2xl font-bold text-red-600 mb-4 wrap-break-word">
           Poista kategoria
         </h2>
-        <p className="text-sm sm:text-base text-slate-300 mb-6 break-words">
-          Haluatko varmasti poistaa kategorian <strong className="text-slate-50 break-words">{category.name}</strong>?
+        <p className="text-sm sm:text-base text-slate-300 mb-6 wrap-break-word">
+          Haluatko varmasti poistaa kategorian <strong className="text-slate-50 wrap-break-word">{category.name}</strong>?
           <br />
           <br />
           <span className="text-red-500">Tämä toiminto on peruuttamaton.</span>

@@ -233,7 +233,7 @@ function QuizTake() {
         </nav>
 
         <main className="max-w-2xl mx-auto px-4 py-12">
-          <div className="bg-gradient-to-br from-slate-900 to-slate-800 border border-slate-700 rounded-lg p-8 text-center">
+          <div className="bg-linear-to-br from-slate-900 to-slate-800 border border-slate-700 rounded-lg p-8 text-center">
             <h2 className="text-4xl font-bold text-slate-50 mb-2">Hienoa!</h2>
             <p className="text-slate-400 mb-8">Olet suorittanut kyselyn</p>
 
@@ -283,23 +283,23 @@ function QuizTake() {
 
                     return (
                       <div key={question.id || idx} className="border border-slate-800 rounded-lg p-4">
-                        <p className="text-slate-100 font-semibold mb-2 break-words">
+                        <p className="text-slate-100 font-semibold mb-2 wrap-break-word">
                           {question.question}
                         </p>
-                        <p className="text-sm text-red-300 mb-1 break-words">
+                        <p className="text-sm text-red-300 mb-1 wrap-break-word">
                           Sinun vastauksesi: {selectedAnswer}
                         </p>
-                        <p className="text-sm text-green-300 mb-2 break-words">
+                        <p className="text-sm text-green-300 mb-2 wrap-break-word">
                           Oikea vastaus: {correctAnswer}
                         </p>
                         {question.explanation && (
                           <div className="bg-slate-800 border border-slate-700 rounded-lg p-3 mb-2">
                             <p className="text-xs text-slate-400 mb-1">Selitys:</p>
-                            <p className="text-sm text-slate-200 break-words">{question.explanation}</p>
+                            <p className="text-sm text-slate-200 wrap-break-word">{question.explanation}</p>
                           </div>
                         )}
                         {source && (source.title || source.page || source.url) && (
-                          <div className="text-xs text-slate-500 break-words">
+                          <div className="text-xs text-slate-500 wrap-break-word">
                             Lähde: {source.title || 'Tuntematon'}
                             {source.page && `, s. ${source.page}`}
                             {source.url && (
@@ -379,7 +379,7 @@ function QuizTake() {
         <div className="max-w-4xl mx-auto px-4 py-2">
           <div className="w-full bg-slate-800 rounded-full h-2">
             <div
-              className="bg-gradient-to-r from-blue-600 to-blue-500 h-2 rounded-full transition-all duration-500"
+              className="bg-linear-to-r from-blue-600 to-blue-500 h-2 rounded-full transition-all duration-500"
               style={{ width: `${progress}%` }}
             />
           </div>
@@ -405,7 +405,7 @@ function QuizTake() {
             </span>
           </div>
 
-          <h2 className="text-2xl font-bold text-slate-50 mb-6 break-words">
+          <h2 className="text-2xl font-bold text-slate-50 mb-6 wrap-break-word">
             {currentQuestion.question}
           </h2>
 
