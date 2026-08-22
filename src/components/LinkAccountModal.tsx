@@ -1,9 +1,14 @@
-import { useState } from 'react';
+import { useState, type FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { linkAnonymousAccount } from '../services/authService';
-import PropTypes from 'prop-types';
 
-function LinkAccountModal({ isOpen, onClose, onSuccess }) {
+interface LinkAccountModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onSuccess?: () => void;
+}
+
+function LinkAccountModal({ isOpen, onClose, onSuccess }: LinkAccountModalProps) {
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -11,7 +16,7 @@ function LinkAccountModal({ isOpen, onClose, onSuccess }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError('');
@@ -21,10 +26,13 @@ function LinkAccountModal({ isOpen, onClose, onSuccess }) {
       onSuccess?.();
       onClose();
     } catch (err) {
-      if (err.code === 'auth/email-already-in-use') {
+      const code = typeof err === 'object' && err !== null ? (err as { code?: unknown }).code : undefined;
+      if (code === 'auth/email-already-in-use') {
         setError('Sähköposti on jo käytössä. Kirjaudu sisään sen sijaan.');
+      } else if (err instanceof Error && err.message) {
+        setError(err.message);
       } else {
-        setError(err.message || 'Tilin linkitys epäonnistui');
+        setError('Tilin linkitys epäonnistui');
       }
     } finally {
       setLoading(false);
@@ -124,11 +132,5 @@ function LinkAccountModal({ isOpen, onClose, onSuccess }) {
     </div>
   );
 }
-
-LinkAccountModal.propTypes = {
-  isOpen: PropTypes.bool.isRequired,
-  onClose: PropTypes.func.isRequired,
-  onSuccess: PropTypes.func,
-};
 
 export default LinkAccountModal;

@@ -1,8 +1,13 @@
 import { Navigate } from 'react-router-dom';
-import PropTypes from 'prop-types';
+import type { ReactNode } from 'react';
 import { useAuth } from '../context/AuthContext';
 
-function ProtectedRoute({ children, adminOnly = false }) {
+interface ProtectedRouteProps {
+  children: ReactNode;
+  adminOnly?: boolean;
+}
+
+function ProtectedRoute({ children, adminOnly = false }: ProtectedRouteProps) {
   const { isAuthenticated, isAdmin, loading, userDataLoading } = useAuth();
 
   console.log('ProtectedRoute:', { isAuthenticated, isAdmin, loading, userDataLoading, adminOnly });
@@ -30,12 +35,7 @@ function ProtectedRoute({ children, adminOnly = false }) {
   }
 
   console.log('ProtectedRoute: Rendering children');
-  return children;
+  return <>{children}</>;
 }
-
-ProtectedRoute.propTypes = {
-  children: PropTypes.node.isRequired,
-  adminOnly: PropTypes.bool,
-};
 
 export default ProtectedRoute;
