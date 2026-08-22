@@ -1,5 +1,6 @@
 const admin = require('firebase-admin');
 const { onDocumentCreated } = require('firebase-functions/v2/firestore');
+const { onCall, HttpsError } = require('firebase-functions/v2/https');
 const { VertexAI } = require('@google-cloud/vertexai');
 
 admin.initializeApp();
@@ -15,6 +16,105 @@ const FEEDBACK_SCHEMA = {
   action: 'string',
 };
 
+// Feedback abuse guards
+const HOUR_MS = 60 * 60 * 1000;
+const DAY_MS = 24 * HOUR_MS;
+const MAX_FEEDBACK_PER_HOUR = 5;
+const MAX_FEEDBACK_PER_DAY = 20;
+const MAX_FEEDBACK_MESSAGE_LENGTH = 2000;
+const MAX_CLASSIFICATIONS_PER_HOUR = 100;
+
+const isValidRating = (rating) =>
+  Number.isInteger(rating) && rating >= 1 && rating <= 5;
+
+const isAiFeedbackEnabled = async () => {
+  try {
+    const snap = await admin.firestore().collection('config').doc('aiSettings').get();
+    return snap.data()?.aiFeedbackEnabled !== false;
+  } catch (error) {
+    console.warn('Failed to read AI kill switch, assuming enabled:', error);
+    return true;
+  }
+};
+
+const countRecentFeedbackByUid = async (uid, since) => {
+  const snapshot = await admin.firestore()
+    .collection('feedback')
+    .where('user.uid', '==', uid)
+    .where('createdAt', '>', since)
+    .count()
+    .get();
+  return snapshot.data().count || 0;
+};
+
+const countRecentFeedbackDocs = async (since) => {
+  const snapshot = await admin.firestore()
+    .collection('feedback')
+    .where('createdAt', '>', since)
+    .count()
+    .get();
+  return snapshot.data().count || 0;
+};
+
+exports.submitFeedback = onCall({ enforceAppCheck: true }, async (request) => {
+  if (!request.auth) {
+    throw new HttpsError('unauthenticated', 'Sign in to submit feedback.');
+  }
+  if (request.auth.token?.firebase?.sign_in_provider === 'anonymous') {
+    throw new HttpsError('permission-denied', 'Anonymous users cannot submit feedback.');
+  }
+
+  const rating = request.data?.rating;
+  const message = typeof request.data?.message === 'string'
+    ? request.data.message.trim()
+    : '';
+  const publishApproved = request.data?.publishApproved === true;
+  const publishNameApproved = request.data?.publishNameApproved === true;
+
+  if (!isValidRating(rating)) {
+    throw new HttpsError('invalid-argument', 'Rating must be an integer between 1 and 5.');
+  }
+  if (!message || message.length > MAX_FEEDBACK_MESSAGE_LENGTH) {
+    throw new HttpsError('invalid-argument',
+      `Message must be between 1 and ${MAX_FEEDBACK_MESSAGE_LENGTH} characters.`);
+  }
+
+  const uid = request.auth.uid;
+  const now = Date.now();
+  const [hourlyCount, dailyCount] = await Promise.all([
+    countRecentFeedbackByUid(uid, new Date(now - HOUR_MS)),
+    countRecentFeedbackByUid(uid, new Date(now - DAY_MS)),
+  ]);
+  if (hourlyCount >= MAX_FEEDBACK_PER_HOUR || dailyCount >= MAX_FEEDBACK_PER_DAY) {
+    throw new HttpsError('resource-exhausted',
+      'Too much feedback submitted recently. Please try again later.');
+  }
+
+  let displayName = null;
+  let email = null;
+  try {
+    const userSnap = await admin.firestore().collection('users').doc(uid).get();
+    if (userSnap.exists()) {
+      displayName = userSnap.data().displayName || null;
+      email = userSnap.data().email || null;
+    }
+  } catch (error) {
+    console.warn(`Could not load user profile for ${uid}:`, error);
+  }
+
+  await admin.firestore().collection('feedback').add({
+    rating,
+    message,
+    publishApproved,
+    publishNameApproved,
+    user: { uid, displayName, email },
+    createdAt: admin.firestore.FieldValue.serverTimestamp(),
+    aiStatus: 'pending',
+  });
+
+  return { ok: true };
+});
+
 const buildSchemaPrompt = () => {
   return [
     'Schema: {',
@@ -29,13 +129,13 @@ const buildSchemaPrompt = () => {
 
 const validateAnalysis = (analysis) => {
   if (!analysis || typeof analysis !== 'object') return false;
-  
+
   if (!FEEDBACK_SCHEMA.sentiment.includes(analysis.sentiment)) return false;
   if (!Array.isArray(analysis.topics)) return false;
   if (!FEEDBACK_SCHEMA.priority.includes(analysis.priority)) return false;
   if (typeof analysis.summary !== 'string') return false;
   if (typeof analysis.action !== 'string') return false;
-  
+
   return true;
 };
 
@@ -73,15 +173,41 @@ exports.classifyFeedback = onDocumentCreated('feedback/{feedbackId}', async (eve
     return;
   }
 
+  const message = typeof data.message === 'string' ? data.message : '';
+  if (!message || message.length > MAX_FEEDBACK_MESSAGE_LENGTH || !isValidRating(data.rating)) {
+    await snap.ref.update({
+      aiStatus: 'skipped_invalid_input',
+      analysisAt: admin.firestore.FieldValue.serverTimestamp(),
+    });
+    return;
+  }
+
+  if (!(await isAiFeedbackEnabled())) {
+    await snap.ref.update({
+      aiStatus: 'disabled',
+      analysisAt: admin.firestore.FieldValue.serverTimestamp(),
+    });
+    return;
+  }
+
+  const recentCount = await countRecentFeedbackDocs(new Date(Date.now() - HOUR_MS));
+  if (recentCount > MAX_CLASSIFICATIONS_PER_HOUR) {
+    await snap.ref.update({
+      aiStatus: 'skipped_rate_limit',
+      analysisAt: admin.firestore.FieldValue.serverTimestamp(),
+    });
+    return;
+  }
+
   await snap.ref.update({
     aiStatus: 'processing',
   });
 
   try {
-    const projectId = process.env.GCLOUD_PROJECT || 
-                      process.env.GCP_PROJECT || 
+    const projectId = process.env.GCLOUD_PROJECT ||
+                      process.env.GCP_PROJECT ||
                       admin.app().options.projectId;
-    
+
     const vertexAI = new VertexAI({
       project: projectId,
       location: vertexRegion,
@@ -90,7 +216,7 @@ exports.classifyFeedback = onDocumentCreated('feedback/{feedbackId}', async (eve
       model: vertexModel,
     });
 
-    const prompt = buildPrompt({ rating: data.rating, message: data.message });
+    const prompt = buildPrompt({ rating: data.rating, message });
     const result = await generativeModel.generateContent({
       contents: [{ role: 'user', parts: [{ text: prompt }] }],
       generationConfig: {
