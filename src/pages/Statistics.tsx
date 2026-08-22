@@ -1,12 +1,30 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, Navigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { Navigate } from 'react-router-dom';
 import { collection, getDocs, getCountFromServer } from 'firebase/firestore';
 import { db } from '../services/firebase';
+import type { UserDoc } from '../types/models';
+
+interface PlatformStats {
+  totalUsers: number;
+  totalQuestions: number;
+  totalCategories: number;
+  totalRanks: number;
+  usersByRank: Record<string, number>;
+  recentUsers: UserDoc[];
+}
+
+const EMPTY_STATS: PlatformStats = {
+  totalUsers: 0,
+  totalQuestions: 0,
+  totalCategories: 0,
+  totalRanks: 0,
+  usersByRank: {},
+  recentUsers: [],
+};
 
 // Pure data loader: returns the stats payload, no component state involved.
-const loadPlatformStats = async () => {
+const loadPlatformStats = async (): Promise<PlatformStats> => {
   // Fetch counts
   const [usersCount, questionsCount, categoriesCount, ranksCount] = await Promise.all([
     getCountFromServer(collection(db, 'users')),
@@ -17,11 +35,11 @@ const loadPlatformStats = async () => {
 
   // Fetch detailed user data for distribution
   const usersSnapshot = await getDocs(collection(db, 'users'));
-  const users = [];
-  const rankDistribution = {};
+  const users: UserDoc[] = [];
+  const rankDistribution: Record<string, number> = {};
 
   usersSnapshot.forEach((doc) => {
-    const userData = { id: doc.id, ...doc.data() };
+    const userData = { id: doc.id, ...doc.data() } as UserDoc;
     users.push(userData);
 
     // Count users by rank
@@ -32,8 +50,8 @@ const loadPlatformStats = async () => {
   // Sort users by creation date (most recent first)
   const recentUsers = users
     .sort((a, b) => {
-      const dateA = a.createdAt ? new Date(a.createdAt) : new Date(0);
-      const dateB = b.createdAt ? new Date(b.createdAt) : new Date(0);
+      const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+      const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
       return dateB - dateA;
     })
     .slice(0, 5);
@@ -50,14 +68,7 @@ const loadPlatformStats = async () => {
 
 function Statistics() {
   const { userData, loading: authLoading } = useAuth();
-  const [stats, setStats] = useState({
-    totalUsers: 0,
-    totalQuestions: 0,
-    totalCategories: 0,
-    totalRanks: 0,
-    usersByRank: {},
-    recentUsers: [],
-  });
+  const [stats, setStats] = useState<PlatformStats>(EMPTY_STATS);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -241,9 +252,9 @@ function Statistics() {
                             className="bg-orange-500 h-2 rounded-full transition-all"
                             style={{ width: `${percentage}%` }}
                             role="progressbar"
-                            aria-valuenow={percentage}
-                            aria-valuemin="0"
-                            aria-valuemax="100"
+                            aria-valuenow={Number(percentage)}
+                            aria-valuemin={0}
+                            aria-valuemax={100}
                           />
                         </div>
                       </div>

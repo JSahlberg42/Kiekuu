@@ -2,14 +2,15 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { getUserStatistics, getCategoryStatistics } from '../services/quizService';
+import type { UserStatistics, CategoryStatistic } from '../types/models';
 import logo from '../assets/images/Kiekuu_logo.jpg';
 
 function ProgressDashboard() {
   const { user } = useAuth();
-  const [stats, setStats] = useState(null);
-  const [categoryStats, setCategoryStats] = useState([]);
+  const [stats, setStats] = useState<UserStatistics | null>(null);
+  const [categoryStats, setCategoryStats] = useState<CategoryStatistic[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const loadStats = async () => {
@@ -32,7 +33,7 @@ function ProgressDashboard() {
     loadStats();
   }, [user]);
 
-  const getAccuracyColor = (accuracy) => {
+  const getAccuracyColor = (accuracy: number) => {
     if (accuracy >= 80) return 'text-green-400';
     if (accuracy >= 60) return 'text-yellow-400';
     return 'text-red-400';

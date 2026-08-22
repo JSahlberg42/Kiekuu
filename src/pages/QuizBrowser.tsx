@@ -4,15 +4,16 @@ import { useAuth } from '../context/AuthContext';
 import { getAvailableQuizzes } from '../services/quizService';
 import { getAllRanks } from '../services/rankService';
 import { logQuizStarted } from '../services/analyticsService';
+import type { QuizCard, Rank } from '../types/models';
 import logo from '../assets/images/Kiekuu_logo.jpg';
 
 function QuizBrowser() {
   const { userData } = useAuth();
   const navigate = useNavigate();
-  const [quizzes, setQuizzes] = useState([]);
-  const [ranks, setRanks] = useState([]);
+  const [quizzes, setQuizzes] = useState<QuizCard[]>([]);
+  const [ranks, setRanks] = useState<Rank[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [error, setError] = useState<string | null>(null);
   const [selectedDifficulty, setSelectedDifficulty] = useState('kaikki');
 
   useEffect(() => {
@@ -44,19 +45,19 @@ function QuizBrowser() {
    *   - The category has no requiredRankId, OR
    *   - The user's totalScore >= the required rank's requiredScore
    */
-  const isCategoryLocked = (quiz) => {
+  const isCategoryLocked = (quiz: QuizCard) => {
     if (!quiz.requiredRankId) return false;
     const requiredRank = ranks.find(r => r.id === quiz.requiredRankId);
     if (!requiredRank) return false;
     return userScore < requiredRank.requiredScore;
   };
 
-  const getRequiredRankName = (quiz) => {
+  const getRequiredRankName = (quiz: QuizCard) => {
     if (!quiz.requiredRankId) return null;
     return ranks.find(r => r.id === quiz.requiredRankId)?.name || null;
   };
 
-  const handleStartQuiz = (quiz) => {
+  const handleStartQuiz = (quiz: QuizCard) => {
     if (isCategoryLocked(quiz)) return;
     logQuizStarted(quiz.id, quiz.name, selectedDifficulty !== 'kaikki' ? selectedDifficulty : null);
     const params = new URLSearchParams();
@@ -226,4 +227,3 @@ function QuizBrowser() {
 }
 
 export default QuizBrowser;
-
