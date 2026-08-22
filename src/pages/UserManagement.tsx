@@ -1,24 +1,35 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
 import { getAllUsers, updateUser, deleteUserData } from '../services/userService';
 import { useAuth } from '../context/AuthContext';
 import { Navigate } from 'react-router-dom';
+import type { CategoryProgress, UserDoc, UserRole } from '../types/models';
+
+/** Users coming from userService always carry their document id. */
+type ManagedUser = UserDoc & { id: string };
+
+interface EditUserFormData {
+  displayName: string;
+  email: string;
+  role: UserRole;
+  rank: string;
+}
 
 function UserManagement() {
   const { userData, loading: authLoading } = useAuth();
-  const [users, setUsers] = useState([]);
+  const [users, setUsers] = useState<ManagedUser[]>([]);
   const [searchEmail, setSearchEmail] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [editingUser, setEditingUser] = useState(null);
-  const [deletingUser, setDeletingUser] = useState(null);
-  const [viewingProgressUser, setViewingProgressUser] = useState(null);
+  const [editingUser, setEditingUser] = useState<ManagedUser | null>(null);
+  const [deletingUser, setDeletingUser] = useState<ManagedUser | null>(null);
+  const [viewingProgressUser, setViewingProgressUser] = useState<ManagedUser | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
 
   const fetchUsers = async () => {
     try {
       const fetchedUsers = await getAllUsers();
-      setUsers(fetchedUsers);
+      setUsers(fetchedUsers as ManagedUser[]);
       setError('');
     } catch (err) {
       setError('Virhe käyttäjien hakemisessa');
@@ -34,7 +45,7 @@ function UserManagement() {
     getAllUsers()
       .then((fetchedUsers) => {
         if (cancelled) return;
-        setUsers(fetchedUsers);
+        setUsers(fetchedUsers as ManagedUser[]);
         setError('');
       })
       .catch((err) => {
@@ -57,7 +68,7 @@ function UserManagement() {
         user.email?.toLowerCase().includes(normalizedSearchEmail)
       );
 
-  const handleEditUser = async (userId, updates) => {
+  const handleEditUser = async (userId: string, updates: Partial<EditUserFormData>) => {
     try {
       setActionLoading(true);
       setError('');
@@ -72,7 +83,7 @@ function UserManagement() {
     }
   };
 
-  const handleDeleteUser = async (userId) => {
+  const handleDeleteUser = async (userId: string) => {
     try {
       setActionLoading(true);
       setError('');
@@ -242,16 +253,23 @@ function UserManagement() {
   );
 }
 
+interface EditUserModalProps {
+  user: ManagedUser;
+  onClose: () => void;
+  onSave: (userId: string, updates: Partial<EditUserFormData>) => void | Promise<void>;
+  loading: boolean;
+}
+
 // Edit User Modal Component
-function EditUserModal({ user, onClose, onSave, loading }) {
-  const [formData, setFormData] = useState({
+function EditUserModal({ user, onClose, onSave, loading }: EditUserModalProps) {
+  const [formData, setFormData] = useState<EditUserFormData>({
     displayName: user.displayName || '',
     email: user.email || '',
     role: user.role || 'user',
     rank: user.rank || 'harjoittelija',
   });
 
-  const handleSubmit = (e) => {
+  const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
     onSave(user.id, formData);
   };
@@ -304,7 +322,7 @@ function EditUserModal({ user, onClose, onSave, loading }) {
             <select
               id="edit-role"
               value={formData.role}
-              onChange={(e) => setFormData({ ...formData, role: e.target.value })}
+              onChange={(e) => setFormData({ ...formData, role: e.target.value as UserRole })}
               className="w-full px-4 py-3 border border-slate-800 rounded-xl bg-slate-950 text-slate-50 focus:outline-hidden focus:ring-2 focus:ring-orange-500 focus:border-orange-500 min-h-[44px]"
             >
               <option value="user">User</option>
@@ -350,8 +368,15 @@ function EditUserModal({ user, onClose, onSave, loading }) {
   );
 }
 
+interface DeleteConfirmModalProps {
+  user: ManagedUser;
+  onClose: () => void;
+  onConfirm: () => void | Promise<void>;
+  loading: boolean;
+}
+
 // Delete Confirmation Modal Component
-function DeleteConfirmModal({ user, onClose, onConfirm, loading }) {
+function DeleteConfirmModal({ user, onClose, onConfirm, loading }: DeleteConfirmModalProps) {
   return (
     <div
       className="fixed inset-0 bg-slate-950/90 flex items-center justify-center z-50 p-4"
@@ -393,15 +418,22 @@ function DeleteConfirmModal({ user, onClose, onConfirm, loading }) {
   );
 }
 
-function UserProgressModal({ user, onClose }) {
+interface UserProgressModalProps {
+  user: ManagedUser;
+  onClose: () => void;
+}
+
+function UserProgressModal({ user, onClose }: UserProgressModalProps) {
   const progress = user.progress || {};
   const answered = progress.questionsAnswered || 0;
   const correct = progress.correctAnswers || 0;
   const accuracy = answered > 0 ? Math.round((correct / answered) * 100) : 0;
   const totalScore = progress.totalScore || 0;
   const lastActivity = user.lastActivity || user.createdAt || null;
-  const progressByCategory = user.progressByCategory || {};
-  const categoryStats = Object.values(progressByCategory).filter(stat => stat && stat.answered > 0);
+  const progressByCategory: Record<string, CategoryProgress> = user.progressByCategory || {};
+  const categoryStats = Object.values(progressByCategory).filter(
+    (stat): stat is CategoryProgress => !!stat && stat.answered > 0
+  );
 
   return (
     <div

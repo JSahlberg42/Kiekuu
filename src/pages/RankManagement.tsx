@@ -1,17 +1,20 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
 import { getAllRanks, createRank, updateRank, deleteRank } from '../services/rankService';
 import { useAuth } from '../context/AuthContext';
 import { Navigate } from 'react-router-dom';
+import type { Rank } from '../types/models';
+
+type RankInput = Omit<Rank, 'id' | 'createdAt' | 'updatedAt'>;
 
 function RankManagement() {
   const { userData, loading: authLoading } = useAuth();
-  const [ranks, setRanks] = useState([]);
+  const [ranks, setRanks] = useState<Rank[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [addingRank, setAddingRank] = useState(false);
-  const [editingRank, setEditingRank] = useState(null);
-  const [deletingRank, setDeletingRank] = useState(null);
+  const [editingRank, setEditingRank] = useState<Rank | null>(null);
+  const [deletingRank, setDeletingRank] = useState<Rank | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
 
   const fetchRanks = async () => {
@@ -48,7 +51,7 @@ function RankManagement() {
     };
   }, [authLoading, userData]);
 
-  const handleCreateRank = async (rankData) => {
+  const handleCreateRank = async (rankData: RankInput) => {
     try {
       setActionLoading(true);
       setError('');
@@ -63,7 +66,7 @@ function RankManagement() {
     }
   };
 
-  const handleUpdateRank = async (rankId, updates) => {
+  const handleUpdateRank = async (rankId: string, updates: Partial<RankInput>) => {
     try {
       setActionLoading(true);
       setError('');
@@ -78,7 +81,7 @@ function RankManagement() {
     }
   };
 
-  const handleDeleteRank = async (rankId) => {
+  const handleDeleteRank = async (rankId: string) => {
     try {
       setActionLoading(true);
       setError('');
@@ -253,9 +256,27 @@ function RankManagement() {
   );
 }
 
+interface RankFormData {
+  name: string;
+  description: string;
+  requiredScore: string | number;
+  /** Empty string / null means "use platform default" */
+  minAccuracy: string | number | null;
+  icon: string;
+  color: string;
+}
+
+interface RankFormModalProps {
+  rank?: Rank | null;
+  onClose: () => void;
+  onSave: (data: RankInput) => void | Promise<void>;
+  loading: boolean;
+  title: string;
+}
+
 // Rank Form Modal Component
-function RankFormModal({ rank, onClose, onSave, loading, title }) {
-  const [formData, setFormData] = useState({
+function RankFormModal({ rank, onClose, onSave, loading, title }: RankFormModalProps) {
+  const [formData, setFormData] = useState<RankFormData>({
     name: rank?.name || '',
     description: rank?.description || '',
     requiredScore: rank?.requiredScore || 0,
@@ -264,17 +285,18 @@ function RankFormModal({ rank, onClose, onSave, loading, title }) {
     color: rank?.color || '#ef4444',
   });
 
-  const handleSubmit = (e) => {
+  const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
-    const data = {
-      ...formData,
-      requiredScore: parseInt(formData.requiredScore, 10),
+    const data: RankInput = {
+      name: formData.name,
+      description: formData.description,
+      requiredScore: parseInt(String(formData.requiredScore), 10),
+      icon: formData.icon,
+      color: formData.color,
     };
     // Only include minAccuracy if provided, otherwise omit so platform-wide default applies
     if (formData.minAccuracy !== '' && formData.minAccuracy !== null) {
-      data.minAccuracy = parseInt(formData.minAccuracy, 10);
-    } else {
-      delete data.minAccuracy;
+      data.minAccuracy = parseInt(String(formData.minAccuracy), 10);
     }
     onSave(data);
   };
@@ -330,7 +352,7 @@ function RankFormModal({ rank, onClose, onSave, loading, title }) {
             <input
               type="number"
               id="rank-min-accuracy"
-              value={formData.minAccuracy}
+              value={formData.minAccuracy ?? ''}
               onChange={(e) => setFormData({ ...formData, minAccuracy: e.target.value })}
               min="0"
               max="100"
@@ -418,8 +440,15 @@ function RankFormModal({ rank, onClose, onSave, loading, title }) {
   );
 }
 
+interface DeleteConfirmModalProps {
+  rank: Rank;
+  onClose: () => void;
+  onConfirm: () => void | Promise<void>;
+  loading: boolean;
+}
+
 // Delete Confirmation Modal Component
-function DeleteConfirmModal({ rank, onClose, onConfirm, loading }) {
+function DeleteConfirmModal({ rank, onClose, onConfirm, loading }: DeleteConfirmModalProps) {
   return (
     <div
       className="fixed inset-0 bg-slate-950/90 flex items-center justify-center z-50 p-4"

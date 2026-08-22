@@ -1,23 +1,24 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, type FormEvent, type ChangeEvent } from 'react';
 import { Link } from 'react-router-dom';
 import { getAllQuestions, createQuestion, updateQuestion, deleteQuestion } from '../services/questionService';
 import { getAllCategories } from '../services/categoryService';
-import { generateQuestions, readFileContent } from '../services/aiService';
+import { generateQuestions, readFileContent, type AiFileData } from '../services/aiService';
 import { useAuth } from '../context/AuthContext';
 import { Navigate } from 'react-router-dom';
+import type { Category, Question, QuestionSource, GeneratedQuestion } from '../types/models';
 
 function QuestionManagement() {
   const { user, userData, loading: authLoading } = useAuth();
-  const [questions, setQuestions] = useState([]);
-  const [categories, setCategories] = useState([]);
+  const [questions, setQuestions] = useState<Question[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [sortOption, setSortOption] = useState('newest');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [addingQuestion, setAddingQuestion] = useState(false);
-  const [editingQuestion, setEditingQuestion] = useState(null);
-  const [deletingQuestion, setDeletingQuestion] = useState(null);
+  const [editingQuestion, setEditingQuestion] = useState<Question | null>(null);
+  const [deletingQuestion, setDeletingQuestion] = useState<Question | null>(null);
   const [generatingWithAI, setGeneratingWithAI] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
 
@@ -45,15 +46,15 @@ function QuestionManagement() {
   }, [authLoading, userData]);
 
   const normalizedQuery = searchQuery.trim().toLowerCase();
-  const categoryMap = categories.reduce((acc, category) => {
+  const categoryMap = categories.reduce<Record<string, string>>((acc, category) => {
     acc[category.id] = category.name || '';
     return acc;
   }, {});
 
-  const matchesSearch = (question) => {
+  const matchesSearch = (question: Question) => {
     if (!normalizedQuery) return true;
 
-    const categoryName = categoryMap[question.categoryId] || '';
+    const categoryName = categoryMap[question.categoryId || ''] || '';
     const createdByName = question.createdBy?.displayName || '';
     const createdByEmail = question.createdBy?.email || '';
     const optionsText = (question.options || []).join(' ');
@@ -73,29 +74,29 @@ function QuestionManagement() {
     return haystack.includes(normalizedQuery);
   };
 
-  const sortQuestions = (list) => {
+  const sortQuestions = (list: Question[]): Question[] => {
       switch (sortOption) {
         case 'oldest':
-          return [...list].sort((a, b) => new Date(a.createdAt || 0) - new Date(b.createdAt || 0));
+          return [...list].sort((a, b) => new Date(a.createdAt || 0).getTime() - new Date(b.createdAt || 0).getTime());
         case 'question-asc':
           return [...list].sort((a, b) => (a.question || '').localeCompare(b.question || '', 'fi'));
         case 'question-desc':
           return [...list].sort((a, b) => (b.question || '').localeCompare(a.question || '', 'fi'));
         case 'category-asc':
           return [...list].sort((a, b) => {
-            const aName = categoryMap[a.categoryId] || '';
-            const bName = categoryMap[b.categoryId] || '';
+            const aName = categoryMap[a.categoryId || ''] || '';
+            const bName = categoryMap[b.categoryId || ''] || '';
             return aName.localeCompare(bName, 'fi');
           });
         case 'category-desc':
           return [...list].sort((a, b) => {
-            const aName = categoryMap[a.categoryId] || '';
-            const bName = categoryMap[b.categoryId] || '';
+            const aName = categoryMap[a.categoryId || ''] || '';
+            const bName = categoryMap[b.categoryId || ''] || '';
             return bName.localeCompare(aName, 'fi');
           });
         case 'newest':
         default:
-          return [...list].sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
+          return [...list].sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
       }
 };
 
@@ -116,13 +117,19 @@ const fetchQuestions = async () => {
     }
   };
 
-  const buildCreatedBy = () => ({
+  interface CreatedByInfo {
+    uid: string | null;
+    displayName: string | null;
+    email: string | null;
+  }
+
+  const buildCreatedBy = (): CreatedByInfo => ({
     uid: userData?.uid || user?.uid || null,
     displayName: userData?.displayName || user?.displayName || null,
     email: userData?.email || user?.email || null,
   });
 
-  const handleCreateQuestion = async (questionData) => {
+  const handleCreateQuestion = async (questionData: Omit<Question, 'id' | 'createdAt' | 'updatedAt'>) => {
     try {
       setActionLoading(true);
       setError('');
@@ -140,7 +147,7 @@ const fetchQuestions = async () => {
     }
   };
 
-  const handleUpdateQuestion = async (questionId, updates) => {
+  const handleUpdateQuestion = async (questionId: string, updates: Partial<Omit<Question, 'id'>>) => {
     try {
       setActionLoading(true);
       setError('');
@@ -155,7 +162,7 @@ const fetchQuestions = async () => {
     }
   };
 
-  const handleDeleteQuestion = async (questionId) => {
+  const handleDeleteQuestion = async (questionId: string) => {
     try {
       setActionLoading(true);
       setError('');
@@ -170,7 +177,7 @@ const fetchQuestions = async () => {
     }
   };
 
-  const handleBulkCreateQuestions = async (questionsArray) => {
+  const handleBulkCreateQuestions = async (questionsArray: GeneratedQuestionWithCategory[]) => {
     try {
       setError('');
       const createdBy = buildCreatedBy();
@@ -463,12 +470,36 @@ const fetchQuestions = async () => {
   );
 }
 
+interface QuestionFormData {
+  question: string;
+  options: string[];
+  correctIndex: number;
+  explanation: string;
+  categoryId: string;
+  source: Required<Pick<QuestionSource, 'title' | 'page' | 'url'>>;
+}
+
+type QuestionFormOutput = Omit<QuestionFormData, 'source'> & { source?: QuestionSource };
+
+interface QuestionFormModalProps {
+  question?: Question | null;
+  categories: Category[];
+  onClose: () => void;
+  onSave: (data: QuestionFormOutput) => void | Promise<void>;
+  loading: boolean;
+  title: string;
+  initialCategoryId?: string;
+}
+
 // Question Form Modal Component
-function QuestionFormModal({ question, categories, onClose, onSave, loading, title, initialCategoryId = '' }) {
-  const [formData, setFormData] = useState({
+function QuestionFormModal({ question, categories, onClose, onSave, loading, title, initialCategoryId = '' }: QuestionFormModalProps) {
+  const [formData, setFormData] = useState<QuestionFormData>(() => ({
     question: question?.question || '',
     options: question?.options || ['', '', '', ''],
-    correctIndex: question?.correctIndex ?? 0,
+    correctIndex:
+      typeof question?.correctIndex === 'number'
+        ? question.correctIndex
+        : parseInt(String(question?.correctIndex ?? ''), 10) || 0,
     explanation: question?.explanation || '',
     categoryId: question?.categoryId || initialCategoryId,
     source: {
@@ -476,9 +507,9 @@ function QuestionFormModal({ question, categories, onClose, onSave, loading, tit
       page: question?.source?.page || '',
       url: question?.source?.url || '',
     },
-  });
+  }));
 
-  const handleOptionChange = (index, value) => {
+  const handleOptionChange = (index: number, value: string) => {
     const newOptions = [...formData.options];
     newOptions[index] = value;
     setFormData({ ...formData, options: newOptions });
@@ -490,7 +521,7 @@ function QuestionFormModal({ question, categories, onClose, onSave, loading, tit
     }
   };
 
-  const removeOption = (index) => {
+  const removeOption = (index: number) => {
     if (formData.options.length > 2) {
       const newOptions = formData.options.filter((_, i) => i !== index);
       setFormData({
@@ -503,7 +534,7 @@ function QuestionFormModal({ question, categories, onClose, onSave, loading, tit
     }
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
     
     // Filter out empty options
@@ -514,15 +545,17 @@ function QuestionFormModal({ question, categories, onClose, onSave, loading, tit
       return;
     }
     
-    const questionData = {
-      ...formData,
+    const questionData: QuestionFormOutput = {
+      question: formData.question,
       options: filteredOptions,
       correctIndex: Math.min(formData.correctIndex, filteredOptions.length - 1),
+      explanation: formData.explanation,
+      categoryId: formData.categoryId,
     };
     
     // Remove empty source fields
-    if (!questionData.source.title && !questionData.source.page && !questionData.source.url) {
-      delete questionData.source;
+    if (formData.source.title || formData.source.page || formData.source.url) {
+      questionData.source = formData.source;
     }
     
     onSave(questionData);
@@ -701,8 +734,15 @@ function QuestionFormModal({ question, categories, onClose, onSave, loading, tit
   );
 }
 
+interface DeleteConfirmModalProps {
+  question: Question;
+  onClose: () => void;
+  onConfirm: () => void | Promise<void>;
+  loading: boolean;
+}
+
 // Delete Confirmation Modal Component
-function DeleteConfirmModal({ question, onClose, onConfirm, loading }) {
+function DeleteConfirmModal({ question, onClose, onConfirm, loading }: DeleteConfirmModalProps) {
   return (
     <div
       className="fixed inset-0 bg-slate-950/90 flex items-center justify-center z-50 p-4"
@@ -744,24 +784,43 @@ function DeleteConfirmModal({ question, onClose, onConfirm, loading }) {
   );
 }
 
+type GeneratedQuestionWithCategory = GeneratedQuestion & { categoryId: string };
+
+interface AIGenerationModalProps {
+  categories: Category[];
+  onClose: () => void;
+  onGenerate: (questions: GeneratedQuestionWithCategory[]) => Promise<void>;
+  initialCategoryId?: string;
+}
+
+interface AIGenerationFormData {
+  categoryId: string;
+  questionCount: number;
+  difficulty: string;
+  contextType: 'text' | 'url' | 'file';
+  contextText: string;
+  contextUrl: string;
+  contextFile: File | null;
+}
+
 // AI Generation Modal Component
-function AIGenerationModal({ categories, onClose, onGenerate, initialCategoryId = '' }) {
-  const [formData, setFormData] = useState({
+function AIGenerationModal({ categories, onClose, onGenerate, initialCategoryId = '' }: AIGenerationModalProps) {
+  const [formData, setFormData] = useState<AIGenerationFormData>({
     categoryId: initialCategoryId,
     questionCount: 5,
     difficulty: 'medium',
-    contextType: 'text', // 'text', 'url', 'file'
+    contextType: 'text',
     contextText: '',
     contextUrl: '',
     contextFile: null,
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [generatedQuestions, setGeneratedQuestions] = useState([]);
+  const [generatedQuestions, setGeneratedQuestions] = useState<GeneratedQuestionWithCategory[]>([]);
   const [step, setStep] = useState(1); // 1: input, 2: review
 
-  const handleFileChange = (e) => {
-    const file = e.target.files[0];
+  const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
     if (file) {
       setFormData({ ...formData, contextFile: file });
     }
@@ -774,7 +833,7 @@ function AIGenerationModal({ categories, onClose, onGenerate, initialCategoryId 
 
       // Get context based on type
       let context = '';
-      let fileData = null;
+      let fileData: AiFileData | undefined;
       let url = '';
       
       if (formData.contextType === 'text') {
@@ -795,9 +854,9 @@ function AIGenerationModal({ categories, onClose, onGenerate, initialCategoryId 
         const fileContent = await readFileContent(formData.contextFile);
         
         // Check if it's a PDF (returns object) or text file (returns string)
-        if (typeof fileContent === 'object' && fileContent.mimeType) {
+        if (typeof fileContent !== 'string' && 'mimeType' in fileContent) {
           fileData = fileContent;
-        } else {
+        } else if (typeof fileContent === 'string') {
           context = fileContent;
         }
       }
@@ -827,7 +886,7 @@ function AIGenerationModal({ categories, onClose, onGenerate, initialCategoryId 
       setGeneratedQuestions(questionsWithCategory);
       setStep(2);
     } catch (err) {
-      setError(err.message || 'Virhe kysymysten generoinnissa');
+      setError(err instanceof Error ? err.message : 'Virhe kysymysten generoinnissa');
       console.error(err);
     } finally {
       setLoading(false);
@@ -848,7 +907,7 @@ function AIGenerationModal({ categories, onClose, onGenerate, initialCategoryId 
     }
   };
 
-  const removeQuestion = (index) => {
+  const removeQuestion = (index: number) => {
     setGeneratedQuestions(generatedQuestions.filter((_, i) => i !== index));
   };
 
