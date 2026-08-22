@@ -1,9 +1,12 @@
 const admin = require('firebase-admin');
+const { getFirestore, FieldValue } = require('firebase-admin/firestore');
 const { onDocumentCreated } = require('firebase-functions/v2/firestore');
 const { onCall, HttpsError } = require('firebase-functions/v2/https');
 const { VertexAI } = require('@google-cloud/vertexai');
 
 admin.initializeApp();
+
+const db = getFirestore();
 
 const vertexRegion = process.env.VERTEX_AI_LOCATION || 'us-central1';
 const vertexModel = process.env.VERTEX_AI_MODEL || 'gemini-2.5-flash';
@@ -29,7 +32,7 @@ const isValidRating = (rating) =>
 
 const isAiFeedbackEnabled = async () => {
   try {
-    const snap = await admin.firestore().collection('config').doc('aiSettings').get();
+    const snap = await db.collection('config').doc('aiSettings').get();
     return snap.data()?.aiFeedbackEnabled !== false;
   } catch (error) {
     console.warn('Failed to read AI kill switch, assuming enabled:', error);
@@ -38,7 +41,7 @@ const isAiFeedbackEnabled = async () => {
 };
 
 const countRecentFeedbackByUid = async (uid, since) => {
-  const snapshot = await admin.firestore()
+  const snapshot = await db
     .collection('feedback')
     .where('user.uid', '==', uid)
     .where('createdAt', '>', since)
@@ -48,7 +51,7 @@ const countRecentFeedbackByUid = async (uid, since) => {
 };
 
 const countRecentFeedbackDocs = async (since) => {
-  const snapshot = await admin.firestore()
+  const snapshot = await db
     .collection('feedback')
     .where('createdAt', '>', since)
     .count()
@@ -93,7 +96,7 @@ exports.submitFeedback = onCall({ enforceAppCheck: true }, async (request) => {
   let displayName = null;
   let email = null;
   try {
-    const userSnap = await admin.firestore().collection('users').doc(uid).get();
+    const userSnap = await db.collection('users').doc(uid).get();
     if (userSnap.exists()) {
       displayName = userSnap.data().displayName || null;
       email = userSnap.data().email || null;
@@ -102,13 +105,13 @@ exports.submitFeedback = onCall({ enforceAppCheck: true }, async (request) => {
     console.warn(`Could not load user profile for ${uid}:`, error);
   }
 
-  await admin.firestore().collection('feedback').add({
+  await db.collection('feedback').add({
     rating,
     message,
     publishApproved,
     publishNameApproved,
     user: { uid, displayName, email },
-    createdAt: admin.firestore.FieldValue.serverTimestamp(),
+    createdAt: FieldValue.serverTimestamp(),
     aiStatus: 'pending',
   });
 
@@ -177,7 +180,7 @@ exports.classifyFeedback = onDocumentCreated('feedback/{feedbackId}', async (eve
   if (!message || message.length > MAX_FEEDBACK_MESSAGE_LENGTH || !isValidRating(data.rating)) {
     await snap.ref.update({
       aiStatus: 'skipped_invalid_input',
-      analysisAt: admin.firestore.FieldValue.serverTimestamp(),
+      analysisAt: FieldValue.serverTimestamp(),
     });
     return;
   }
@@ -185,7 +188,7 @@ exports.classifyFeedback = onDocumentCreated('feedback/{feedbackId}', async (eve
   if (!(await isAiFeedbackEnabled())) {
     await snap.ref.update({
       aiStatus: 'disabled',
-      analysisAt: admin.firestore.FieldValue.serverTimestamp(),
+      analysisAt: FieldValue.serverTimestamp(),
     });
     return;
   }
@@ -194,7 +197,7 @@ exports.classifyFeedback = onDocumentCreated('feedback/{feedbackId}', async (eve
   if (recentCount > MAX_CLASSIFICATIONS_PER_HOUR) {
     await snap.ref.update({
       aiStatus: 'skipped_rate_limit',
-      analysisAt: admin.firestore.FieldValue.serverTimestamp(),
+      analysisAt: FieldValue.serverTimestamp(),
     });
     return;
   }
@@ -247,14 +250,14 @@ exports.classifyFeedback = onDocumentCreated('feedback/{feedbackId}', async (eve
       analysis: analysis,
       analysisModel: vertexModel,
       analysisRaw: analysis ? null : text,
-      analysisAt: admin.firestore.FieldValue.serverTimestamp(),
+      analysisAt: FieldValue.serverTimestamp(),
     });
   } catch (error) {
     console.error('Feedback classification failed:', error);
     await snap.ref.update({
       aiStatus: 'error',
       analysisError: error.message || 'Classification failed',
-      analysisAt: admin.firestore.FieldValue.serverTimestamp(),
+      analysisAt: FieldValue.serverTimestamp(),
     });
   }
 });
