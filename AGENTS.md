@@ -6,8 +6,9 @@ Kiekuu: gamified quiz platform for Finnish volunteer fire departments (VPK). Rea
 
 ```bash
 npm run dev        # do NOT start this yourself - the user runs the dev server
-npm run lint       # eslint src --ext js,jsx (only check configured; no typecheck, no test suite)
+npm run lint       # eslint src (only check configured; no test suite)
 npm run lint:fix
+npm run typecheck  # tsc --noEmit, strict mode
 npm run build      # vite build -> dist/
 ```
 
@@ -25,7 +26,7 @@ npm run build      # vite build -> dist/
 
 ## Hard constraints
 
-- **No TypeScript.** Plain JavaScript ES6+ only (.js/.jsx). No .ts/.tsx files.
+- **TypeScript for `src/`.** All `src/` code is TypeScript (`.ts`/`.tsx`), `strict: true`, gated by `npm run typecheck` in CI. Legacy `.js/.jsx` files under `src/` exist only during the ongoing incremental migration - convert them when touching them. `firebase/functions/` and `scripts/` stay plain JavaScript.
 - **UI text is Finnish; code identifiers and docs are English.**
 - Follow `STYLEGUIDE.md` ("Tactical Dark Mode": slate-950 bg, orange-500 primary, `rounded-xl`, subtle `border-slate-800`, lucide-react icons) and `.github/copilot/instructions.md` (question data shape, naming, patterns) for all UI work.
 - Mobile-first Tailwind responsive design.
