@@ -1,10 +1,19 @@
-import { useState } from 'react';
+import { useState, type ChangeEvent, type FormEvent } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { signUp, signInWithGoogle } from '../services/authService';
 import { logSignUp } from '../services/analyticsService';
+import { firebaseErrorCode, firebaseErrorMessage } from '../utils/firebaseErrors';
 import logo from '../assets/images/Kiekuu_logo.jpg';
+
+interface SignUpFormData {
+  displayName: string;
+  email: string;
+  password: string;
+  confirmPassword: string;
+}
+
 function SignUp() {
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<SignUpFormData>({
     displayName: '',
     email: '',
     password: '',
@@ -14,14 +23,15 @@ function SignUp() {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
-  const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value,
-    });
+  const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
   };
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setError('');
 
@@ -43,7 +53,7 @@ function SignUp() {
       logSignUp('email');
       navigate('/');
     } catch (err) {
-      setError(getErrorMessage(err.code));
+      setError(getErrorMessage(firebaseErrorCode(err)));
     } finally {
       setLoading(false);
     }
@@ -58,17 +68,17 @@ function SignUp() {
       logSignUp('google');
       navigate('/');
     } catch (err) {
-      if (err.code === 'auth/popup-closed-by-user') {
+      if (firebaseErrorCode(err) === 'auth/popup-closed-by-user') {
         setError('Rekisteröityminen peruutettiin');
       } else {
-        setError(getErrorMessage(err.code) || 'Google-rekisteröityminen epäonnistui');
+        setError(getErrorMessage(firebaseErrorCode(err)) || firebaseErrorMessage(err) || 'Google-rekisteröityminen epäonnistui');
       }
     } finally {
       setLoading(false);
     }
   };
 
-  const getErrorMessage = (code) => {
+  const getErrorMessage = (code?: string) => {
     switch (code) {
       case 'auth/email-already-in-use':
         return 'Sähköpostiosoite on jo käytössä';

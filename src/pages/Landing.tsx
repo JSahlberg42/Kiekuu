@@ -1,5 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import { signInAnonymouslyUser, signInWithGoogle } from '../services/authService';
+import { firebaseErrorCode, firebaseErrorMessage } from '../utils/firebaseErrors';
 import logo from '../assets/images/Kiekuu_logo.jpg';
 import { useState } from 'react';
 
@@ -20,21 +21,20 @@ function Landing() {
     } catch (err) {
       console.error('Anonymous sign in error:', err);
       console.error('Error details:', {
-        code: err.code,
-        message: err.message,
-        name: err.name
+        code: firebaseErrorCode(err),
+        message: firebaseErrorMessage(err),
       });
-      
+
       // Show user-friendly error message
       let errorMessage = 'Aloitus epäonnistui. ';
-      if (err.message && err.message.includes('timeout')) {
+      if (firebaseErrorMessage(err)?.includes('timeout')) {
         errorMessage += 'Yhteys aikakatkaistiin. Tarkista internetyhteytesi ja yritä uudelleen.';
-      } else if (err.code === 'permission-denied') {
+      } else if (firebaseErrorCode(err) === 'permission-denied') {
         errorMessage += 'Lupa evätty. Ota yhteyttä tukeen.';
       } else {
         errorMessage += 'Yritä uudelleen hetken kuluttua.';
       }
-      
+
       setError(errorMessage);
     } finally {
       setLoading(false);
@@ -48,10 +48,10 @@ function Landing() {
       await signInWithGoogle();
       navigate('/');
     } catch (err) {
-      if (err.code === 'auth/popup-closed-by-user') {
+      if (firebaseErrorCode(err) === 'auth/popup-closed-by-user') {
         setError('Kirjautuminen peruutettiin');
       } else {
-        setError(err.message || 'Google-kirjautuminen epäonnistui');
+        setError(firebaseErrorMessage(err) || 'Google-kirjautuminen epäonnistui');
       }
     } finally {
       setLoading(false);
@@ -66,7 +66,7 @@ function Landing() {
     <div className="min-h-screen flex items-center justify-center bg-slate-950 px-4">
       <div className="max-w-md w-full">
         <div className="text-center mb-8">
-          <div 
+          <div
             className="w-24 h-24 sm:w-32 sm:h-32 mx-auto mb-4 bg-center bg-no-repeat bg-contain opacity-90"
             style={{ backgroundImage: `url(${logo})`, filter: 'brightness(1.1) contrast(1.05)' }}
             role="img"

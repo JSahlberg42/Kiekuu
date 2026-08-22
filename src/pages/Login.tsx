@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useState, type FormEvent } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { signIn, signInWithGoogle } from '../services/authService';
 import { logLogin } from '../services/analyticsService';
+import { firebaseErrorCode, firebaseErrorMessage } from '../utils/firebaseErrors';
 import logo from '../assets/images/Kiekuu_logo.jpg';
 function Login() {
   const [email, setEmail] = useState('');
@@ -10,7 +11,7 @@ function Login() {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setError('');
     setLoading(true);
@@ -20,7 +21,7 @@ function Login() {
       logLogin('email');
       navigate('/');
     } catch (err) {
-      setError(getErrorMessage(err.code));
+      setError(getErrorMessage(firebaseErrorCode(err)));
     } finally {
       setLoading(false);
     }
@@ -35,17 +36,17 @@ function Login() {
       logLogin('google');
       navigate('/');
     } catch (err) {
-      if (err.code === 'auth/popup-closed-by-user') {
+      if (firebaseErrorCode(err) === 'auth/popup-closed-by-user') {
         setError('Kirjautuminen peruutettiin');
       } else {
-        setError(getErrorMessage(err.code) || 'Google-kirjautuminen epäonnistui');
+        setError(getErrorMessage(firebaseErrorCode(err)) || firebaseErrorMessage(err) || 'Google-kirjautuminen epäonnistui');
       }
     } finally {
       setLoading(false);
     }
   };
 
-  const getErrorMessage = (code) => {
+  const getErrorMessage = (code?: string) => {
     switch (code) {
       case 'auth/invalid-email':
         return 'Virheellinen sähköpostiosoite';
