@@ -1,7 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { submitFeedback } from '../services/feedbackService';
+import { firebaseErrorCode } from '../utils/firebaseErrors';
 import logo from '../assets/images/Kiekuu_logo.jpg';
 
 function Feedback() {
@@ -25,7 +26,7 @@ function Feedback() {
     }
   }, [success]);
 
-  const handleSubmit = async (event) => {
+  const handleSubmit = async (event: FormEvent) => {
     event.preventDefault();
     if (isAnonymous) {
       setError('Palaute on saatavilla vain kirjautuneille käyttäjille.');
@@ -52,7 +53,7 @@ function Feedback() {
       setPublishNameApproved(false);
     } catch (submitError) {
       console.error('Feedback submit failed:', submitError);
-      const code = submitError?.code || '';
+      const code = firebaseErrorCode(submitError);
       if (code === 'functions/resource-exhausted') {
         setError('Olet lähettänyt paljon palautetta viime aikoina. Kokeile myöhemmin uudelleen.');
       } else if (code === 'functions/invalid-argument') {

@@ -2,7 +2,9 @@ import { Link } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { logOut } from '../services/authService';
-import LinkAccountModal from '../components/LinkAccountModal';import logo from '../assets/images/Kiekuu_logo.jpg';
+import LinkAccountModal from '../components/LinkAccountModal';
+import logo from '../assets/images/Kiekuu_logo.jpg';
+
 function Home() {
   const { user, userData } = useAuth();
   const [linkModalDismissed, setLinkModalDismissed] = useState(false);
@@ -17,7 +19,7 @@ function Home() {
   const shouldShowLinkModal =
     linkModalDismissed === false &&
     !!user?.isAnonymous &&
-    userData?.progress?.questionsAnswered > 0 &&
+    (userData?.progress?.questionsAnswered ?? 0) > 0 &&
     userData?.progress?.currentLevel !== 'harjoittelija';
 
   useEffect(() => {

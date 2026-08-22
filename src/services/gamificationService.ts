@@ -145,12 +145,13 @@ export const shuffleQuestionOptions = (question: Question): Question => {
 export const getRandomizedQuestions = (
   questions: Question[],
   maxCount = 10,
-  maxDifficulty: QuestionDifficulty | null = null,
+  maxDifficulty: QuestionDifficulty | string | null = null,
 ): Question[] => {
   let pool = questions;
 
   if (maxDifficulty) {
-    const maxIndex = DIFFICULTY_ORDER.indexOf(maxDifficulty);
+    // Unknown difficulty strings simply yield no filter (indexOf === -1)
+    const maxIndex = DIFFICULTY_ORDER.indexOf(maxDifficulty as QuestionDifficulty);
     if (maxIndex !== -1) {
       const allowed = new Set<string>(DIFFICULTY_ORDER.slice(0, maxIndex + 1));
       const filtered = questions.filter((q) => allowed.has(q.difficulty || 'perustaso'));

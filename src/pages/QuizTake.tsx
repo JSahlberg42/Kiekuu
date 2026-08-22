@@ -1,10 +1,11 @@
 import { useEffect, useState, useRef } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { getQuestionsByCategory, getQuestionsByCategoryId, submitAnswer } from '../services/quizService';
+import { getQuestionsByCategoryId, submitAnswer } from '../services/quizService';
 import { isFirestoreOfflineError, logFirestoreErrorContext } from '../utils/firestoreDiagnostics';
 import { getRandomizedQuestions, calculatePoints, DEFAULT_DIFFICULTY_POINTS, DEFAULT_DIFFICULTY_PENALTIES } from '../services/gamificationService';
 import { logAnswerSubmitted, logQuizCompleted } from '../services/analyticsService';
+import type { QuestionDifficulty } from '../types/models';
 import logo from '../assets/images/Kiekuu_logo.jpg';
 
 // Animation duration for correct answer flash (matches animate-pulse duration)
@@ -12,10 +13,10 @@ const FLASH_ANIMATION_DURATION_MS = 200;
 
 // Elapsed seconds helper kept at module scope: clock reads are event-time
 // operations and must not be evaluated during render.
-const secondsSince = (fromMs) => Math.round((Date.now() - fromMs) / 1000);
+const secondsSince = (fromMs: number) => Math.round((Date.now() - fromMs) / 1000);
 
 function QuizTake() {
-  const { user, userData } = useAuth();
+  const { user } = useAuth();
   const submittingRef = useRef(false);
   const [searchParams] = useSearchParams();
 
@@ -23,18 +24,18 @@ function QuizTake() {
   const categoryName = searchParams.get('category') || '';
   const difficulty = searchParams.get('difficulty') || null;
 
-  const [questions, setQuestions] = useState([]);
+  const [questions, setQuestions] = useState<ReturnType<typeof getRandomizedQuestions>>([]);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
-  const [selectedAnswers, setSelectedAnswers] = useState({});
+  const [selectedAnswers, setSelectedAnswers] = useState<Record<number, number>>({});
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [quizComplete, setQuizComplete] = useState(false);
   const [totalPoints, setTotalPoints] = useState(0);
-  const [lastPointDelta, setLastPointDelta] = useState(null);
+  const [lastPointDelta, setLastPointDelta] = useState<number | null>(null);
   const [startTime] = useState(() => Date.now());
-  const [flashAnswer, setFlashAnswer] = useState(null);
-  const [quizResultTime, setQuizResultTime] = useState(null);
+  const [flashAnswer, setFlashAnswer] = useState<{ questionIndex: number; answerIndex: number } | null>(null);
+  const [quizResultTime, setQuizResultTime] = useState<number | null>(null);
 
   useEffect(() => {
     const loadQuestions = async () => {
@@ -46,9 +47,7 @@ function QuizTake() {
 
       try {
         setLoading(true);
-        const data = categoryId
-          ? await getQuestionsByCategoryId(categoryId, difficulty)
-          : await getQuestionsByCategory(categoryName, difficulty);
+        const data = await getQuestionsByCategoryId(categoryId, difficulty);
         if (data.length === 0) {
           setError('Kysymyksiä ei löytynyt');
         } else {
@@ -109,11 +108,11 @@ function QuizTake() {
   const isAnswered = selectedAnswers[currentQuestionIndex] !== undefined;
   const correctAnswers = Object.entries(selectedAnswers).reduce((count, [index, answerIndex]) => {
     const q = questions[parseInt(index)];
-    return count + (answerIndex === q.correctAnswerIndex ? 1 : 0);
+    return count + (answerIndex === q?.correctAnswerIndex ? 1 : 0);
   }, 0);
 
-  const handleSelectAnswer = async (answerIndex) => {
-    if (submitting || quizComplete || isAnswered || submittingRef.current) {
+  const handleSelectAnswer = async (answerIndex: number) => {
+    if (!user || submitting || quizComplete || isAnswered || submittingRef.current) {
       return;
     }
 
@@ -134,19 +133,7 @@ function QuizTake() {
 
       // Submit answer to database in the background (non-blocking so the quiz
       // always advances regardless of network conditions)
-      submitAnswer(
-        user.uid,
-        currentQuestion.id,
-        answerIndex,
-        isCorrect,
-        qDifficulty,
-        0,
-        {
-          categoryId: currentQuestion.categoryId || categoryId || null,
-          categoryName: categoryName || currentQuestion.categoryName || currentQuestion.categoryId || null,
-          currentProgress: userData?.progress || null,
-        }
-      ).catch(err => {
+      submitAnswer(user.uid, currentQuestion.id, answerIndex).catch(err => {
         logFirestoreErrorContext('submitAnswer', err);
         console.error('Error submitting answer:', err);
       });
@@ -217,7 +204,7 @@ function QuizTake() {
           selectedIndex: answerIndex,
         };
       })
-      .filter(Boolean);
+      .filter((entry): entry is { question: (typeof questions)[number]; selectedIndex: number } => entry !== null);
 
     return (
       <div className="min-h-screen bg-slate-950">
@@ -275,7 +262,7 @@ function QuizTake() {
                 <div className="space-y-4">
                   {wrongAnswers.map(({ question, selectedIndex }, idx) => {
                     const correctIndex = question.correctAnswerIndex;
-                    const correctAnswer = question.options?.[correctIndex] || '-';
+                    const correctAnswer = typeof correctIndex === 'number' ? question.options?.[correctIndex] || '-' : '-';
                     const selectedAnswer = question.options?.[selectedIndex] || '-';
                     const source = question.source || null;
 
@@ -345,7 +332,7 @@ function QuizTake() {
 
   const options = getAnswerOptions();
   const progress = ((currentQuestionIndex + 1) / questions.length) * 100;
-  const qDifficulty = currentQuestion.difficulty || 'perustaso';
+  const qDifficulty: QuestionDifficulty = currentQuestion.difficulty || 'perustaso';
   const potentialPoints = DEFAULT_DIFFICULTY_POINTS[qDifficulty] ?? 10;
   const potentialPenalty = DEFAULT_DIFFICULTY_PENALTIES[qDifficulty] ?? 2;
 
