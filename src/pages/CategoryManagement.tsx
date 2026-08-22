@@ -1,19 +1,28 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
 import { getAllCategories, createCategory, updateCategory, deleteCategory } from '../services/categoryService';
 import { getAllRanks } from '../services/rankService';
 import { useAuth } from '../context/AuthContext';
 import { Navigate } from 'react-router-dom';
+import type { Category, Rank } from '../types/models';
+
+interface CategoryFormData {
+  name: string;
+  description: string;
+  icon: string;
+  color: string;
+  requiredRankId: string;
+}
 
 function CategoryManagement() {
   const { userData, loading: authLoading } = useAuth();
-  const [categories, setCategories] = useState([]);
-  const [ranks, setRanks] = useState([]);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [ranks, setRanks] = useState<Rank[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [addingCategory, setAddingCategory] = useState(false);
-  const [editingCategory, setEditingCategory] = useState(null);
-  const [deletingCategory, setDeletingCategory] = useState(null);
+  const [editingCategory, setEditingCategory] = useState<Category | null>(null);
+  const [deletingCategory, setDeletingCategory] = useState<Category | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
 
   useEffect(() => {
@@ -49,7 +58,7 @@ function CategoryManagement() {
     }
   };
 
-  const handleCreateCategory = async (categoryData) => {
+  const handleCreateCategory = async (categoryData: CategoryFormData) => {
     try {
       setActionLoading(true);
       setError('');
@@ -64,7 +73,7 @@ function CategoryManagement() {
     }
   };
 
-  const handleUpdateCategory = async (categoryId, updates) => {
+  const handleUpdateCategory = async (categoryId: string, updates: Partial<CategoryFormData>) => {
     try {
       setActionLoading(true);
       setError('');
@@ -79,7 +88,7 @@ function CategoryManagement() {
     }
   };
 
-  const handleDeleteCategory = async (categoryId) => {
+  const handleDeleteCategory = async (categoryId: string) => {
     try {
       setActionLoading(true);
       setError('');
@@ -255,9 +264,18 @@ function CategoryManagement() {
   );
 }
 
+interface CategoryFormModalProps {
+  category?: Category | null;
+  ranks: Rank[];
+  onClose: () => void;
+  onSave: (data: CategoryFormData) => void | Promise<void>;
+  loading: boolean;
+  title: string;
+}
+
 // Category Form Modal Component
-function CategoryFormModal({ category, ranks, onClose, onSave, loading, title }) {
-  const [formData, setFormData] = useState({
+function CategoryFormModal({ category, ranks, onClose, onSave, loading, title }: CategoryFormModalProps) {
+  const [formData, setFormData] = useState<CategoryFormData>({
     name: category?.name || '',
     description: category?.description || '',
     icon: category?.icon || '',
@@ -265,7 +283,7 @@ function CategoryFormModal({ category, ranks, onClose, onSave, loading, title })
     requiredRankId: category?.requiredRankId || '',
   });
 
-  const handleSubmit = (e) => {
+  const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
     onSave(formData);
   };
@@ -399,8 +417,15 @@ function CategoryFormModal({ category, ranks, onClose, onSave, loading, title })
   );
 }
 
+interface DeleteConfirmModalProps {
+  category: Category;
+  onClose: () => void;
+  onConfirm: () => void | Promise<void>;
+  loading: boolean;
+}
+
 // Delete Confirmation Modal Component
-function DeleteConfirmModal({ category, onClose, onConfirm, loading }) {
+function DeleteConfirmModal({ category, onClose, onConfirm, loading }: DeleteConfirmModalProps) {
   return (
     <div
       className="fixed inset-0 bg-slate-950/90 flex items-center justify-center z-50 p-4"
