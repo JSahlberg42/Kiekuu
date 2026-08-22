@@ -50,6 +50,12 @@ export interface Question {
   explanation?: string;
   published?: boolean;
   source?: QuestionSource;
+  /** Admin authorship metadata written on create */
+  createdBy?: {
+    uid?: string | null;
+    displayName?: string | null;
+    email?: string | null;
+  };
   createdAt?: string;
   updatedAt?: string;
 }
