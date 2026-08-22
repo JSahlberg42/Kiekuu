@@ -1,14 +1,38 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, type FormEvent, type ChangeEvent } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { Navigate } from 'react-router-dom';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { db } from '../services/firebase';
 import { DEFAULT_DIFFICULTY_POINTS, DEFAULT_DIFFICULTY_PENALTIES } from '../services/gamificationService';
+import type { QuestionDifficulty } from '../types/models';
+
+interface PlatformConfigForm {
+  platformName: string;
+  welcomeMessage: string;
+  pointsPerQuestion: number;
+  questionTimeLimit: number;
+  passingScore: number;
+  enableEmailNotifications: boolean;
+  maintenanceMode: boolean;
+  allowAnonymousUsers: boolean;
+  maxQuestionsPerQuiz: number;
+  // Gamification settings
+  minAccuracyForRankUp: number;
+  pointsPerDifficulty: Record<QuestionDifficulty, number>;
+  penaltyPerDifficulty: Record<QuestionDifficulty, number>;
+}
+
+const DIFFICULTY_ROWS: ReadonlyArray<{ key: QuestionDifficulty; label: string }> = [
+  { key: 'perustaso', label: 'Perustaso' },
+  { key: 'keskitaso', label: 'Keskitaso' },
+  { key: 'edistynyt', label: 'Edistynyt' },
+  { key: 'mestari', label: 'Mestari' },
+];
 
 function PlatformConfiguration() {
   const { userData, loading: authLoading } = useAuth();
-  const [config, setConfig] = useState({
+  const [config, setConfig] = useState<PlatformConfigForm>({
     platformName: 'Kiekuu',
     welcomeMessage: 'Tervetuloa Kiekuuhun!',
     pointsPerQuestion: 10,
@@ -46,7 +70,7 @@ function PlatformConfiguration() {
       .then((configDoc) => {
         if (cancelled) return;
         if (configDoc.exists()) {
-          setConfig((prev) => ({ ...prev, ...configDoc.data() }));
+          setConfig((prev) => ({ ...prev, ...(configDoc.data() as Partial<PlatformConfigForm>) }));
         }
       })
       .catch((err) => {
@@ -62,7 +86,7 @@ function PlatformConfiguration() {
     };
   }, [authLoading, userData]);
 
-  const handleSave = async (e) => {
+  const handleSave = async (e: FormEvent) => {
     e.preventDefault();
     try {
       setSaving(true);
@@ -85,8 +109,12 @@ function PlatformConfiguration() {
     }
   };
 
-  const handleInputChange = (field, value) => {
+  const handleInputChange = <K extends keyof PlatformConfigForm>(field: K, value: PlatformConfigForm[K]) => {
     setConfig({ ...config, [field]: value });
+  };
+
+  const handleNumberInput = (field: keyof PlatformConfigForm) => (e: ChangeEvent<HTMLInputElement>) => {
+    setConfig({ ...config, [field]: parseInt(e.target.value) } as PlatformConfigForm);
   };
 
   if (authLoading || loading) {
@@ -191,7 +219,7 @@ function PlatformConfiguration() {
                   type="number"
                   id="points-per-question"
                   value={config.pointsPerQuestion}
-                  onChange={(e) => handleInputChange('pointsPerQuestion', parseInt(e.target.value))}
+                  onChange={handleNumberInput('pointsPerQuestion')}
                   min="1"
                   max="100"
                   className="w-full px-4 py-3 border border-slate-800 rounded-xl bg-slate-950 text-slate-50 focus:outline-hidden focus:ring-2 focus:ring-orange-500 focus:border-orange-500 min-h-[44px]"
@@ -207,7 +235,7 @@ function PlatformConfiguration() {
                   type="number"
                   id="question-time-limit"
                   value={config.questionTimeLimit}
-                  onChange={(e) => handleInputChange('questionTimeLimit', parseInt(e.target.value))}
+                  onChange={handleNumberInput('questionTimeLimit')}
                   min="10"
                   max="300"
                   className="w-full px-4 py-3 border border-slate-800 rounded-xl bg-slate-950 text-slate-50 focus:outline-hidden focus:ring-2 focus:ring-orange-500 focus:border-orange-500 min-h-[44px]"
@@ -223,7 +251,7 @@ function PlatformConfiguration() {
                   type="number"
                   id="passing-score"
                   value={config.passingScore}
-                  onChange={(e) => handleInputChange('passingScore', parseInt(e.target.value))}
+                  onChange={handleNumberInput('passingScore')}
                   min="0"
                   max="100"
                   className="w-full px-4 py-3 border border-slate-800 rounded-xl bg-slate-950 text-slate-50 focus:outline-hidden focus:ring-2 focus:ring-orange-500 focus:border-orange-500 min-h-[44px]"
@@ -239,7 +267,7 @@ function PlatformConfiguration() {
                   type="number"
                   id="max-questions"
                   value={config.maxQuestionsPerQuiz}
-                  onChange={(e) => handleInputChange('maxQuestionsPerQuiz', parseInt(e.target.value))}
+                  onChange={handleNumberInput('maxQuestionsPerQuiz')}
                   min="1"
                   max="50"
                   className="w-full px-4 py-3 border border-slate-800 rounded-xl bg-slate-950 text-slate-50 focus:outline-hidden focus:ring-2 focus:ring-orange-500 focus:border-orange-500 min-h-[44px]"
@@ -268,7 +296,7 @@ function PlatformConfiguration() {
                   type="number"
                   id="min-accuracy"
                   value={config.minAccuracyForRankUp}
-                  onChange={(e) => handleInputChange('minAccuracyForRankUp', parseInt(e.target.value))}
+                  onChange={handleNumberInput('minAccuracyForRankUp')}
                   min="0"
                   max="100"
                   className="w-full px-4 py-3 border border-slate-800 rounded-xl bg-slate-950 text-slate-50 focus:outline-hidden focus:ring-2 focus:ring-orange-500 focus:border-orange-500 min-h-[44px]"
@@ -282,21 +310,17 @@ function PlatformConfiguration() {
                   Pisteet oikeasta vastauksesta (vaikeustason mukaan)
                 </p>
                 <div className="grid grid-cols-2 gap-3">
-                  {[
-                    { key: 'perustaso', label: 'Perustaso' },
-                    { key: 'keskitaso', label: 'Keskitaso' },
-                    { key: 'edistynyt', label: 'Edistynyt' },
-                    { key: 'mestari', label: 'Mestari' },
-                  ].map(({ key, label }) => (
+                  {DIFFICULTY_ROWS.map(({ key, label }) => (
                     <div key={key}>
                       <label className="block text-xs text-slate-400 mb-1">{label}</label>
                       <input
                         type="number"
-                        value={config.pointsPerDifficulty?.[key] ?? DEFAULT_DIFFICULTY_POINTS[key]}
-                        onChange={(e) => handleInputChange('pointsPerDifficulty', {
-                          ...config.pointsPerDifficulty,
-                          [key]: parseInt(e.target.value),
-                        })}
+                        value={config.pointsPerDifficulty[key] ?? DEFAULT_DIFFICULTY_POINTS[key]}
+                        onChange={(e) => {
+                          const next = { ...config.pointsPerDifficulty };
+                          next[key] = parseInt(e.target.value);
+                          handleInputChange('pointsPerDifficulty', next);
+                        }}
                         min="1"
                         className="w-full px-3 py-2 border border-slate-800 rounded-xl bg-slate-950 text-slate-50 focus:outline-hidden focus:ring-2 focus:ring-orange-500 focus:border-orange-500 min-h-[44px]"
                       />
@@ -311,21 +335,17 @@ function PlatformConfiguration() {
                   Rangaistuspisteet väärästä vastauksesta (vaikeustason mukaan)
                 </p>
                 <div className="grid grid-cols-2 gap-3">
-                  {[
-                    { key: 'perustaso', label: 'Perustaso' },
-                    { key: 'keskitaso', label: 'Keskitaso' },
-                    { key: 'edistynyt', label: 'Edistynyt' },
-                    { key: 'mestari', label: 'Mestari' },
-                  ].map(({ key, label }) => (
+                  {DIFFICULTY_ROWS.map(({ key, label }) => (
                     <div key={key}>
                       <label className="block text-xs text-slate-400 mb-1">{label}</label>
                       <input
                         type="number"
-                        value={config.penaltyPerDifficulty?.[key] ?? DEFAULT_DIFFICULTY_PENALTIES[key]}
-                        onChange={(e) => handleInputChange('penaltyPerDifficulty', {
-                          ...config.penaltyPerDifficulty,
-                          [key]: parseInt(e.target.value),
-                        })}
+                        value={config.penaltyPerDifficulty[key] ?? DEFAULT_DIFFICULTY_PENALTIES[key]}
+                        onChange={(e) => {
+                          const next = { ...config.penaltyPerDifficulty };
+                          next[key] = parseInt(e.target.value);
+                          handleInputChange('penaltyPerDifficulty', next);
+                        }}
                         min="0"
                         className="w-full px-3 py-2 border border-slate-800 rounded-xl bg-slate-950 text-slate-50 focus:outline-hidden focus:ring-2 focus:ring-orange-500 focus:border-orange-500 min-h-[44px]"
                       />
