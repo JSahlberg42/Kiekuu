@@ -73,6 +73,8 @@ export interface CategoryProgress {
 export type UserRole = 'user' | 'admin';
 
 export interface UserDoc {
+  /** Document id; present on docs fetched through services, absent at creation time */
+  readonly id?: string;
   uid?: string;
   email?: string | null;
   displayName?: string | null;
@@ -107,18 +109,16 @@ export interface PlatformConfig {
   aiFeedbackEnabled?: boolean;
 }
 
-export type FeedbackRating = 1 | 2 | 3 | 4 | 5;
-
 export interface SubmitFeedbackRequest {
-  rating: FeedbackRating;
+  /** Integer 1–5; validated server-side */
+  rating: number;
   message: string;
   publishApproved: boolean;
   publishNameApproved: boolean;
 }
 
 export interface SubmitFeedbackResponse {
-  ok?: boolean;
-  id?: string;
+  ok: boolean;
 }
 
 export interface RankChange {

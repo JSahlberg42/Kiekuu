@@ -1,11 +1,18 @@
-import { getAI, getGenerativeModel } from 'firebase/ai';
+import { getAI, getGenerativeModel, type Part } from 'firebase/ai';
 import app from './firebase';
+import type { GeneratedQuestion } from '../types/models';
+
+export interface AiFileData {
+  mimeType: string;
+  /** Base64-encoded file contents */
+  data: string;
+}
 
 // Initialize Firebase AI
 const ai = getAI(app);
 
 // Get the generative model (Gemini 3 Flash Preview)
-const model = getGenerativeModel(ai, { 
+const model = getGenerativeModel(ai, {
   model: 'gemini-3-flash-preview',
   generationConfig: {
     temperature: 0.7,
@@ -18,18 +25,35 @@ const model = getGenerativeModel(ai, {
   ]
 });
 
+const isGeneratedQuestion = (q: unknown): q is GeneratedQuestion => {
+  if (typeof q !== 'object' || q === null) return false;
+  const candidate = q as Partial<GeneratedQuestion>;
+  return (
+    typeof candidate.question === 'string' &&
+    Array.isArray(candidate.options) &&
+    typeof candidate.correctIndex === 'number' &&
+    typeof candidate.explanation === 'string'
+  );
+};
+
 /**
  * Generate questions using AI based on context and parameters
- * @param {Object} params - Generation parameters
- * @param {string} params.context - Context text (optional if url or fileData provided)
- * @param {string} params.url - Direct URL for AI to fetch and analyze (optional)
- * @param {Object} params.fileData - Optional file data object with { mimeType, data } for PDFs
- * @param {number} params.questionCount - Number of questions to generate
- * @param {string} params.difficulty - Difficulty level (easy, medium, hard, pro)
- * @param {string} params.categoryName - Category name for context
- * @returns {Promise<Array>} Generated questions array
  */
-export const generateQuestions = async ({ context, url, fileData, questionCount, difficulty, categoryName }) => {
+export const generateQuestions = async ({
+  context,
+  url,
+  fileData,
+  questionCount,
+  difficulty,
+  categoryName,
+}: {
+  context?: string;
+  url?: string;
+  fileData?: AiFileData;
+  questionCount: number;
+  difficulty: string;
+  categoryName: string;
+}): Promise<GeneratedQuestion[]> => {
   try {
     const promptText = `Olet tekoäly, joka luo tietokilpailukysymyksiä suomalaisille sopimuspalokunnille.
 
@@ -71,7 +95,7 @@ ${url ? `8. Hae ja analysoi sisältö URL-osoitteesta: ${url}` : '8. Lue konteks
 ${url ? 'Hae sisältö annetusta URL-osoitteesta ja luo kysymykset sen perusteella.' : 'Analysoi liitetty dokumentti tai teksti ja luo kysymykset sen sisällön perusteella:'}`;
 
     // Prepare content for AI - support text, URL, and file (PDF) inputs
-    let content;
+    let content: string | Array<string | Part>;
     if (url) {
       // For URLs, let the URL Context tool fetch the content
       content = promptText;
@@ -82,19 +106,19 @@ ${url ? 'Hae sisältö annetusta URL-osoitteesta ja luo kysymykset sen perusteel
         {
           inlineData: {
             mimeType: fileData.mimeType,
-            data: fileData.data
-          }
-        }
+            data: fileData.data,
+          },
+        },
       ];
     } else {
       // For text context, include it in the prompt
-      content = `${promptText}\n\nKONTEKSTI:\n${context}`;
+      content = `${promptText}\n\nKONTEKSTI:\n${context ?? ''}`;
     }
 
     const result = await model.generateContent(content);
     const response = await result.response;
     const text = response.text();
-    
+
     // Extract JSON from response (handle potential markdown formatting)
     let jsonText = text.trim();
     if (jsonText.startsWith('```json')) {
@@ -102,18 +126,19 @@ ${url ? 'Hae sisältö annetusta URL-osoitteesta ja luo kysymykset sen perusteel
     } else if (jsonText.startsWith('```')) {
       jsonText = jsonText.replace(/```\n?/g, '');
     }
-    
+
     // Parse the JSON
-    const questions = JSON.parse(jsonText);
-    
-    // Validate the structure
-    if (!Array.isArray(questions)) {
+    const parsed: unknown = JSON.parse(jsonText);
+
+    if (!Array.isArray(parsed)) {
       throw new Error('AI ei palauttanut kysymyksiä array-muodossa');
     }
-    
-    // Validate each question has required fields
+
+    const questions = parsed.filter(isGeneratedQuestion);
+
+    // Validate each question has required fields with usable values
     questions.forEach((q, index) => {
-      if (!q.question || !Array.isArray(q.options) || q.correctIndex === undefined || !q.explanation) {
+      if (!q.question || !Array.isArray(q.options) || !q.explanation) {
         throw new Error(`Kysymys ${index + 1} on puutteellinen`);
       }
       if (q.options.length < 2) {
@@ -123,7 +148,7 @@ ${url ? 'Hae sisältö annetusta URL-osoitteesta ja luo kysymykset sen perusteel
         throw new Error(`Kysymys ${index + 1} correctIndex on virheellinen`);
       }
     });
-    
+
     return questions;
   } catch (error) {
     console.error('Error generating questions with AI:', error);
@@ -133,21 +158,19 @@ ${url ? 'Hae sisältö annetusta URL-osoitteesta ja luo kysymykset sen perusteel
 
 /**
  * Extract text content from URL
- * @deprecated This function is no longer needed. Gemini 3 Flash has native URL support through the URL Context tool.
+ * @deprecated Gemini 3 Flash has native URL support through the URL Context tool.
  * URLs can be passed directly to generateQuestions() via the url parameter.
- * @param {string} url - URL to fetch content from
- * @returns {Promise<string>} Extracted text content
  */
-export const fetchContentFromUrl = async (url) => {
+export const fetchContentFromUrl = async (url: string): Promise<string> => {
   try {
     // Try multiple CORS proxies as fallbacks
     const proxies = [
       `https://corsproxy.io/?${encodeURIComponent(url)}`,
       `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`,
     ];
-    
-    let lastError;
-    
+
+    let lastError: unknown;
+
     for (const proxyUrl of proxies) {
       try {
         const response = await fetch(proxyUrl, {
@@ -155,24 +178,24 @@ export const fetchContentFromUrl = async (url) => {
             'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
           }
         });
-        
+
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
-        
+
         const text = await response.text();
-        
+
         // Simple HTML to text conversion (very basic)
         const div = document.createElement('div');
         div.innerHTML = text;
         const extractedText = div.textContent || div.innerText || '';
-        
+
         // Clean up whitespace
         const cleaned = extractedText
           .replace(/\s+/g, ' ')
           .replace(/\n\s*\n/g, '\n')
           .trim();
-        
+
         // Limit to reasonable length to avoid token limits
         return cleaned.substring(0, 50000);
       } catch (err) {
@@ -181,8 +204,8 @@ export const fetchContentFromUrl = async (url) => {
         continue;
       }
     }
-    
-    throw lastError;
+
+    throw lastError instanceof Error ? lastError : new Error(String(lastError));
   } catch (error) {
     console.error('Error fetching URL content:', error);
     throw new Error('URL-haku epäonnistui. CORS-rajoitusten vuoksi URL-haku ei toimi kaikilla sivustoilla. Kopioi sisältö manuaalisesti "Teksti"-välilehdellä.', { cause: error });
@@ -191,53 +214,58 @@ export const fetchContentFromUrl = async (url) => {
 
 /**
  * Read and extract content from uploaded file
- * @param {File} file - File object
- * @returns {Promise<Object|string>} For PDFs: {mimeType, data}, for text files: string content
+ * @returns For PDFs: {mimeType, data}, for text files: string content
  */
-export const readFileContent = async (file) => {
+export const readFileContent = async (file: File): Promise<AiFileData | string> => {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
-    
+
     // Handle PDFs - read as base64 for AI model
     if (file.type === 'application/pdf') {
       reader.onload = (e) => {
         try {
+          if (!e.target || typeof e.target.result !== 'object' || e.target.result === null) {
+            throw new Error('Tyhjä tiedosto');
+          }
           // Convert ArrayBuffer to base64
           const base64 = btoa(
             new Uint8Array(e.target.result)
               .reduce((data, byte) => data + String.fromCharCode(byte), '')
           );
-          
+
           resolve({
             mimeType: 'application/pdf',
-            data: base64
+            data: base64,
           });
         } catch (err) {
           reject(new Error('Virhe PDF-tiedoston lukemisessa', { cause: err }));
         }
       };
-      
+
       reader.onerror = () => {
         reject(new Error('Virhe PDF-tiedoston lukemisessa'));
       };
-      
+
       reader.readAsArrayBuffer(file);
     } else {
       // Handle text files (.txt, .md)
       reader.onload = (e) => {
         try {
-          const text = e.target.result;
+          const text = e.target?.result;
+          if (typeof text !== 'string') {
+            throw new Error('Tuntematon tiedostomuoto');
+          }
           // Limit to reasonable length
           resolve(text.substring(0, 50000));
         } catch (err) {
           reject(new Error('Virhe tiedoston lukemisessa', { cause: err }));
         }
       };
-      
+
       reader.onerror = () => {
         reject(new Error('Virhe tiedoston lukemisessa'));
       };
-      
+
       reader.readAsText(file);
     }
   });
