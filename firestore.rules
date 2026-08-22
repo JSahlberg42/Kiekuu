@@ -28,26 +28,30 @@ service cloud.firestore {
                       request.resource.data.role == 'user' &&
                       request.resource.data.rank == 'harjoittelija';
       
-      // Users can update their own data (except role)
+      // Self-service updates are limited to profile/account-linking fields.
+      // Progression state (progress, progressByCategory, rank*) is written
+      // exclusively by the submitQuizAnswer Cloud Function, so scores and
+      // ranks cannot be forged from the client.
       allow update: if isOwner(userId) && 
-                      request.resource.data.role == resource.data.role;
+                      request.resource.data.role == resource.data.role &&
+                      request.resource.data.diff(resource.data).affectedKeys().hasOnly(
+                        ['displayName', 'photoURL', 'email', 'isAnonymous', 'linkedAt']
+                      );
       
-      // Only admins can update roles
+      // Admins have full update access (role management, moderation)
       allow update: if isAdmin();
       
       // No deletions allowed
       allow delete: if false;
       
-      // User answers subcollection
+      // User answers subcollection - created by submitQuizAnswer only,
+      // immutable afterwards
       match /answers/{answerId} {
         // Users can read their own answers
         allow read: if isOwner(userId);
         
-        // Users can create their own answers
-        allow create: if isOwner(userId);
-        
-        // No updates or deletions
-        allow update, delete: if false;
+        // No client writes; server writes via Admin SDK bypass rules
+        allow create, update, delete: if false;
       }
     }
     

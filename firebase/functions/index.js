@@ -59,6 +59,21 @@ const countRecentFeedbackDocs = async (since) => {
   return snapshot.data().count || 0;
 };
 
+// Quiz scoring defaults (mirror src/services/gamificationService.js)
+const DIFFICULTY_ORDER = ['perustaso', 'keskitaso', 'edistynyt', 'mestari'];
+const DIFFICULTY_POINTS_DEFAULTS = { perustaso: 10, keskitaso: 20, edistynyt: 30, mestari: 50 };
+const DIFFICULTY_PENALTIES_DEFAULTS = { perustaso: 2, keskitaso: 5, edistynyt: 10, mestari: 15 };
+const DEFAULT_MIN_ACCURACY_FOR_RANK_UP = 60;
+const MAX_ANSWER_TIME_SECONDS = 2 * 60 * 60;
+
+const normalizeAnswerIndex = (raw) => {
+  if (Number.isInteger(raw)) return raw;
+  if (typeof raw === 'string' && /^-?\d+$/.test(raw.trim())) {
+    return parseInt(raw.trim(), 10);
+  }
+  return null;
+};
+
 exports.submitFeedback = onCall({ enforceAppCheck: true }, async (request) => {
   if (!request.auth) {
     throw new HttpsError('unauthenticated', 'Sign in to submit feedback.');
@@ -116,6 +131,133 @@ exports.submitFeedback = onCall({ enforceAppCheck: true }, async (request) => {
   });
 
   return { ok: true };
+});
+
+exports.submitQuizAnswer = onCall({ enforceAppCheck: true }, async (request) => {
+  if (!request.auth) {
+    throw new HttpsError('unauthenticated', 'Sign in to answer questions.');
+  }
+
+  const questionId = typeof request.data?.questionId === 'string'
+    ? request.data.questionId.trim()
+    : '';
+  const selectedIndex = request.data?.selectedIndex;
+  const timeSpentRaw = request.data?.timeSpent;
+
+  if (!questionId || questionId.length > 128) {
+    throw new HttpsError('invalid-argument', 'Invalid question reference.');
+  }
+  if (!Number.isInteger(selectedIndex) || selectedIndex < 0 || selectedIndex > 63) {
+    throw new HttpsError('invalid-argument', 'Invalid answer selection.');
+  }
+  const timeSpent = Number.isFinite(timeSpentRaw)
+    ? Math.min(Math.max(Math.floor(timeSpentRaw), 0), MAX_ANSWER_TIME_SECONDS)
+    : 0;
+
+  // Correctness and difficulty are derived server-side from the question
+  // document - the client cannot claim its own points.
+  const qSnap = await db.collection('questions').doc(questionId).get();
+  if (!qSnap.exists || qSnap.data().published === false) {
+    throw new HttpsError('failed-precondition', 'Question is not available.');
+  }
+  const question = qSnap.data();
+  const correctIndex = normalizeAnswerIndex(question.correctAnswerIndex ?? question.correctIndex);
+  const isCorrect = correctIndex !== null && selectedIndex === correctIndex;
+  const difficulty = DIFFICULTY_ORDER.includes(question.difficulty)
+    ? question.difficulty
+    : 'perustaso';
+
+  let config = {};
+  try {
+    const configSnap = await db.collection('config').doc('platform').get();
+    if (configSnap.exists()) config = configSnap.data() || {};
+  } catch (error) {
+    console.warn('Could not load platform config, using defaults:', error);
+  }
+  const pointsMap = config.pointsPerDifficulty || DIFFICULTY_POINTS_DEFAULTS;
+  const penaltyMap = config.penaltyPerDifficulty || DIFFICULTY_PENALTIES_DEFAULTS;
+  const points = isCorrect
+    ? (pointsMap[difficulty] ?? DIFFICULTY_POINTS_DEFAULTS[difficulty])
+    : -(penaltyMap[difficulty] ?? DIFFICULTY_PENALTIES_DEFAULTS[difficulty]);
+
+  const uid = request.auth.uid;
+  const categoryId = question.categoryId ? String(question.categoryId) : null;
+  let categoryName = null;
+  if (categoryId) {
+    try {
+      const catSnap = await db.collection('categories').doc(categoryId).get();
+      categoryName = catSnap.exists() ? catSnap.data().name || null : null;
+    } catch (error) {
+      console.warn(`Could not load category ${categoryId}:`, error);
+    }
+  }
+
+  const answerRef = await db.collection('users').doc(uid).collection('answers').add({
+    questionId,
+    selectedIndex,
+    isCorrect,
+    difficulty,
+    timeSpent,
+    points,
+    submittedAt: new Date().toISOString(),
+    categoryId,
+    categoryName,
+  });
+
+  const answeredDelta = 1;
+  const correctDelta = isCorrect ? 1 : 0;
+  const userUpdate = {
+    'progress.totalScore': FieldValue.increment(points),
+    'progress.questionsAnswered': FieldValue.increment(answeredDelta),
+    'progress.correctAnswers': FieldValue.increment(correctDelta),
+    lastActivity: new Date().toISOString(),
+  };
+  if (categoryId) {
+    userUpdate[`progressByCategory.${categoryId}.categoryId`] = categoryId;
+    userUpdate[`progressByCategory.${categoryId}.name`] = categoryName || categoryId;
+    userUpdate[`progressByCategory.${categoryId}.answered`] = FieldValue.increment(answeredDelta);
+    userUpdate[`progressByCategory.${categoryId}.correct`] = FieldValue.increment(correctDelta);
+  }
+  await db.collection('users').doc(uid).set(userUpdate, { merge: true });
+
+  let rankChanged = null;
+  try {
+    const [userDoc, ranksSnap] = await Promise.all([
+      db.collection('users').doc(uid).get(),
+      db.collection('ranks').get(),
+    ]);
+    if (userDoc.exists && !ranksSnap.empty) {
+      const userData = userDoc.data();
+      const progress = userData.progress || {};
+      const score = progress.totalScore || 0;
+      const answered = progress.questionsAnswered || 0;
+      const correct = progress.correctAnswers || 0;
+      const accuracy = answered > 0 ? (correct / answered) * 100 : 0;
+      const globalMinAccuracy = config.minAccuracyForRankUp ?? DEFAULT_MIN_ACCURACY_FOR_RANK_UP;
+      const ranks = ranksSnap.docs
+        .map((d) => ({ id: d.id, ...d.data() }))
+        .sort((a, b) => (a.requiredScore || 0) - (b.requiredScore || 0));
+      let earned = ranks[0];
+      for (const rank of ranks) {
+        const rankMinAccuracy = rank.minAccuracy ?? globalMinAccuracy;
+        if (score >= (rank.requiredScore || 0) && accuracy >= rankMinAccuracy) {
+          earned = rank;
+        }
+      }
+      if (earned && userData.rankId !== earned.id) {
+        await db.collection('users').doc(uid).update({
+          rank: earned.name,
+          rankId: earned.id,
+          rankUpdatedAt: new Date().toISOString(),
+        });
+        rankChanged = { id: earned.id, name: earned.name };
+      }
+    }
+  } catch (error) {
+    console.warn('Rank evaluation failed:', error);
+  }
+
+  return { ok: true, answerId: answerRef.id, isCorrect, points, rankChanged };
 });
 
 const buildSchemaPrompt = () => {
