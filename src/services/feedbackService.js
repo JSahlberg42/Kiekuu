@@ -1,14 +1,14 @@
-import { addDoc, collection } from 'firebase/firestore';
-import { db } from './firebase';
+import { getFunctions, httpsCallable } from 'firebase/functions';
+import app from './firebase';
 
 export const submitFeedback = async (feedback) => {
-  const feedbackRef = collection(db, 'feedback');
-  const payload = {
-    ...feedback,
-    createdAt: new Date().toISOString(),
-    aiStatus: 'pending',
-  };
-
-  const docRef = await addDoc(feedbackRef, payload);
-  return docRef.id;
+  const functions = getFunctions(app);
+  const submit = httpsCallable(functions, 'submitFeedback');
+  const result = await submit({
+    rating: feedback.rating,
+    message: feedback.message,
+    publishApproved: feedback.publishApproved === true,
+    publishNameApproved: feedback.publishNameApproved === true,
+  });
+  return result.data;
 };

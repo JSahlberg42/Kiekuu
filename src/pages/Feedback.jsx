@@ -5,7 +5,7 @@ import { submitFeedback } from '../services/feedbackService';
 import logo from '../assets/images/Kiekuu_logo.jpg';
 
 function Feedback() {
-  const { user, userData } = useAuth();
+  const { user } = useAuth();
   const [rating, setRating] = useState(0);
   const [message, setMessage] = useState('');
   const [publishApproved, setPublishApproved] = useState(true);
@@ -44,12 +44,6 @@ function Feedback() {
         message: message.trim(),
         publishApproved,
         publishNameApproved,
-        user: {
-          uid: user?.uid || null,
-          displayName: userData?.displayName || user?.displayName || null,
-          email: userData?.email || user?.email || null,
-          isAnonymous,
-        },
       });
       setSuccess(true);
       setMessage('');
@@ -58,7 +52,14 @@ function Feedback() {
       setPublishNameApproved(false);
     } catch (submitError) {
       console.error('Feedback submit failed:', submitError);
-      setError('Palautteen lähetys epäonnistui.');
+      const code = submitError?.code || '';
+      if (code === 'functions/resource-exhausted') {
+        setError('Olet lähettänyt paljon palautetta viime aikoina. Kokeile myöhemmin uudelleen.');
+      } else if (code === 'functions/invalid-argument') {
+        setError('Tarkista lomakkeen tiedot ja yritä uudelleen.');
+      } else {
+        setError('Palautteen lähetys epäonnistui.');
+      }
     } finally {
       setLoading(false);
     }
@@ -157,6 +158,7 @@ function Feedback() {
                 value={message}
                 onChange={(event) => setMessage(event.target.value)}
                 rows={5}
+                maxLength={2000}
                 className="w-full px-4 py-3 border border-slate-800 rounded-xl bg-slate-950 text-slate-50 focus:outline-hidden focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
                 placeholder="Mitä voisimme parantaa?"
               />
