@@ -9,7 +9,7 @@ admin.initializeApp();
 const db = getFirestore();
 
 const vertexRegion = process.env.VERTEX_AI_LOCATION || 'us-central1';
-const vertexModel = process.env.VERTEX_AI_MODEL || 'gemini-2.5-flash';
+const vertexModel = process.env.VERTEX_AI_MODEL || 'gemini-3.7-flash';
 
 const FEEDBACK_SCHEMA = {
   sentiment: ['positive', 'neutral', 'negative'],

@@ -11,9 +11,9 @@ export interface AiFileData {
 // Initialize Firebase AI
 const ai = getAI(app);
 
-// Get the generative model (Gemini 3 Flash Preview)
+// Get the generative model (Gemini 3.7 Flash)
 const model = getGenerativeModel(ai, {
-  model: 'gemini-3-flash-preview',
+  model: 'gemini-3.7-flash',
   generationConfig: {
     temperature: 0.7,
     topP: 0.95,
