@@ -3,47 +3,74 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Taso 1 — Harjoittelija — Kiekuu</title>
+    <title>Harjoittelija — Kiekuu</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { 
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            max-width: 900px; margin: 0 auto; padding: 40px 20px;
-            background: #0f172a; color: #e2e8f0; line-height: 1.6;
-        }
-        h1 { color: #fb923c; margin-bottom: 16px; font-size: 2em; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+               max-width: 900px; margin: 0 auto; padding: 40px 20px;
+               background: #0f172a; color: #e2e8f0; line-height: 1.6; }
+        h1 { color: #fb923c; margin-bottom: 8px; font-size: 2em; }
+        .rank-badge { display: inline-block; background: #334155; padding: 8px 16px; border-radius: 8px;
+                      font-size: 1.2em; margin-bottom: 16px; color: #fb923c; }
+        .info-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin: 24px 0; }
+        .info-box { background: #1e293b; border-radius: 8px; padding: 16px; border: 1px solid #334155; }
+        .info-box h3 { color: #fb923c; font-size: 1em; margin-bottom: 4px; }
+        .info-box p { color: #cbd5e1; font-size: 0.95em; }
         h2 { color: #fb923c; margin: 28px 0 12px 0; font-size: 1.5em; }
-        h3 { color: #fb923c; margin: 24px 0 8px 0; font-size: 1.2em; }
-        p { margin-bottom: 16px; color: #cbd5e1; }
         ul { margin-left: 20px; margin-bottom: 16px; }
-        li { margin-bottom: 8px; color: #cbd5e1; }
-        strong { color: #e2e8f0; }
+        li { margin-bottom: 8px; }
+        .tag { display: inline-block; background: #334155; padding: 4px 12px; border-radius: 4px; 
+               font-size: 0.85em; margin-right: 8px; color: #e2e8f0; }
+        .cta-button { display: inline-block; background: #fb923c; color: #0f172a; padding: 12px 24px;
+                      border-radius: 8px; font-weight: bold; margin-top: 20px; }
+        .cta-button:hover { background: #fbbf24; text-decoration: none; }
+        a { color: #60a5fa; text-decoration: none; }
+        a:hover { text-decoration: underline; }
         .back-link { margin-top: 40px; padding-top: 20px; border-top: 1px solid #334155; }
-        .back-link a { color: #60a5fa; text-decoration: none; }
-        .back-link a:hover { text-decoration: underline; }
+        .back-link a { color: #94a3b8; }
     </style>
 </head>
 <body>
-<p><h1>Harjoittelija</h1></p><p>Ensimmäinen taso Kiekuussa — aloitat tästä.</p><p>---</p><p><h2>Yleiskatsaus</h2></p><p>| Ominaisuus | Tiedot |
-|-------------|---------|
-| <strong>Taso</strong> | 1 / 6 |
-| <strong>Edellytykset</strong> | Ei vaatimuksia |
-| <strong>Tavoite</strong> | Tutustu palokuntatoiminnan perusteisiin |</p><p>---</p><p><h2>Mitä opit</h2></p><p><h3>Perusosaaminen</h3></p><p>Tämä taso kattaa palokuntatoiminnan perusteet:</p><p>1. <strong>Turvallisuus</strong> — Työturvallisuus, henkilökohtaiset suojavarusteet
-2. <strong>Yksikkötunnukset</strong> — Palokunnan tunnukset ja rakenteet
-3. <strong>Viestintä</strong> — Perusradiosanasto (VIRVE)
-4. <strong>Ensiapu</strong> — Perusensiavun periaatteet</p><p><h3>Aihealueet</h3></p><p>| Aihe | Esimerkki sisältö |
-|------|-------------------|
-| Työturvallisuus | Suojainten käyttö, vaaratekijät |
-| Yksikkörakenne | VPK:n organisaatio, hälytysjärjestys |
-| VIRVE-perusteet | Radion käyttö, tilanneraportti |
-| EA1-perusteet | Hätäensiapu,elvytys |</p><p>---</p><p><h2>Kysymykset ja vaikeustasot</h2></p><p><h3>Perustaso</h3>
-Yksinkertaiset käsitteet ja määritelmät.</p><p><h3>Keskitaso</h3>
-Sovella tietoa käytännön tilanteisiin.</p><p>---</p><p><h2>Seuraava taso</h2></p><p>Kun olet suorittanut riittävästi kysymyksiä, edet automaattisesti tasolle <strong>Nuorempi sammutusmies</strong>.</p><p>---</p><p><h2>Aiheeseen liittyvä OPS-materiaali</h2></p><p>Katso [OPS-vastaavuus](../technical/ops-alignment) nähdäksesi, miten tämä taso vastaa OPS 2026 -oppimissuunnitelmaa.</p><p>---</p><p><h2>Lisätietoa</h2></p><p><ul>
-<li>[Aloittaminen](../getting-started/) — Miten aloitat</li>
-<li>[UKK](../getting-started/faq) — Usein kysytyt kysymykset</li>
-</ul></p><p>---</p><p>[← Takaisin: Tasot](../) | [Seuraavaksi: Nuorempi sammutusmies →](../nuorempi-sammutusmies)</p>
-<div class="back-link">
-    <a href="../index.html">← Takaisin käyttöopas-sivulle</a> | <a href="..">Takaisin documentation-sivulle</a>
-</div>
+    <span class="rank-badge">🏅 Taso 1</span>
+    <h1>Harjoittelija</h1>
+    <p>Ensimmäinen taso Kiekuussa — aloitat tästä.</p>
+
+    <div class="info-grid">
+        <div class="info-box">
+            <h3>🎯 Tavoite</h3>
+            <p>Opit palokunnan perusteet, työturvallisuuden ja yksikön toiminnan</p>
+        </div>
+        <div class="info-box">
+            <h3>📚 Sisältö</h3>
+            <p>Perustiedot, työturvallisuus, yksikön tutustuminen</p>
+        </div>
+        <div class="info-box">
+            <h3>⚡ Vaikeustaso</h3>
+            <p>Perustaso (perustaso)</p>
+        </div>
+        <div class="info-box">
+            <h3>🏆 Pisteet</h3>
+            <p>Perustason pisteet (pienin panostus)</p>
+        </div>
+    </div>
+
+    <h2>Mitä opit?</h2>
+    <ul>
+        <li>Palokunnan organisaatio ja tehtävät</li>
+        <li>Työturvallisuuden perusteet</li>
+        <li>Henkilökohtaiset suojavarusteet</li>
+        <li>Välitön toiminta onnettomuuspaikalla</li>
+        <li>Viestiliikenteen perusteet</li>
+    </ul>
+
+    <h2>Seuraava taso</h2>
+    <p>Kun suoritat harjoittelija-tason, avautuu <strong>Nuorempi sammutusmies</strong> -taso.</p>
+    <p><span class="tag">Seuraava</span> Nuorempi sammutusmies</p>
+
+    <a href="https://kiekuu.apinalauma.fi" class="cta-button">Aloita oppiminen →</a>
+
+    <div class="back-link">
+        <a href="index.html">← Takaisin käyttöopas-sivulle</a> | <a href="..">Takaisin documentation-sivulle</a>
+    </div>
 </body>
 </html>
