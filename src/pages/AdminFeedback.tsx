@@ -11,7 +11,7 @@ interface Feedback {
   message: string;
   publishApproved: boolean;
   publishNameApproved: boolean;
-  createdAt: Timestamp;
+  createdAt: Timestamp | string | null;
   user: {
     uid: string;
     displayName?: string;
@@ -114,15 +114,58 @@ function AdminFeedback() {
     }
   };
 
-  const formatDate = (timestamp?: Timestamp) => {
+  const getTimeMs = (timestamp: unknown): number => {
+    if (!timestamp) return 0;
+    try {
+      if (typeof timestamp === 'object' && timestamp !== null) {
+        const ts = timestamp as { toDate?: unknown; toMillis?: unknown; seconds?: unknown };
+        if (typeof ts.toDate === 'function') {
+          const result = (ts.toDate as () => Date).call(ts);
+          return (result as Date).getTime();
+        }
+        if (typeof ts.toMillis === 'function') {
+          return (ts.toMillis as () => number).call(ts);
+        }
+        if (typeof ts.seconds === 'number') {
+          return ts.seconds * 1000;
+        }
+      }
+      if (typeof timestamp === 'string') {
+        const d = new Date(timestamp);
+        return isNaN(d.getTime()) ? 0 : d.getTime();
+      }
+    } catch {
+      return 0;
+    }
+    return 0;
+  };
+
+  const formatDate = (timestamp: unknown) => {
     if (!timestamp) return 'N/A';
-    return new Date(timestamp.toDate()).toLocaleDateString('fi-FI', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
+    try {
+      if (typeof timestamp === 'object' && timestamp !== null) {
+        const ts = timestamp as { toDate?: unknown; seconds?: unknown };
+        if (typeof ts.toDate === 'function') {
+          const result = (ts.toDate as () => Date).call(ts);
+          return new Date(result as Date).toLocaleDateString('fi-FI', {
+            year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
+          });
+        }
+        if (typeof ts.seconds === 'number') {
+          return new Date(ts.seconds * 1000).toLocaleDateString('fi-FI', {
+            year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
+          });
+        }
+      }
+      if (typeof timestamp === 'string') {
+        return new Date(timestamp).toLocaleDateString('fi-FI', {
+          year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
+        });
+      }
+      return 'N/A';
+    } catch {
+      return 'N/A';
+    }
   };
 
   const filteredAndSortedFeedbacks = feedbacks
@@ -137,8 +180,8 @@ function AdminFeedback() {
       let bValue: number | string;
       
       if (sortField === 'createdAt') {
-        aValue = a.createdAt?.toMillis() || 0;
-        bValue = b.createdAt?.toMillis() || 0;
+        aValue = getTimeMs(a.createdAt);
+        bValue = getTimeMs(b.createdAt);
       } else if (sortField === 'rating') {
         aValue = a.rating || 0;
         bValue = b.rating || 0;
