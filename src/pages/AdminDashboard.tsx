@@ -174,6 +174,26 @@ function AdminDashboard() {
               Settings
             </Link>
           </div>
+
+          {/* Feedback Management */}
+          <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 sm:p-8">
+            <div className="flex items-center mb-4">
+              <div className="p-3 bg-blue-600/20 rounded-xl">
+                <svg className="w-6 h-6 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                </svg>
+              </div>
+              <h2 className="ml-4 text-lg sm:text-xl font-semibold text-orange-500 uppercase tracking-wide">Feedback</h2>
+            </div>
+            <p className="text-sm sm:text-base leading-relaxed text-slate-300 mb-4">View and analyse user feedback</p>
+            <Link
+              to="/admin/feedback"
+              className="block w-full bg-blue-600 text-slate-50 px-4 py-3 rounded-xl hover:bg-blue-700 active:bg-blue-800 transition-colors font-semibold min-h-[44px] text-center"
+              aria-label="Hallitse palautteita"
+            >
+              Manage Feedback
+            </Link>
+          </div>
         </div>
       </div>
     </div>
