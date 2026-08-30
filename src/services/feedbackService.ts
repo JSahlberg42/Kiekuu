@@ -1,6 +1,11 @@
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import app from './firebase';
-import type { SubmitFeedbackRequest, SubmitFeedbackResponse } from '../types/models';
+import type {
+  SubmitFeedbackRequest,
+  SubmitFeedbackResponse,
+  ManageFeedbackRequest,
+  ManageFeedbackResponse,
+} from '../types/models';
 
 export const submitFeedback = async (
   feedback: SubmitFeedbackRequest,
@@ -16,5 +21,17 @@ export const submitFeedback = async (
     publishApproved: feedback.publishApproved === true,
     publishNameApproved: feedback.publishNameApproved === true,
   });
+  return result.data;
+};
+
+export const manageFeedback = async (
+  request: ManageFeedbackRequest,
+): Promise<ManageFeedbackResponse> => {
+  const functions = getFunctions(app);
+  const manage = httpsCallable<ManageFeedbackRequest, ManageFeedbackResponse>(
+    functions,
+    'manageFeedback',
+  );
+  const result = await manage(request);
   return result.data;
 };

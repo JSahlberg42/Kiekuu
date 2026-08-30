@@ -1,6 +1,5 @@
 const admin = require('firebase-admin');
 const { getFirestore, FieldValue } = require('firebase-admin/firestore');
-const { onDocumentCreated } = require('firebase-functions/v2/firestore');
 const { onCall, HttpsError } = require('firebase-functions/v2/https');
 const { VertexAI } = require('@google-cloud/vertexai');
 
@@ -13,6 +12,8 @@ const vertexModel = process.env.VERTEX_AI_MODEL || 'gemini-3.7-flash';
 
 const FEEDBACK_SCHEMA = {
   sentiment: ['positive', 'neutral', 'negative'],
+  isSpam: 'boolean',
+  spamReason: 'string',
   topics: 'array_of_strings',
   priority: ['low', 'medium', 'high'],
   summary: 'string',
@@ -30,29 +31,10 @@ const MAX_CLASSIFICATIONS_PER_HOUR = 100;
 const isValidRating = (rating) =>
   Number.isInteger(rating) && rating >= 1 && rating <= 5;
 
-const isAiFeedbackEnabled = async () => {
-  try {
-    const snap = await db.collection('config').doc('aiSettings').get();
-    return snap.data()?.aiFeedbackEnabled !== false;
-  } catch (error) {
-    console.warn('Failed to read AI kill switch, assuming enabled:', error);
-    return true;
-  }
-};
-
 const countRecentFeedbackByUid = async (uid, since) => {
   const snapshot = await db
     .collection('feedback')
     .where('user.uid', '==', uid)
-    .where('createdAt', '>', since)
-    .count()
-    .get();
-  return snapshot.data().count || 0;
-};
-
-const countRecentFeedbackDocs = async (since) => {
-  const snapshot = await db
-    .collection('feedback')
     .where('createdAt', '>', since)
     .count()
     .get();
@@ -120,6 +102,12 @@ exports.submitFeedback = onCall({ enforceAppCheck: true }, async (request) => {
     console.warn(`Could not load user profile for ${uid}:`, error);
   }
 
+  // Classify immediately — every stored feedback is AI-classified at write
+  // time. The only exception: if AI classification itself fails (error,
+  // timeout, etc.), we still store the feedback but without classification.
+  const classification = await classifyContent({ rating, message });
+  const classifiedFields = buildClassificationFields(classification);
+
   await db.collection('feedback').add({
     rating,
     message,
@@ -127,7 +115,7 @@ exports.submitFeedback = onCall({ enforceAppCheck: true }, async (request) => {
     publishNameApproved,
     user: { uid, displayName, email },
     createdAt: FieldValue.serverTimestamp(),
-    aiStatus: 'pending',
+    ...classifiedFields,
   });
 
   return { ok: true };
@@ -263,6 +251,8 @@ exports.submitQuizAnswer = onCall({ enforceAppCheck: true }, async (request) => 
 const buildSchemaPrompt = () => {
   return [
     'Schema: {',
+    '  "isSpam": boolean,',
+    '  "spamReason": "short_reason_if_spam",',
     '  "sentiment": "positive" | "neutral" | "negative",',
     '  "topics": ["short_topic"],',
     '  "priority": "low" | "medium" | "high",',
@@ -275,6 +265,8 @@ const buildSchemaPrompt = () => {
 const validateAnalysis = (analysis) => {
   if (!analysis || typeof analysis !== 'object') return false;
 
+  if (typeof analysis.isSpam !== 'boolean') return false;
+  if (typeof analysis.spamReason !== 'string') return false;
   if (!FEEDBACK_SCHEMA.sentiment.includes(analysis.sentiment)) return false;
   if (!Array.isArray(analysis.topics)) return false;
   if (!FEEDBACK_SCHEMA.priority.includes(analysis.priority)) return false;
@@ -287,6 +279,7 @@ const validateAnalysis = (analysis) => {
 const buildPrompt = ({ rating, message }) => {
   return [
     'Classify the feedback into JSON only.',
+    'Detect potential spam: advertising, irrelevant/gibberish text, mass-mailed content, suspicious links, or abuse. If it is spam, set "isSpam": true (and give a short "spamReason"); otherwise set "isSpam": false and provide a sentiment.',
     buildSchemaPrompt(),
     `Rating: ${rating ?? 'unknown'}`,
     `Feedback: """${message || ''}"""`,
@@ -309,44 +302,17 @@ const extractJson = (text) => {
   return null;
 };
 
-exports.classifyFeedback = onDocumentCreated('feedback/{feedbackId}', async (event) => {
-  const snap = event.data;
-  if (!snap) return;
-
-  const data = snap.data();
-  if (!data || data.aiStatus === 'done' || data.aiStatus === 'processing') {
-    return;
+/**
+ * Runs AI classification on feedback content WITHOUT touching the database.
+ * Used inline in submitFeedback (so every stored feedback is classified at
+ * write time) and by the admin reclassify action.
+ * Returns { analysis, rawText, model } on success (analysis may be null if the
+ * AI response didn't validate), or { error } if classification failed.
+ */
+const classifyContent = async ({ rating, message }) => {
+  if (!message || message.length > MAX_FEEDBACK_MESSAGE_LENGTH || !isValidRating(rating)) {
+    return { error: 'invalid_input' };
   }
-
-  const message = typeof data.message === 'string' ? data.message : '';
-  if (!message || message.length > MAX_FEEDBACK_MESSAGE_LENGTH || !isValidRating(data.rating)) {
-    await snap.ref.update({
-      aiStatus: 'skipped_invalid_input',
-      analysisAt: FieldValue.serverTimestamp(),
-    });
-    return;
-  }
-
-  if (!(await isAiFeedbackEnabled())) {
-    await snap.ref.update({
-      aiStatus: 'disabled',
-      analysisAt: FieldValue.serverTimestamp(),
-    });
-    return;
-  }
-
-  const recentCount = await countRecentFeedbackDocs(new Date(Date.now() - HOUR_MS));
-  if (recentCount > MAX_CLASSIFICATIONS_PER_HOUR) {
-    await snap.ref.update({
-      aiStatus: 'skipped_rate_limit',
-      analysisAt: FieldValue.serverTimestamp(),
-    });
-    return;
-  }
-
-  await snap.ref.update({
-    aiStatus: 'processing',
-  });
 
   try {
     const projectId = process.env.GCLOUD_PROJECT ||
@@ -361,7 +327,7 @@ exports.classifyFeedback = onDocumentCreated('feedback/{feedbackId}', async (eve
       model: vertexModel,
     });
 
-    const prompt = buildPrompt({ rating: data.rating, message });
+    const prompt = buildPrompt({ rating, message });
     const result = await generativeModel.generateContent({
       contents: [{ role: 'user', parts: [{ text: prompt }] }],
       generationConfig: {
@@ -387,19 +353,138 @@ exports.classifyFeedback = onDocumentCreated('feedback/{feedbackId}', async (eve
       }
     }
 
-    await snap.ref.update({
-      aiStatus: 'done',
-      analysis: analysis,
-      analysisModel: vertexModel,
-      analysisRaw: analysis ? null : text,
-      analysisAt: FieldValue.serverTimestamp(),
-    });
+    return { analysis, rawText: text, model: vertexModel };
   } catch (error) {
     console.error('Feedback classification failed:', error);
-    await snap.ref.update({
+    return { error: error.message || 'Classification failed' };
+  }
+};
+
+/**
+ * Builds the persistence fields for a feedback doc from a classification
+ * result. A clean result with analysis -> done + spam fields. A clean result
+ * without analysis -> done but no classification. An error -> stored without
+ * classification (only exception the user allows).
+ */
+const buildClassificationFields = (classification) => {
+  if (classification.error) {
+    return {
       aiStatus: 'error',
-      analysisError: error.message || 'Classification failed',
+      analysis: null,
+      analysisError: classification.error,
       analysisAt: FieldValue.serverTimestamp(),
-    });
+    };
+  }
+  if (!classification.analysis) {
+    return {
+      aiStatus: 'done',
+      analysis: null,
+      analysisModel: classification.model,
+      analysisRaw: classification.rawText || null,
+      analysisAt: FieldValue.serverTimestamp(),
+    };
+  }
+  const analysis = classification.analysis;
+  return {
+    aiStatus: 'done',
+    analysis,
+    analysisModel: classification.model,
+    analysisRaw: null,
+    analysisAt: FieldValue.serverTimestamp(),
+    isSpam: analysis.isSpam === true,
+    spamReason: analysis.isSpam ? analysis.spamReason || '' : '',
+    status: analysis.isSpam ? 'spam' : 'unread',
+  };
+};
+
+/** Returns the Firestore user doc for an authenticated user, or null. */
+const getAuthUserDoc = async (request) => {
+  if (!request.auth) throw new HttpsError('unauthenticated', 'Sign in to continue.');
+  const snap = await db.collection('users').doc(request.auth.uid).get();
+  return snap.exists ? snap : null;
+};
+
+const requireAdmin = async (request) => {
+  const userSnap = await getAuthUserDoc(request);
+  if (!userSnap) {
+    throw new HttpsError('permission-denied', 'User profile not found.');
+  }
+  if (userSnap.data().role !== 'admin') {
+    throw new HttpsError('permission-denied', 'Admin privileges are required.');
+  }
+  return userSnap;
+};
+
+const FEEDBACK_STATUSES = ['unread', 'read', 'ok', 'spam'];
+
+/**
+ * Admin callable: performs feedback actions.
+ * Supported actions:
+ *  - setStatus:  { feedbackId, status: 'read'|'ok'|'unread'|'spam' }
+ *  - delete:     { feedbackId }
+ *  - reclassify: { feedbackId } (re-runs AI classification by resetting aiStatus)
+ */
+exports.manageFeedback = onCall({ enforceAppCheck: true }, async (request) => {
+  await requireAdmin(request);
+
+  const action = request.data?.action;
+  const feedbackId = typeof request.data?.feedbackId === 'string'
+    ? request.data.feedbackId.trim()
+    : '';
+
+  if (!feedbackId) {
+    throw new HttpsError('invalid-argument', 'feedbackId is required.');
+  }
+  if (!action) {
+    throw new HttpsError('invalid-argument', 'action is required.');
+  }
+
+  const ref = db.collection('feedback').doc(feedbackId);
+  const snap = await ref.get();
+  if (!snap.exists) {
+    throw new HttpsError('not-found', 'Feedback not found.');
+  }
+
+  switch (action) {
+    case 'setStatus': {
+      const status = request.data?.status;
+      if (!FEEDBACK_STATUSES.includes(status)) {
+        throw new HttpsError('invalid-argument', 'Invalid status.');
+      }
+      await ref.update({
+        status,
+        // Clearing spam flag if re-marked as read/ok/unread
+        ...(status !== 'spam' && { isSpam: false, spamReason: '' }),
+      });
+      return { ok: true, status };
+    }
+    case 'markSpam': {
+      const spamReason = typeof request.data?.spamReason === 'string'
+        ? request.data.spamReason.slice(0, 200)
+        : 'marked by admin';
+      await ref.update({
+        status: 'spam',
+        isSpam: true,
+        spamReason,
+      });
+      return { ok: true, status: 'spam' };
+    }
+    case 'delete': {
+      await ref.delete();
+      return { ok: true, deleted: true };
+    }
+    case 'reclassify': {
+      const data = snap.data();
+      const message = typeof data.message === 'string' ? data.message : '';
+      const classification = await classifyContent({
+        rating: data.rating,
+        message,
+      });
+      const fields = buildClassificationFields(classification);
+      await ref.update(fields);
+      return { ok: true, aiStatus: fields.aiStatus, analysis: fields.analysis || null };
+    }
+    default:
+      throw new HttpsError('invalid-argument', 'Unknown action.');
   }
 });

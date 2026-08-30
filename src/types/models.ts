@@ -128,6 +128,28 @@ export interface SubmitFeedbackResponse {
   ok: boolean;
 }
 
+export type FeedbackStatus = 'unread' | 'read' | 'ok' | 'spam';
+
+export type ManageFeedbackAction =
+  | 'setStatus'
+  | 'markSpam'
+  | 'delete'
+  | 'reclassify';
+
+export interface ManageFeedbackRequest {
+  action: ManageFeedbackAction;
+  feedbackId: string;
+  status?: FeedbackStatus;
+  spamReason?: string;
+}
+
+export interface ManageFeedbackResponse {
+  ok: boolean;
+  status?: FeedbackStatus;
+  deleted?: boolean;
+  analysis?: Record<string, unknown> | null;
+}
+
 export interface RankChange {
   id: string;
   name: string;
