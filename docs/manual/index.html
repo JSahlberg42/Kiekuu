@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="fi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kiekuu — Käyttöopas</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 900px; margin: 0 auto; padding: 40px 20px;
+            background: #0f172a; color: #e2e8f0;
+            line-height: 1.6;
+        }
+        h1 { color: #fb923c; margin-bottom: 8px; font-size: 2.5em; }
+        .subtitle { color: #94a3b8; margin-bottom: 40px; font-size: 1.1em; }
+        h2 { color: #fb923c; margin: 32px 0 16px 0; font-size: 1.8em; }
+        .feature-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; margin: 32px 0; }
+        .feature-card { background: #1e293b; border-radius: 12px; padding: 24px; 
+                        border: 1px solid #334155; transition: transform 0.2s; }
+        .feature-card:hover { transform: translateY(-4px); }
+        .feature-card h3 { color: #fb923c; margin-bottom: 12px; }
+        .feature-card p { color: #cbd5e1; }
+        .tag { display: inline-block; background: #334155; color: #e2e8f0; 
+               padding: 4px 12px; border-radius: 4px; font-size: 0.9em; margin-right: 8px; }
+        a { color: #60a5fa; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .back-link { margin-top: 40px; padding-top: 20px; border-top: 1px solid #334155; }
+        .back-link a { color: #94a3b8; }
+        .back-link a:hover { color: #fb923c; }
+    </style>
+</head>
+<body>
+    <h1>🧯 Kiekuu — Käyttöopas</h1>
+    <p class="subtitle">Pelillistetty oppimisalusta sopimuspalokuntien (VPK) koulutukseen</p>
+
+    <h2>Miksi Kiekuu?</h2>
+    <p>Kiekuu on ilmainen, OPS 2026 -oppimissuunnitelmaan perustuva oppimisalusta, joka tekee palokuntakoulutuksesta motivoivaa ja helposti seurattavaa. Voit:</p>
+
+    <div class="feature-grid">
+        <div class="feature-card">
+            <h3>✅ Aloittaa heti</h3>
+            <p>Ei rekisteröitymistä, kokeile ensimmäinen taso nyt</p>
+            <span class="tag">Nopea pääsy</span>
+        </div>
+        <div class="feature-card">
+            <h3>✅ Edetä tasoittain</h3>
+            <p>Kuusi tasoa harjoittelijasta palokunnan päällikköön</p>
+            <span class="tag">OPS-sovitettu</span>
+        </div>
+        <div class="feature-card">
+            <h3>✅ AI-tutorin tuki</h3>
+            <p>Gemini 3.7 Flash selittää väärät vastaukset</p>
+            <span class="tag">AI Tutor</span>
+        </div>
+        <div class="feature-card">
+            <h3>✅ Luottaa lähteisiin</h3>
+            <p>Jokaiselle vastaukselle on OPS-viittaus</p>
+            <span class="tag">Lähteet</span>
+        </div>
+    </div>
+
+    <p><strong>Valitse taso ja aloita oppiminen!</strong></p>
+
+    <div class="back-link">
+        <a href="/">← Takaisin pääsivulle</a>
+    </div>
+</body>
+</html>
