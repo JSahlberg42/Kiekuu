@@ -21,7 +21,7 @@ npm run build      # vite build -> dist/
 - NEVER run `firebase deploy --only hosting`. All deploys go through GitHub Actions:
   - Push to `main` -> production site `kiekuu-cb601` (https://kiekuu-cb601.web.app).
   - PRs -> preview deploy to `test-kiekuu` (https://test-kiekuu.web.app) with a PR comment.
-- Firestore rules changes also need care: rules are deployed separately (`firebase deploy --only firestore:rules`), not part of CI.
+- Cloud Functions and Firestore rules/indexes deploy automatically via GitHub Actions too, **only when the relevant files change** (`dorny/paths-filter`): `firebase/functions/**`, `firestore.rules`, `firestore.indexes.json`. Functions/rules deploy to the single production project (`kiekuu-cb601`) even on PRs, so staging can test the backend.
 - CI builds on Node 20 with secrets as `VITE_*` env vars. Env vars are baked in at build time - a missing var silently produces a broken bundle, not an error.
 
 ## Hard constraints
@@ -43,7 +43,7 @@ npm run build      # vite build -> dist/
 - `src/services/*.ts` - ALL Firestore/Auth/AI operations live here (authService, questionService, userService, gamificationService, aiService...). Pages/components call services, never raw Firestore.
 - `src/context/AuthContext.tsx` - auth state provider; `ProtectedRoute` guards routes (`adminOnly` prop gates `/admin/*`).
 - Routes in `src/App.tsx` are lazy-loaded; Landing/Login/SignUp are eager.
-- `firebase/functions/index.js` - single v2 Cloud Function `classifyFeedback`, triggered on new `feedback/{id}` docs, classifies them via Vertex AI (Gemini Flash) server-side. Client-side AI (`src/services/aiService.ts`) uses `firebase/ai` (AI Logic) with URL-context for admin question generation.
+- `firebase/functions/index.js` - callable Cloud Functions incl. `submitFeedback` (which classifies feedback inline via Vertex AI / Gemini Flash at write time), `manageFeedback` (admin actions), and quiz scoring. Client-side AI (`src/services/aiService.ts`) uses `firebase/ai` (AI Logic) with URL-context for admin question generation.
 
 ## Domain model
 

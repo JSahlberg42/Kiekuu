@@ -16,6 +16,17 @@ jobs:
         with:
           node-version: '20'
       
+      - name: Check for functions/rules changes
+        id: paths
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            functions:
+              - 'firebase/functions/**'
+            rules:
+              - 'firestore.rules'
+              - 'firestore.indexes.json'
+      
       - name: Install dependencies
         run: npm ci
       
@@ -41,3 +52,21 @@ jobs:
           projectId: kiekuu-cb601
           target: kiekuu-cb601
           channelId: live
+
+      # Deploy Cloud Functions only when firebase/functions changed.
+      - name: Deploy Cloud Functions
+        if: steps.paths.outputs.functions == 'true'
+        uses: w9jds/firebase-action@v15.19.1
+        with:
+          args: deploy --only functions --project kiekuu-cb601
+        env:
+          GCP_SA_KEY: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_KIEKUU }}
+
+      # Deploy Firestore rules/indexes only when they changed.
+      - name: Deploy Firestore Rules
+        if: steps.paths.outputs.rules == 'true'
+        uses: w9jds/firebase-action@v15.19.1
+        with:
+          args: deploy --only firestore:rules,firestore:indexes --project kiekuu-cb601
+        env:
+          GCP_SA_KEY: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_KIEKUU }}
