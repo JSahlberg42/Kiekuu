@@ -1,7 +1,7 @@
 const admin = require('firebase-admin');
 const { getFirestore, FieldValue } = require('firebase-admin/firestore');
 const { onCall, HttpsError } = require('firebase-functions/v2/https');
-const { VertexAI } = require('@google-cloud/vertexai');
+const { GoogleGenAI } = require('@google/genai');
 
 admin.initializeApp();
 
@@ -319,24 +319,25 @@ const classifyContent = async ({ rating, message }) => {
                       process.env.GCP_PROJECT ||
                       admin.app().options.projectId;
 
-    const vertexAI = new VertexAI({
+    // @google/genai SDK (Vertex AI mode). Uses Application Default Credentials
+    // automatically in Cloud Functions. Replaces the deprecated @google-cloud/vertexai.
+    const ai = new GoogleGenAI({
+      vertexai: true,
       project: projectId,
       location: vertexRegion,
     });
-    const generativeModel = vertexAI.getGenerativeModel({
-      model: vertexModel,
-    });
 
     const prompt = buildPrompt({ rating, message });
-    const result = await generativeModel.generateContent({
-      contents: [{ role: 'user', parts: [{ text: prompt }] }],
-      generationConfig: {
+    const result = await ai.models.generateContent({
+      model: vertexModel,
+      contents: prompt,
+      config: {
         temperature: 0.2,
         maxOutputTokens: 256,
       },
     });
 
-    const text = result.response?.candidates?.[0]?.content?.parts?.map((part) => part.text).join('') || '';
+    const text = result.text || '';
     const jsonString = extractJson(text);
     let analysis = null;
 
