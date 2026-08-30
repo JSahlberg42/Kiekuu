@@ -28,7 +28,7 @@ npm run build      # vite build -> dist/
 
 - **TypeScript for `src/`.** All `src/` code is TypeScript (`.ts`/`.tsx`), `strict: true`, gated by `npm run typecheck` in CI - do not add `.js/.jsx` files under `src/`. `firebase/functions/` and `scripts/` stay plain JavaScript.
 - **UI text is Finnish; code identifiers and docs are English.**
-- Follow `STYLEGUIDE.md` ("Tactical Dark Mode": slate-950 bg, orange-500 primary, `rounded-xl`, subtle `border-slate-800`, lucide-react icons) and `.github/copilot/instructions.md` (question data shape, naming, patterns) for all UI work.
+- Follow `STYLEGUIDE.md` ("Tactical Dark Mode": slate-950 bg, orange-500 primary, `rounded-xl`, subtle `border-slate-800`, lucide-react icons) for all UI work.
 - Mobile-first Tailwind responsive design.
 
 ## Firebase gotchas
@@ -50,3 +50,47 @@ npm run build      # vite build -> dist/
 - Rank order (career progression, used everywhere): `harjoittelija` -> `nuorempi sammutusmies` -> `sammutusmies` -> `vanhempi sammutusmies` -> `ryhmänjohtaja` -> `palokunnan päällikkö`.
 - Question difficulty: `perustaso` -> `keskitaso` -> `edistynyt` -> `mestari`; higher difficulty = more points earned AND more points lost. Spec in `docs/GAMIFICATION.md`.
 - New user docs must be created with `role: 'user'`, `rank: 'harjoittelija'` or Firestore rules reject the write.
+
+## Code Organization
+
+- **Components:** One component per file in `src/components/`
+- **Pages:** Route components in `src/pages/`
+- **Hooks:** Custom hooks in `src/hooks/` (e.g., `useAuth.ts`, `useFirestore.ts`)
+- **Services:** Firebase operations in `src/services/` (e.g., `authService.ts`, `questionsService.ts`, `aiService.ts`)
+- **Utils:** Pure utility functions in `src/utils/`
+- **Context:** State management in `src/context/` (e.g., `AuthContext.tsx`)
+
+## Component Patterns
+
+- Use functional components with hooks
+- Export default at bottom: `export default ComponentName;`
+- Props destructuring at function signature
+- Keep components focused and single-responsibility
+
+## Firebase Patterns
+
+- Always wrap Firebase calls in error handling (try-catch or `.catch()`)
+- Use Firestore transactions for multi-document operations
+- Implement loading states and error states in components
+- Cache auth state in Context to prevent repeated checks
+
+## Naming Conventions
+
+- **Components:** PascalCase (e.g., `QuestionCard.tsx`)
+- **Functions/Variables:** camelCase (e.g., `fetchQuestions`, `userScore`)
+- **Constants:** UPPER_SNAKE_CASE (e.g., `MAX_ATTEMPTS`, `API_TIMEOUT`)
+- **Files:** kebab-case for utilities (e.g., `format-utils.ts`) or PascalCase for components
+
+## Common Patterns
+
+- **Auth check:** Use `useAuth` hook; redirect to `/login` if not authenticated
+- **Error messages:** Use toast notifications for user feedback
+- **Form handling:** Use controlled components with `useState` for form values
+- **List rendering:** Always use unique `key` prop (use `id`, never array index)
+
+## Common Mistakes to Avoid
+
+- ❌ Don't use `var`, always use `const` or `let`
+- ❌ Don't mutate state directly; use setState hooks
+- ❌ Don't hardcode Firebase config; use environment variables (`VITE_FIREBASE_*`)
+- ❌ Don't forget `async`/`await` error handling for Firebase calls
