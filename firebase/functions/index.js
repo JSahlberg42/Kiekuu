@@ -7,7 +7,7 @@ admin.initializeApp();
 
 const db = getFirestore();
 
-const vertexRegion = process.env.VERTEX_AI_LOCATION || 'us-central1';
+const vertexRegion = process.env.VERTEX_AI_LOCATION || 'global';
 const vertexModel = process.env.VERTEX_AI_MODEL || 'gemini-3.7-flash';
 
 const FEEDBACK_SCHEMA = {
