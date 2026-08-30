@@ -1,0 +1,12 @@
+title: Kiekuu
+description: Pelillistetty oppimisalusta sopimuspalokuntien (VPK) koulutukseen
+theme: jekyll-theme-cayman
+
+markdown: kramdown
+permalink: /:title/
+
+exclude:
+  - logo/
+  - screenshots/
+  - "*.jpg"
+  - "*.png"

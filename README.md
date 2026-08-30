@@ -133,6 +133,7 @@ This project is licensed under the **MIT License** — see [LICENSE.txt](LICENSE
 
 - **Live app:** https://kiekuu.apinalauma.fi
 - **Preview app:** https://test-kiekuu.web.app (auto-deployed on PRs)
+- **User manual:** https://JSahlberg42.github.io/Kiekuu (GitHub Pages)
 - **OPS 2026:** https://www.pelastusopisto.fi/wp-content/uploads/OPS_Sopimushenkilosto_2026.pdf
 - **SSPL:** https://sspl.fi
 - **SPEK:** https://spek.fi
