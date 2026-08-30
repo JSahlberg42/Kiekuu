@@ -1,6 +1,5 @@
 const admin = require('firebase-admin');
 const { getFirestore, FieldValue } = require('firebase-admin/firestore');
-const { onDocumentCreated } = require('firebase-functions/v2/firestore');
 const { onCall, HttpsError } = require('firebase-functions/v2/https');
 const { VertexAI } = require('@google-cloud/vertexai');
 
@@ -32,29 +31,10 @@ const MAX_CLASSIFICATIONS_PER_HOUR = 100;
 const isValidRating = (rating) =>
   Number.isInteger(rating) && rating >= 1 && rating <= 5;
 
-const isAiFeedbackEnabled = async () => {
-  try {
-    const snap = await db.collection('config').doc('aiSettings').get();
-    return snap.data()?.aiFeedbackEnabled !== false;
-  } catch (error) {
-    console.warn('Failed to read AI kill switch, assuming enabled:', error);
-    return true;
-  }
-};
-
 const countRecentFeedbackByUid = async (uid, since) => {
   const snapshot = await db
     .collection('feedback')
     .where('user.uid', '==', uid)
-    .where('createdAt', '>', since)
-    .count()
-    .get();
-  return snapshot.data().count || 0;
-};
-
-const countRecentFeedbackDocs = async (since) => {
-  const snapshot = await db
-    .collection('feedback')
     .where('createdAt', '>', since)
     .count()
     .get();
@@ -122,6 +102,12 @@ exports.submitFeedback = onCall({ enforceAppCheck: true }, async (request) => {
     console.warn(`Could not load user profile for ${uid}:`, error);
   }
 
+  // Classify immediately — every stored feedback is AI-classified at write
+  // time. The only exception: if AI classification itself fails (error,
+  // timeout, etc.), we still store the feedback but without classification.
+  const classification = await classifyContent({ rating, message });
+  const classifiedFields = buildClassificationFields(classification);
+
   await db.collection('feedback').add({
     rating,
     message,
@@ -129,9 +115,7 @@ exports.submitFeedback = onCall({ enforceAppCheck: true }, async (request) => {
     publishNameApproved,
     user: { uid, displayName, email },
     createdAt: FieldValue.serverTimestamp(),
-    aiStatus: 'pending',
-    status: 'unread',
-    isSpam: false,
+    ...classifiedFields,
   });
 
   return { ok: true };
@@ -319,46 +303,16 @@ const extractJson = (text) => {
 };
 
 /**
- * Runs AI classification on a single feedback doc. Reusable by both the
- * onDocumentCreated trigger and the admin re-classify callable.
- * Returns the persisted analysis or null if skipped/failed.
+ * Runs AI classification on feedback content WITHOUT touching the database.
+ * Used inline in submitFeedback (so every stored feedback is classified at
+ * write time) and by the admin reclassify action.
+ * Returns { analysis, rawText, model } on success (analysis may be null if the
+ * AI response didn't validate), or { error } if classification failed.
  */
-const classifyFeedbackDoc = async (snap) => {
-  const data = snap.data();
-  if (!data) return null;
-  if (data.aiStatus === 'done' || data.aiStatus === 'processing') {
-    return data.analysis || null;
+const classifyContent = async ({ rating, message }) => {
+  if (!message || message.length > MAX_FEEDBACK_MESSAGE_LENGTH || !isValidRating(rating)) {
+    return { error: 'invalid_input' };
   }
-
-  const message = typeof data.message === 'string' ? data.message : '';
-  if (!message || message.length > MAX_FEEDBACK_MESSAGE_LENGTH || !isValidRating(data.rating)) {
-    await snap.ref.update({
-      aiStatus: 'skipped_invalid_input',
-      analysisAt: FieldValue.serverTimestamp(),
-    });
-    return null;
-  }
-
-  if (!(await isAiFeedbackEnabled())) {
-    await snap.ref.update({
-      aiStatus: 'disabled',
-      analysisAt: FieldValue.serverTimestamp(),
-    });
-    return null;
-  }
-
-  const recentCount = await countRecentFeedbackDocs(new Date(Date.now() - HOUR_MS));
-  if (recentCount > MAX_CLASSIFICATIONS_PER_HOUR) {
-    await snap.ref.update({
-      aiStatus: 'skipped_rate_limit',
-      analysisAt: FieldValue.serverTimestamp(),
-    });
-    return null;
-  }
-
-  await snap.ref.update({
-    aiStatus: 'processing',
-  });
 
   try {
     const projectId = process.env.GCLOUD_PROJECT ||
@@ -373,7 +327,7 @@ const classifyFeedbackDoc = async (snap) => {
       model: vertexModel,
     });
 
-    const prompt = buildPrompt({ rating: data.rating, message });
+    const prompt = buildPrompt({ rating, message });
     const result = await generativeModel.generateContent({
       contents: [{ role: 'user', parts: [{ text: prompt }] }],
       generationConfig: {
@@ -399,43 +353,49 @@ const classifyFeedbackDoc = async (snap) => {
       }
     }
 
-    if (analysis) {
-      await snap.ref.update({
-        aiStatus: 'done',
-        analysis: analysis,
-        analysisModel: vertexModel,
-        analysisRaw: null,
-        analysisAt: FieldValue.serverTimestamp(),
-        isSpam: analysis.isSpam === true,
-        spamReason: analysis.isSpam ? analysis.spamReason || '' : '',
-        status: analysis.isSpam ? 'spam' : 'unread',
-      });
-    } else {
-      await snap.ref.update({
-        aiStatus: 'done',
-        analysis: null,
-        analysisModel: vertexModel,
-        analysisRaw: text,
-        analysisAt: FieldValue.serverTimestamp(),
-      });
-    }
-    return analysis;
+    return { analysis, rawText: text, model: vertexModel };
   } catch (error) {
     console.error('Feedback classification failed:', error);
-    await snap.ref.update({
-      aiStatus: 'error',
-      analysisError: error.message || 'Classification failed',
-      analysisAt: FieldValue.serverTimestamp(),
-    });
-    return null;
+    return { error: error.message || 'Classification failed' };
   }
 };
 
-exports.classifyFeedback = onDocumentCreated('feedback/{feedbackId}', async (event) => {
-  const snap = event.data;
-  if (!snap) return;
-  await classifyFeedbackDoc(snap);
-});
+/**
+ * Builds the persistence fields for a feedback doc from a classification
+ * result. A clean result with analysis -> done + spam fields. A clean result
+ * without analysis -> done but no classification. An error -> stored without
+ * classification (only exception the user allows).
+ */
+const buildClassificationFields = (classification) => {
+  if (classification.error) {
+    return {
+      aiStatus: 'error',
+      analysis: null,
+      analysisError: classification.error,
+      analysisAt: FieldValue.serverTimestamp(),
+    };
+  }
+  if (!classification.analysis) {
+    return {
+      aiStatus: 'done',
+      analysis: null,
+      analysisModel: classification.model,
+      analysisRaw: classification.rawText || null,
+      analysisAt: FieldValue.serverTimestamp(),
+    };
+  }
+  const analysis = classification.analysis;
+  return {
+    aiStatus: 'done',
+    analysis,
+    analysisModel: classification.model,
+    analysisRaw: null,
+    analysisAt: FieldValue.serverTimestamp(),
+    isSpam: analysis.isSpam === true,
+    spamReason: analysis.isSpam ? analysis.spamReason || '' : '',
+    status: analysis.isSpam ? 'spam' : 'unread',
+  };
+};
 
 /** Returns the Firestore user doc for an authenticated user, or null. */
 const getAuthUserDoc = async (request) => {
@@ -514,16 +474,15 @@ exports.manageFeedback = onCall({ enforceAppCheck: true }, async (request) => {
       return { ok: true, deleted: true };
     }
     case 'reclassify': {
-      // Reset to pending so the trigger/re-run can classify again
-      await ref.update({
-        aiStatus: 'pending',
-        analysis: null,
-        analysisRaw: null,
-        analysisError: null,
+      const data = snap.data();
+      const message = typeof data.message === 'string' ? data.message : '';
+      const classification = await classifyContent({
+        rating: data.rating,
+        message,
       });
-      // Reclassify immediately via the shared helper.
-      const analysis = await classifyFeedbackDoc(snap);
-      return { ok: true, aiStatus: 'done', analysis };
+      const fields = buildClassificationFields(classification);
+      await ref.update(fields);
+      return { ok: true, aiStatus: fields.aiStatus, analysis: fields.analysis || null };
     }
     default:
       throw new HttpsError('invalid-argument', 'Unknown action.');
