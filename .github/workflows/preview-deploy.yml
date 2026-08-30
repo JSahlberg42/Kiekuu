@@ -18,6 +18,17 @@ jobs:
         with:
           node-version: '20'
       
+      - name: Check for functions/rules changes
+        id: paths
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            functions:
+              - 'firebase/functions/**'
+            rules:
+              - 'firestore.rules'
+              - 'firestore.indexes.json'
+      
       - name: Install dependencies
         run: npm ci
       
@@ -45,6 +56,26 @@ jobs:
           projectId: kiekuu-cb601
           target: test-kiekuu
           channelId: live
+
+      # Deploy Cloud Functions only when firebase/functions changed.
+      # Note: functions deploy to the single production project (kiekuu-cb601),
+      # so the staging UI can test the new backend.
+      - name: Deploy Cloud Functions
+        if: github.actor != 'dependabot[bot]' && steps.paths.outputs.functions == 'true'
+        uses: w9jds/firebase-action@v15.19.1
+        with:
+          args: deploy --only functions --project kiekuu-cb601
+        env:
+          GCP_SA_KEY: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_KIEKUU }}
+
+      # Deploy Firestore rules/indexes only when they changed.
+      - name: Deploy Firestore Rules
+        if: github.actor != 'dependabot[bot]' && steps.paths.outputs.rules == 'true'
+        uses: w9jds/firebase-action@v15.19.1
+        with:
+          args: deploy --only firestore:rules,firestore:indexes --project kiekuu-cb601
+        env:
+          GCP_SA_KEY: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_KIEKUU }}
       
       - name: Comment PR with Preview URL
         if: github.actor != 'dependabot[bot]' && github.event_name == 'pull_request'
