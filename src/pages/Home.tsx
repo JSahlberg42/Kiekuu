@@ -81,6 +81,15 @@ function Home() {
                   Admin
                 </Link>
               )}
+              <a
+                href="https://jsahlberg42.github.io/Kiekuu"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full sm:w-auto text-center px-4 py-2 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-slate-50 rounded-xl text-sm font-medium transition-colors min-h-[44px] flex items-center justify-center"
+                aria-label="Avaa käyttöopas uuteen välilehteen"
+              >
+                📚 Documentation
+              </a>
               {!user?.isAnonymous ? (
                 <Link
                   to="/feedback"

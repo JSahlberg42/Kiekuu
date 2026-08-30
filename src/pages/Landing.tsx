@@ -136,6 +136,54 @@ function Landing() {
         <div className="mt-8 text-center text-sm text-slate-600">
           <p>Noudattelee Pelastusopiston sopimushenkilöstön OPS:in sisältöä sekä muita alan suosituksia.</p>
         </div>
+
+        <div className="mt-6 bg-slate-900 border border-slate-800 rounded-xl p-6">
+          <h2 className="text-sm font-semibold uppercase tracking-widest text-orange-500 mb-3 text-center">
+            📚 Tutustu käyttöoppaaseen
+          </h2>
+          <p className="text-sm text-slate-400 text-center mb-4">
+            Löydät ohjeet, tasokuvaukset ja usein kysytyt kysymykset dokumentaatiosta.
+          </p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <a
+              href="https://jsahlberg42.github.io/Kiekuu/manual/getting-started/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="block px-4 py-3 bg-slate-800 hover:bg-slate-700 active:bg-slate-600 border border-slate-700 rounded-xl text-sm text-slate-50 font-medium transition-colors text-center min-h-[44px] flex items-center justify-center"
+              aria-label="Avaa aloitusohjeet uuteen välilehteen"
+            >
+              🚀 Aloittaminen
+            </a>
+            <a
+              href="https://jsahlberg42.github.io/Kiekuu/manual/ranks/harjoittelija.html"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="block px-4 py-3 bg-slate-800 hover:bg-slate-700 active:bg-slate-600 border border-slate-700 rounded-xl text-sm text-slate-50 font-medium transition-colors text-center min-h-[44px] flex items-center justify-center"
+              aria-label="Avaa tasokuvaukset uuteen välilehteen"
+            >
+              🏅 Tasot
+            </a>
+            <a
+              href="https://jsahlberg42.github.io/Kiekuu/manual/getting-started/faq.html"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="block px-4 py-3 bg-slate-800 hover:bg-slate-700 active:bg-slate-600 border border-slate-700 rounded-xl text-sm text-slate-50 font-medium transition-colors text-center min-h-[44px] flex items-center justify-center"
+              aria-label="Avaa usein kysytyt kysymykset uuteen välilehteen"
+            >
+              ❓ UKK
+            </a>
+            <a
+              href="https://jsahlberg42.github.io/Kiekuu"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="block px-4 py-3 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-slate-50 rounded-xl text-sm font-medium transition-colors text-center min-h-[44px] flex items-center justify-center"
+              aria-label="Avaa koko käyttöopas uuteen välilehteen"
+            >
+              📖 Koko käyttöopas →
+            </a>
+          </div>
+        </div>
+
         <div className="mt-4 text-center text-xs text-slate-500">
           <p>© 2026 Jussi Sahlberg</p>
         </div>
