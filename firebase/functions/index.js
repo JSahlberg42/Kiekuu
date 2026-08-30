@@ -432,6 +432,8 @@ exports.manageFeedback = onCall({ enforceAppCheck: true }, async (request) => {
     ? request.data.feedbackId.trim()
     : '';
 
+  console.log(`[manageFeedback] action=${action ?? 'none'} feedbackId=${feedbackId || 'none'} admin=${request.auth?.uid ?? 'unknown'}`);
+
   if (!feedbackId) {
     throw new HttpsError('invalid-argument', 'feedbackId is required.');
   }
