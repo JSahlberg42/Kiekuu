@@ -166,6 +166,56 @@ Establish Kiekuu as a recognized platform in Finnish rescue services.
 - Re-evaluate Gemini 4 Flash when available
 - Consider switching to persistent Firestore cache now that the startup race has been resolved
 - Add more OPS-aligned questions
+- Swedish language support (ruotsinkieliset VPK:t)
+
+---
+
+## 📖 GitHub Pages — User Manual (MVP)
+
+GitHub Pages serves as the public-facing user manual at `https://JSahlberg42.github.io/Kiekuu`.
+
+### Structure
+
+```
+docs/manual/
+├── index.md                       # Manual home
+├── getting-started/
+│   ├── index.md                   # Getting started overview
+│   ├── signup.md                  # Account creation
+│   ├── first-steps.md             # First questions, rank progression
+│   └── faq.md                     # Frequently asked questions
+├── ranks/
+│   ├── harjoittelija.md           # Harjoittelija level
+│   ├── nuorempi-sammutusmies.md   # Nuorempi sammutusmies level
+│   ├── sammutusmies.md            # Sammutusmies level
+│   ├── vanhempi-sammutusmies.md   # Vanhempi sammutusmies level
+│   ├── ryhmanjohtaja.md           # Ryhmänjohtaja level
+│   └── palokunnan-paallikko.md    # Palokunnan päällikkö level
+└── technical/                     # TBD in Sprint 2
+```
+
+### Publishing
+- GitHub Pages hosts from `docs/manual/` on `main` branch
+- Content in Finnish (native language of target users)
+- PR-based previews via `test-kiekuu.web.app` (manual can be linked from there)
+
+### MVP Scope (Sprint 1)
+- [x] `docs/manual/index.md` — Manual home page
+- [x] `docs/manual/getting-started/` — 4 starter pages
+- [x] `docs/manual/ranks/` — 6 rank overviews
+- [ ] `docs/manual/technical/` — Technical documentation (Sprint 2)
+- [ ] GitHub Pages config and workflow setup (Sprint 2)
+- [ ] Custom domain (e.g., `manual.kiekuu.fi`) if available (Sprint 2)
+
+### Future Phases
+- **Phase 2:** FAQ expansion, troubleshooting guides
+- **Phase 3:** OPS curriculum deep-dives per course
+- **Phase 4:** Video walkthroughs, downloadable resources
+
+### Decision Notes
+- GitHub Pages chosen over Firebase Hosting for documentation: static content, no auth needed, easy Git-based workflow, free hosting
+- Firebase Hosting continues to serve the app itself at root domain
+- Manual and app are separate concerns; manual lives on GitHub Pages without affecting app
 
 ---
 

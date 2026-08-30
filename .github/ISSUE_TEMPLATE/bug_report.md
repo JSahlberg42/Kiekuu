@@ -1,6 +1,6 @@
 ---
 name: Bug Report
-description: Report a bug, error, or unexpected behavior in Kiekuu
+about: Report a bug, error, or unexpected behavior in Kiekuu
 title: "[Bug]: "
 labels: ["bug", "needs-triage"]
 assignees: []

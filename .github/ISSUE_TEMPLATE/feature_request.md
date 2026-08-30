@@ -1,6 +1,6 @@
 ---
 name: Feature Request
-description: Suggest a new feature or improvement for Kiekuu
+about: Suggest a new feature or improvement for Kiekuu
 title: "[Feature]: "
 labels: ["enhancement", "needs-triage"]
 assignees: []
