@@ -53,6 +53,12 @@ jobs:
           target: kiekuu-cb601
           channelId: live
 
+      # Install Cloud Functions dependencies (needed by firebase-tools to analyze/deploy).
+      - name: Install Functions Dependencies
+        if: steps.paths.outputs.functions == 'true'
+        run: npm ci
+        working-directory: firebase/functions
+
       # Deploy Cloud Functions only when firebase/functions changed.
       - name: Deploy Cloud Functions
         if: steps.paths.outputs.functions == 'true'
