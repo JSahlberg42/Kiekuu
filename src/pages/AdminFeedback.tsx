@@ -47,6 +47,8 @@ function AdminFeedback() {
   const [search, setSearch] = useState<string>('');
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [busy, setBusy] = useState<Set<string>>(new Set());
+  const [pageSize, setPageSize] = useState<number>(25);
+  const [currentPage, setCurrentPage] = useState<number>(1);
 
   // Real-time listener so status changes from the admin reflect immediately.
   useEffect(() => {
@@ -99,6 +101,21 @@ function AdminFeedback() {
 
     return unsubscribe;
   }, [loading, userData?.role]);
+
+  // Reset to the first page whenever filters, sort, search, or page size change.
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setCurrentPage(1);
+  }, [
+    filterStatus,
+    filterSentiment,
+    filterPriority,
+    filterAiStatus,
+    search,
+    sortField,
+    sortDirection,
+    pageSize,
+  ]);
 
   const getSentimentColor = (sentiment?: string) => {
     switch (sentiment?.toLowerCase()) {
@@ -290,6 +307,11 @@ function AdminFeedback() {
       if (aValue > bValue) return sortDirection === 'asc' ? 1 : -1;
       return 0;
     });
+
+  const totalPages = Math.max(1, Math.ceil(filteredAndSortedFeedbacks.length / pageSize));
+  const safePage = Math.min(currentPage, totalPages);
+  const pageStart = (safePage - 1) * pageSize;
+  const pagedFeedbacks = filteredAndSortedFeedbacks.slice(pageStart, pageStart + pageSize);
 
   const clearFilters = () => {
     setFilterStatus('');
@@ -626,7 +648,7 @@ function AdminFeedback() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-800">
-                  {filteredAndSortedFeedbacks.map((feedback) => {
+                  {pagedFeedbacks.map((feedback) => {
                     const rowBusy = busy.has(feedback.id);
                     return (
                       <tr
@@ -763,6 +785,57 @@ function AdminFeedback() {
                   })}
                 </tbody>
               </table>
+            </div>
+          )}
+
+          {/* Pagination controls */}
+          {!isLoading && filteredAndSortedFeedbacks.length > 0 && totalPages > 1 && (
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-3 px-4 py-3 border-t border-slate-800 bg-slate-950">
+              <div className="text-sm text-slate-400">
+                Näytetään {pageStart + 1}–{Math.min(pageStart + pageSize, filteredAndSortedFeedbacks.length)} / {filteredAndSortedFeedbacks.length}
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                  disabled={safePage <= 1}
+                  className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 disabled:opacity-40 text-slate-50 rounded-lg text-sm font-medium transition-colors"
+                >
+                  ← Edellinen
+                </button>
+                <span className="text-sm text-slate-400 whitespace-nowrap">
+                  Sivu {safePage} / {totalPages}
+                </span>
+                <button
+                  onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                  disabled={safePage >= totalPages}
+                  className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 disabled:opacity-40 text-slate-50 rounded-lg text-sm font-medium transition-colors"
+                >
+                  Seuraava →
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Page size selector */}
+          {!isLoading && filteredAndSortedFeedbacks.length > 0 && (
+            <div className="flex flex-wrap items-center gap-3 px-4 py-3 border-t border-slate-800 bg-slate-900">
+              <label className="text-sm text-slate-400">
+                Näytä:
+              </label>
+              <select
+                value={pageSize}
+                onChange={(e) => {
+                  setPageSize(Number(e.target.value));
+                  setCurrentPage(1);
+                }}
+                className="px-3 py-1.5 bg-slate-950 border border-slate-700 rounded-lg text-slate-50 text-sm focus:outline-hidden focus:ring-2 focus:ring-blue-500"
+              >
+                <option value={25}>25</option>
+                <option value={50}>50</option>
+                <option value={100}>100</option>
+                <option value={150}>150</option>
+              </select>
+              <span className="text-xs text-slate-500">per sivu</span>
             </div>
           )}
         </div>
