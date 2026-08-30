@@ -10,67 +10,111 @@
                max-width: 900px; margin: 0 auto; padding: 40px 20px;
                background: #0f172a; color: #e2e8f0; line-height: 1.6; }
         h1 { color: #fb923c; margin-bottom: 8px; font-size: 2em; }
-        .rank-badge { display: inline-block; background: #334155; padding: 8px 16px; border-radius: 8px;
-                      font-size: 1.2em; margin-bottom: 16px; color: #fb923c; }
-        .info-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin: 24px 0; }
-        .info-box { background: #1e293b; border-radius: 8px; padding: 16px; border: 1px solid #334155; }
-        .info-box h3 { color: #fb923c; font-size: 1em; margin-bottom: 4px; }
-        .info-box p { color: #cbd5e1; font-size: 0.95em; }
+        .subtitle { color: #94a3b8; margin-bottom: 32px; }
         h2 { color: #fb923c; margin: 28px 0 12px 0; font-size: 1.5em; }
-        ul { margin-left: 20px; margin-bottom: 16px; }
-        li { margin-bottom: 8px; }
-        .tag { display: inline-block; background: #334155; padding: 4px 12px; border-radius: 4px; 
-               font-size: 0.85em; margin-right: 8px; color: #e2e8f0; }
-        .cta-button { display: inline-block; background: #fb923c; color: #0f172a; padding: 12px 24px;
-                      border-radius: 8px; font-weight: bold; margin-top: 20px; }
-        .cta-button:hover { background: #fbbf24; text-decoration: none; }
+        h3 { color: #fb923c; margin: 20px 0 8px 0; font-size: 1.15em; }
+        p { color: #cbd5e1; margin-bottom: 12px; }
+        .card { background: #1e293b; border-radius: 12px; padding: 20px; margin-bottom: 16px;
+                border: 1px solid #334155; }
+        .card h3 { margin-top: 0; }
+        strong { color: #e2e8f0; }
         a { color: #60a5fa; text-decoration: none; }
         a:hover { text-decoration: underline; }
         .back-link { margin-top: 40px; padding-top: 20px; border-top: 1px solid #334155; }
         .back-link a { color: #94a3b8; }
+        ul, ol { margin-left: 20px; margin-bottom: 16px; color: #cbd5e1; }
+        li { margin-bottom: 8px; }
+        hr { border: none; border-top: 1px solid #334155; margin: 28px 0; }
+        blockquote { border-left: 3px solid #fb923c; padding-left: 16px; color: #94a3b8;
+                      margin: 16px 0; }
     </style>
 </head>
 <body>
-    <span class="rank-badge">🏅 Taso 1</span>
-    <h1>Harjoittelija</h1>
-    <p>Ensimmäinen taso Kiekuussa — aloitat tästä.</p>
-
-    <div class="info-grid">
-        <div class="info-box">
-            <h3>🎯 Tavoite</h3>
-            <p>Opit palokunnan perusteet, työturvallisuuden ja yksikön toiminnan</p>
-        </div>
-        <div class="info-box">
-            <h3>📚 Sisältö</h3>
-            <p>Perustiedot, työturvallisuus, yksikön tutustuminen</p>
-        </div>
-        <div class="info-box">
-            <h3>⚡ Vaikeustaso</h3>
-            <p>Perustaso (perustaso)</p>
-        </div>
-        <div class="info-box">
-            <h3>🏆 Pisteet</h3>
-            <p>Perustason pisteet (pienin panostus)</p>
-        </div>
-    </div>
-
-    <h2>Mitä opit?</h2>
-    <ul>
-        <li>Palokunnan organisaatio ja tehtävät</li>
-        <li>Työturvallisuuden perusteet</li>
-        <li>Henkilökohtaiset suojavarusteet</li>
-        <li>Välitön toiminta onnettomuuspaikalla</li>
-        <li>Viestiliikenteen perusteet</li>
-    </ul>
-
-    <h2>Seuraava taso</h2>
-    <p>Kun suoritat harjoittelija-tason, avautuu <strong>Nuorempi sammutusmies</strong> -taso.</p>
-    <p><span class="tag">Seuraava</span> Nuorempi sammutusmies</p>
-
-    <a href="https://kiekuu.apinalauma.fi" class="cta-button">Aloita oppiminen →</a>
-
+    <h1 id="harjoittelija">Harjoittelija</h1>
+<p>Ensimmäinen taso Kiekuussa — aloitat tästä.</p>
+<hr />
+<h2 id="yleiskatsaus">Yleiskatsaus</h2>
+<table>
+<thead>
+<tr>
+<th>Ominaisuus</th>
+<th>Tiedot</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Taso</strong></td>
+<td>1 / 6</td>
+</tr>
+<tr>
+<td><strong>Edellytykset</strong></td>
+<td>Ei vaatimuksia</td>
+</tr>
+<tr>
+<td><strong>Tavoite</strong></td>
+<td>Tutustu palokuntatoiminnan perusteisiin</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="mita-opit">Mitä opit</h2>
+<h3 id="perusosaaminen">Perusosaaminen</h3>
+<p>Tämä taso kattaa palokuntatoiminnan perusteet:</p>
+<ol>
+<li><strong>Turvallisuus</strong> — Työturvallisuus, henkilökohtaiset suojavarusteet</li>
+<li><strong>Yksikkötunnukset</strong> — Palokunnan tunnukset ja rakenteet</li>
+<li><strong>Viestintä</strong> — Perusradiosanasto (VIRVE)</li>
+<li><strong>Ensiapu</strong> — Perusensiavun periaatteet</li>
+</ol>
+<h3 id="aihealueet">Aihealueet</h3>
+<table>
+<thead>
+<tr>
+<th>Aihe</th>
+<th>Esimerkki sisältö</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Työturvallisuus</td>
+<td>Suojainten käyttö, vaaratekijät</td>
+</tr>
+<tr>
+<td>Yksikkörakenne</td>
+<td>VPK:n organisaatio, hälytysjärjestys</td>
+</tr>
+<tr>
+<td>VIRVE-perusteet</td>
+<td>Radion käyttö, tilanneraportti</td>
+</tr>
+<tr>
+<td>EA1-perusteet</td>
+<td>Hätäensiapu,elvytys</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="kysymykset-ja-vaikeustasot">Kysymykset ja vaikeustasot</h2>
+<h3 id="perustaso">Perustaso</h3>
+<p>Yksinkertaiset käsitteet ja määritelmät.</p>
+<h3 id="keskitaso">Keskitaso</h3>
+<p>Sovella tietoa käytännön tilanteisiin.</p>
+<hr />
+<h2 id="seuraava-taso">Seuraava taso</h2>
+<p>Kun olet suorittanut riittävästi kysymyksiä, edet automaattisesti tasolle <strong>Nuorempi sammutusmies</strong>.</p>
+<hr />
+<h2 id="aiheeseen-liittyva-ops-materiaali">Aiheeseen liittyvä OPS-materiaali</h2>
+<p>Katso [OPS-vastaavuus(../technical/ops-alignment.html) nähdäksesi, miten tämä taso vastaa OPS 2026 -oppimissuunnitelmaa.</p>
+<hr />
+<h2 id="lisatietoa">Lisätietoa</h2>
+<ul>
+<li>[Aloittaminen(../getting-started/.html) — Miten aloitat</li>
+<li>[UKK(../getting-started/faq.html) — Usein kysytyt kysymykset</li>
+</ul>
+<hr />
+<p>[← Takaisin: Tasot(../.html) | [Seuraavaksi: Nuorempi sammutusmies →(../nuorempi-sammutusmies.html)</p>
     <div class="back-link">
-        <a href="index.html">← Takaisin käyttöopas-sivulle</a> | <a href="..">Takaisin documentation-sivulle</a>
+        <a href="../getting-started/index.html">Aloittaminen</a> | <a href="../../manual/index.html">Käyttöopas</a>
     </div>
 </body>
 </html>
