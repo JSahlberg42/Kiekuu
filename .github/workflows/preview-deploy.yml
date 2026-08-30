@@ -57,6 +57,12 @@ jobs:
           target: test-kiekuu
           channelId: live
 
+      # Install Cloud Functions dependencies (needed by firebase-tools to analyze/deploy).
+      - name: Install Functions Dependencies
+        if: github.actor != 'dependabot[bot]' && steps.paths.outputs.functions == 'true'
+        run: npm ci
+        working-directory: firebase/functions
+
       # Deploy Cloud Functions only when firebase/functions changed.
       # Note: functions deploy to the single production project (kiekuu-cb601),
       # so the staging UI can test the new backend.
