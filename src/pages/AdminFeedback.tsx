@@ -71,11 +71,11 @@ function AdminFeedback() {
             createdAt: data.createdAt,
             user: data.user || { uid: '', displayName: '', email: '' },
             aiStatus: data.aiStatus || 'pending',
-            sentiment: data.sentiment,
-            topics: data.topics || [],
-            priority: data.priority,
-            summary: data.summary,
-            action: data.action,
+            sentiment: data.sentiment || data.analysis?.sentiment,
+            topics: data.topics || data.analysis?.topics || [],
+            priority: data.priority || data.analysis?.priority,
+            summary: data.summary || data.analysis?.summary,
+            action: data.action || data.analysis?.action,
             status: data.status || 'unread',
             isSpam: data.isSpam || false,
             spamReason: data.spamReason || '',
@@ -240,15 +240,46 @@ function AdminFeedback() {
     });
     setError('');
     try {
-      await Promise.all(ids.map(id =>
+      const results = await Promise.all(ids.map(id =>
         manageFeedback({ action, feedbackId: id, status, spamReason })
       ));
+
       if (action === 'delete') {
         setSelected(prev => {
           const next = new Set([...prev].filter(id => !ids.includes(id)));
           return next;
         });
       }
+
+      // Optimistically update the in-memory feedback list so the UI reflects
+      // the change immediately (the realtime listener will re-confirm).
+      setFeedbacks(prev => prev.map(fb => {
+        const idx = ids.indexOf(fb.id);
+        if (idx === -1) return fb;
+        const result = results[idx];
+        if (!result) return fb;
+        const patch: Partial<Feedback> = {};
+        if (action === 'setStatus' && result.status) {
+          patch.status = result.status;
+          if (result.status !== 'spam') {
+            patch.isSpam = false;
+            patch.spamReason = '';
+          }
+        }
+        if (action === 'markSpam') {
+          patch.status = 'spam';
+          patch.isSpam = true;
+          patch.spamReason = result.status === 'spam' ? (fb.spamReason || 'marked by admin') : fb.spamReason;
+        }
+        if (action === 'reclassify') {
+          if (result.sentiment != null) patch.sentiment = result.sentiment;
+          if (result.priority != null) patch.priority = result.priority;
+          if (result.isSpam != null) patch.isSpam = result.isSpam;
+          if (result.status) patch.status = result.status;
+          if (result.aiStatus) patch.aiStatus = result.aiStatus;
+        }
+        return { ...fb, ...patch };
+      }));
     } catch (err) {
       console.error('Feedback action failed:', err);
       setError((err as Error).message || 'Toiminto epäonnistui.');

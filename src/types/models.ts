@@ -148,6 +148,11 @@ export interface ManageFeedbackResponse {
   status?: FeedbackStatus;
   deleted?: boolean;
   analysis?: Record<string, unknown> | null;
+  /** Flattened classification fields returned by reclassify. */
+  sentiment?: string | null;
+  priority?: string | null;
+  isSpam?: boolean;
+  aiStatus?: string | null;
 }
 
 export interface RankChange {
