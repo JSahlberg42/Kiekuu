@@ -94,7 +94,7 @@ exports.submitFeedback = onCall({ enforceAppCheck: true }, async (request) => {
   let email = null;
   try {
     const userSnap = await db.collection('users').doc(uid).get();
-    if (userSnap.exists()) {
+    if (userSnap.exists) {
       displayName = userSnap.data().displayName || null;
       email = userSnap.data().email || null;
     }
@@ -158,7 +158,7 @@ exports.submitQuizAnswer = onCall({ enforceAppCheck: true }, async (request) => 
   let config = {};
   try {
     const configSnap = await db.collection('config').doc('platform').get();
-    if (configSnap.exists()) config = configSnap.data() || {};
+    if (configSnap.exists) config = configSnap.data() || {};
   } catch (error) {
     console.warn('Could not load platform config, using defaults:', error);
   }
@@ -174,7 +174,7 @@ exports.submitQuizAnswer = onCall({ enforceAppCheck: true }, async (request) => 
   if (categoryId) {
     try {
       const catSnap = await db.collection('categories').doc(categoryId).get();
-      categoryName = catSnap.exists() ? catSnap.data().name || null : null;
+      categoryName = catSnap.exists ? catSnap.data().name || null : null;
     } catch (error) {
       console.warn(`Could not load category ${categoryId}:`, error);
     }
@@ -262,18 +262,53 @@ const buildSchemaPrompt = () => {
   ].join('\n');
 };
 
-const validateAnalysis = (analysis) => {
-  if (!analysis || typeof analysis !== 'object') return false;
+/**
+ * Normalizes and validates a raw AI classification object. Rather than
+ * hard-failing on minor deviations (case, nulls, missing optional fields),
+ * it coerces known fields to the canonical shape. Returns null only if the
+ * payload is not an object at all.
+ */
+const normalizeAnalysis = (raw) => {
+  if (!raw || typeof raw !== 'object') return null;
 
-  if (typeof analysis.isSpam !== 'boolean') return false;
-  if (typeof analysis.spamReason !== 'string') return false;
-  if (!FEEDBACK_SCHEMA.sentiment.includes(analysis.sentiment)) return false;
-  if (!Array.isArray(analysis.topics)) return false;
-  if (!FEEDBACK_SCHEMA.priority.includes(analysis.priority)) return false;
-  if (typeof analysis.summary !== 'string') return false;
-  if (typeof analysis.action !== 'string') return false;
+  const isSpam = raw.isSpam === true || raw.isSpam === 'true' || raw.isSpam === 1;
+  const rawReason = raw.spamReason || raw.spam_reason || '';
 
-  return true;
+  let sentiment = typeof raw.sentiment === 'string'
+    ? raw.sentiment.toLowerCase().trim()
+    : 'neutral';
+  if (!FEEDBACK_SCHEMA.sentiment.includes(sentiment)) {
+    sentiment = 'neutral';
+  }
+
+  let priority = typeof raw.priority === 'string'
+    ? raw.priority.toLowerCase().trim()
+    : 'low';
+  if (!FEEDBACK_SCHEMA.priority.includes(priority)) {
+    priority = 'low';
+  }
+
+  let topics = [];
+  if (Array.isArray(raw.topics)) {
+    topics = raw.topics
+      .map((t) => (typeof t === 'string' ? t.trim() : ''))
+      .filter(Boolean);
+  } else if (typeof raw.topics === 'string' && raw.topics.trim()) {
+    topics = [raw.topics.trim()];
+  }
+
+  const summary = typeof raw.summary === 'string' ? raw.summary.trim() : '';
+  const action = typeof raw.action === 'string' ? raw.action.trim() : '';
+
+  return {
+    isSpam,
+    spamReason: typeof rawReason === 'string' ? rawReason.trim() : String(rawReason || ''),
+    sentiment,
+    topics,
+    priority,
+    summary,
+    action,
+  };
 };
 
 const buildPrompt = ({ rating, message }) => {
@@ -334,6 +369,8 @@ const classifyContent = async ({ rating, message }) => {
       config: {
         temperature: 0.2,
         maxOutputTokens: 256,
+        // Force structured JSON output (no markdown fences / prose).
+        responseMimeType: 'application/json',
       },
     });
 
@@ -344,10 +381,11 @@ const classifyContent = async ({ rating, message }) => {
     if (jsonString) {
       try {
         const parsed = JSON.parse(jsonString);
-        if (validateAnalysis(parsed)) {
-          analysis = parsed;
+        const normalized = normalizeAnalysis(parsed);
+        if (normalized) {
+          analysis = normalized;
         } else {
-          console.warn('AI response validation failed:', parsed);
+          console.warn('AI response normalization returned null:', parsed);
         }
       } catch (parseError) {
         console.error('JSON parse error:', parseError);
@@ -389,6 +427,12 @@ const buildClassificationFields = (classification) => {
   return {
     aiStatus: 'done',
     analysis,
+    // Flattened fields so clients can read them without unwrapping `analysis`.
+    sentiment: analysis.sentiment,
+    topics: analysis.topics || [],
+    priority: analysis.priority,
+    summary: analysis.summary,
+    action: analysis.action,
     analysisModel: classification.model,
     analysisRaw: null,
     analysisAt: FieldValue.serverTimestamp(),
@@ -485,7 +529,15 @@ exports.manageFeedback = onCall({ enforceAppCheck: true }, async (request) => {
       });
       const fields = buildClassificationFields(classification);
       await ref.update(fields);
-      return { ok: true, aiStatus: fields.aiStatus, analysis: fields.analysis || null };
+      return {
+        ok: true,
+        aiStatus: fields.aiStatus,
+        analysis: fields.analysis || null,
+        sentiment: fields.sentiment || null,
+        priority: fields.priority || null,
+        isSpam: fields.isSpam === true,
+        status: fields.status || null,
+      };
     }
     default:
       throw new HttpsError('invalid-argument', 'Unknown action.');
