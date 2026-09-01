@@ -66,7 +66,7 @@ function Leaderboard() {
   const currentPosition = currentEntry?.position ?? null;
   const isOnLeaderboard = currentEntry != null;
   const isCurrentUserTop =
-    currentPosition != null && currentPosition <= (snapshot?.topEntries.length ?? 0);
+    isOnLeaderboard && snapshot?.topEntries.some((e) => e.uid === user?.uid);
 
   return (
     <div className="min-h-screen bg-slate-950">
