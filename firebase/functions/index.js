@@ -257,6 +257,17 @@ exports.submitQuizAnswer = onCall({ enforceAppCheck: true }, async (request) => 
     console.warn('Leaderboard sync failed:', uid, error.message || error);
   }
 
+  // Sync team totalScore: bump the user's team totalScore by the delta
+  // from this submission. Best-effort — failures must not affect the
+  // quiz submission flow.
+  try {
+    if (currentRank !== false) {
+      await syncTeamScore(uid, points);
+    }
+  } catch (error) {
+    console.warn('Team score sync failed:', uid, error.message || error);
+  }
+
   return { ok: true, answerId: answerRef.id, isCorrect, points, rankChanged };
 });
 
@@ -289,6 +300,29 @@ const syncLeaderboardEntry = async (uid, rank) => {
   });
 };
 
+/**
+ * Bump the user's team totalScore by `points`. Best-effort: the team's
+ * totalScore is a running aggregate of every member's personal score, so
+ * we just add the delta on each submission. If the user is not on a
+ * team this is a no-op.
+ *
+ * Cost: 1 get() + 1 update() per quiz submission (only when the user
+ * has a team).
+ */
+const syncTeamScore = async (uid, points) => {
+  const userDoc = await db.collection('users').doc(uid).get();
+  if (!userDoc.exists) return;
+  const teamId = userDoc.data().teamId;
+  if (!teamId) return;
+
+  const teamRef = db.collection(TEAMS_COLLECTION).doc(teamId);
+  const teamSnap = await teamRef.get();
+  if (!teamSnap.exists) return;
+
+  const delta = Math.max(-1000, Math.min(1000, Number(points) || 0));
+  await teamRef.update({ totalScore: FieldValue.increment(delta) });
+};
+
 const buildSchemaPrompt = () => {
   return [
     'Schema: {',
@@ -303,14 +337,7 @@ const buildSchemaPrompt = () => {
   ].join('\n');
 };
 
-/**
- * Normalizes and validates a raw AI classification object. Rather than
- * hard-failing on minor deviations (case, nulls, missing optional fields),
- * it coerces known fields to the canonical shape. Returns null only if the
- * payload is not an object at all.
- */
 const normalizeAnalysis = (raw) => {
-  if (!raw || typeof raw !== 'object') return null;
 
   const isSpam = raw.isSpam === true || raw.isSpam === 'true' || raw.isSpam === 1;
   const rawReason = raw.spamReason || raw.spam_reason || '';
@@ -583,4 +610,474 @@ exports.manageFeedback = onCall({ enforceAppCheck: true }, async (request) => {
     default:
       throw new HttpsError('invalid-argument', 'Unknown action.');
   }
+});
+
+// ---------------------------------------------------------------------------
+// Team management
+// ---------------------------------------------------------------------------
+
+const TEAMS_COLLECTION = 'teams';
+const MAX_TEAM_NAME_LENGTH = 40;
+const MAX_TEAM_DESCRIPTION_LENGTH = 200;
+const MAX_TEAM_MEMBERS = 50;
+
+const sanitizeTeamName = (raw) => {
+  if (typeof raw !== 'string') return null;
+  const trimmed = raw.trim();
+  if (!trimmed || trimmed.length > MAX_TEAM_NAME_LENGTH) return null;
+  // Reject control characters; keep letters/digits/spaces/dashes/periods.
+  // eslint-disable-next-line no-control-regex
+  if (/[\u0000-\u001f]/.test(trimmed)) return null;
+  return trimmed;
+};
+
+const sanitizeTeamDescription = (raw) => {
+  if (raw == null || raw === '') return '';
+  if (typeof raw !== 'string') return null;
+  const trimmed = raw.trim();
+  if (trimmed.length > MAX_TEAM_DESCRIPTION_LENGTH) return null;
+  // eslint-disable-next-line no-control-regex
+  if (/[\u0000-\u001f]/.test(trimmed)) return null;
+  return trimmed;
+};
+
+const bumpUserTeamStats = async (uid, delta) => {
+  if (delta === 0) return;
+  try {
+    const userRef = db.collection('users').doc(uid);
+    const userSnap = await userRef.get();
+    if (!userSnap.exists) return;
+    const current = userSnap.data().totalScore || 0;
+    await userRef.update({ totalScore: current + delta });
+  } catch (error) {
+    console.warn(`Could not adjust user ${uid} totalScore:`, error);
+  }
+};
+
+exports.createTeam = onCall({ enforceAppCheck: true }, async (request) => {
+  if (!request.auth) {
+    throw new HttpsError('unauthenticated', 'Sign in to create a team.');
+  }
+  // Anonymous users cannot create teams (teams require non-anonymous identity).
+  if (request.auth.token?.is_anonymous) {
+    throw new HttpsError('permission-denied', 'Anonymous users cannot create teams. Create an account or sign in.');
+  }
+  const uid = request.auth.uid;
+
+  const name = sanitizeTeamName(request.data?.name);
+  if (!name) {
+    throw new HttpsError('invalid-argument', 'Team name is required (1-40 chars).');
+  }
+  const description = sanitizeTeamDescription(request.data?.description);
+  if (description === null) {
+    throw new HttpsError('invalid-argument', `Description must be under ${MAX_TEAM_DESCRIPTION_LENGTH} characters.`);
+  }
+
+  // Prevent a user from belonging to two teams.
+  const userRef = db.collection('users').doc(uid);
+  const userSnap = await userRef.get();
+  if (userSnap.exists && userSnap.data().teamId) {
+    throw new HttpsError('failed-precondition', 'Leave your current team before creating a new one.');
+  }
+  // Require explicit team-visibility consent (displayName, photoURL, score).
+  if (!userSnap.exists || !userSnap.data().consentToTeamVisibility) {
+    throw new HttpsError('permission-denied', 'Consent required to create a team (display name, photo and score will be visible to team members).');
+  }
+
+  const teamRef = db.collection(TEAMS_COLLECTION).doc();
+  const now = new Date().toISOString();
+  await db.runTransaction(async (tx) => {
+    tx.set(teamRef, {
+      name,
+      description,
+      createdBy: uid,
+      createdAt: now,
+      updatedAt: now,
+      memberUids: [uid],
+      memberCount: 1,
+      totalScore: 0,
+    });
+    tx.set(userRef, {
+      teamId: teamRef.id,
+      joinedTeamAt: now,
+    }, { merge: true });
+  });
+
+  return { teamId: teamRef.id };
+});
+
+exports.joinTeam = onCall({ enforceAppCheck: true }, async (request) => {
+  if (!request.auth) {
+    throw new HttpsError('unauthenticated', 'Sign in to join a team.');
+  }
+  // Anonymous users cannot join teams (teams require non-anonymous identity).
+  if (request.auth.token?.is_anonymous) {
+    throw new HttpsError('permission-denied', 'Anonymous users cannot join teams. Create an account or sign in.');
+  }
+  const uid = request.auth.uid;
+
+  const teamId = typeof request.data?.teamId === 'string' ? request.data.teamId.trim() : '';
+  if (!teamId || teamId.length > 128) {
+    throw new HttpsError('invalid-argument', 'Invalid team reference.');
+  }
+
+  const userRef = db.collection('users').doc(uid);
+  const userSnap = await userRef.get();
+  if (userSnap.exists && userSnap.data().teamId === teamId) {
+    return { ok: true };
+  }
+  if (userSnap.exists && userSnap.data().teamId) {
+    throw new HttpsError('failed-precondition', 'Leave your current team before joining another.');
+  }
+  // Require explicit team-visibility consent (displayName, photoURL, score).
+  if (!userSnap.exists || !userSnap.data().consentToTeamVisibility) {
+    throw new HttpsError('permission-denied', 'Consent required to join a team (display name, photo and score will be visible to team members).');
+  }
+
+  const teamRef = db.collection(TEAMS_COLLECTION).doc(teamId);
+  const now = new Date().toISOString();
+  let joined = false;
+  try {
+    await db.runTransaction(async (tx) => {
+      const tSnap = await tx.get(teamRef);
+      if (!tSnap.exists) {
+        throw new HttpsError('not-found', 'Team not found.');
+      }
+      const data = tSnap.data();
+      const memberUids = Array.isArray(data.memberUids) ? data.memberUids : [];
+      if (memberUids.length >= MAX_TEAM_MEMBERS) {
+        throw new HttpsError('resource-exhausted', `Team is full (${MAX_TEAM_MEMBERS} members).`);
+      }
+      const updatedMembers = memberUids.includes(uid) ? memberUids : [...memberUids, uid];
+      tx.update(teamRef, {
+        memberUids: updatedMembers,
+        memberCount: updatedMembers.length,
+        updatedAt: now,
+      });
+      tx.set(userRef, {
+        teamId: teamRef.id,
+        joinedTeamAt: now,
+      }, { merge: true });
+      joined = true;
+    });
+  } catch (error) {
+    if (error instanceof HttpsError) throw error;
+    console.error('joinTeam transaction failed:', error);
+    throw new HttpsError('internal', 'Could not join team.');
+  }
+
+  if (joined) {
+    try {
+      const uSnap = await userRef.get();
+      const score = uSnap.exists ? (uSnap.data().totalScore || 0) : 0;
+      await teamRef.update({ totalScore: FieldValue.increment(score) });
+    } catch (error) {
+      console.warn(`Could not seed team ${teamRef.id} score:`, error);
+    }
+  }
+  return { ok: true };
+});
+
+exports.leaveTeam = onCall({ enforceAppCheck: true }, async (request) => {
+  if (!request.auth) {
+    throw new HttpsError('unauthenticated', 'Sign in to leave a team.');
+  }
+  const uid = request.auth.uid;
+
+  const userRef = db.collection('users').doc(uid);
+  const userSnap = await userRef.get();
+  if (!userSnap.exists || !userSnap.data().teamId) {
+    return { ok: true };
+  }
+  const teamId = userSnap.data().teamId;
+  const teamRef = db.collection(TEAMS_COLLECTION).doc(teamId);
+  const now = new Date().toISOString();
+
+  let removed = false;
+  try {
+    await db.runTransaction(async (tx) => {
+      const tSnap = await tx.get(teamRef);
+      const memberUids = tSnap.exists && Array.isArray(tSnap.data().memberUids)
+        ? tSnap.data().memberUids
+        : [];
+      const updatedMembers = memberUids.filter((id) => id !== uid);
+      tx.set(userRef, {
+        teamId: null,
+        joinedTeamAt: null,
+      }, { merge: true });
+      if (!tSnap.exists) {
+        return;
+      }
+      const data = tSnap.data();
+      const userScore = (await userRef.get()).data().totalScore || 0;
+      const nextTotalScore = Math.max(0, (data.totalScore || 0) - userScore);
+      if (updatedMembers.length === 0) {
+        // Empty team: delete it instead of leaving a 0-score ghost.
+        tx.delete(teamRef);
+        removed = true;
+        return;
+      }
+      tx.update(teamRef, {
+        memberUids: updatedMembers,
+        memberCount: updatedMembers.length,
+        totalScore: nextTotalScore,
+        updatedAt: now,
+      });
+      removed = true;
+    });
+  } catch (error) {
+    console.error('leaveTeam transaction failed:', error);
+    throw new HttpsError('internal', 'Could not leave team.');
+  }
+
+  void bumpUserTeamStats; // silence unused warning when bump not used here
+  return { ok: true };
+});
+
+// ---------------------------------------------------------------------------
+// Admin team management
+// ---------------------------------------------------------------------------
+
+/**
+ * Admin-only: list all teams with member count and creator info.
+ * Returns top 200 teams sorted by totalScore desc.
+ */
+exports.adminListAllTeams = onCall({ enforceAppCheck: true }, async (request) => {
+  await requireAdmin(request);
+
+  const limitCount = Math.min(
+    Number.isInteger(request.data?.limit) ? request.data.limit : 200,
+    500,
+  );
+
+  const snapshot = await db
+    .collection(TEAMS_COLLECTION)
+    .orderBy('totalScore', 'desc')
+    .limit(limitCount)
+    .get();
+
+  const teams = snapshot.docs.map((doc) => {
+    const data = doc.data();
+    return {
+      id: doc.id,
+      name: data.name || '',
+      description: data.description || '',
+      createdBy: data.createdBy || '',
+      createdAt: data.createdAt || '',
+      updatedAt: data.updatedAt || '',
+      totalScore: data.totalScore || 0,
+      memberCount: data.memberCount || 0,
+      memberUids: data.memberUids || [],
+    };
+  });
+
+  return { teams };
+});
+
+/**
+ * Admin-only: get all members of a specific team with their profile data.
+ */
+exports.adminGetTeamMembers = onCall({ enforceAppCheck: true }, async (request) => {
+  await requireAdmin(request);
+
+  const teamId = typeof request.data?.teamId === 'string'
+    ? request.data.teamId.trim()
+    : '';
+
+  if (!teamId) {
+    throw new HttpsError('invalid-argument', 'teamId is required.');
+  }
+
+  const teamRef = db.collection(TEAMS_COLLECTION).doc(teamId);
+  const teamSnap = await teamRef.get();
+
+  if (!teamSnap.exists) {
+    throw new HttpsError('not-found', 'Team not found.');
+  }
+
+  const teamData = teamSnap.data();
+  const memberUids = Array.isArray(teamData.memberUids) ? teamData.memberUids : [];
+
+  // Fetch profile data for all members in parallel (batch reads).
+  const memberDocs = await Promise.all(
+    memberUids.map(async (uid) => {
+      const userSnap = await db.collection('users').doc(uid).get();
+      if (!userSnap.exists) return null;
+      const ud = userSnap.data();
+      return {
+        uid,
+        displayName: ud.displayName || null,
+        email: ud.email || null,
+        photoURL: ud.photoURL || null,
+        rank: ud.rank || 'harjoittelija',
+        totalScore: ud.progress?.totalScore || 0,
+        teamId: ud.teamId || null,
+      };
+    }),
+  );
+
+  const members = memberDocs.filter(Boolean);
+
+  return {
+    team: {
+      id: teamSnap.id,
+      name: teamData.name || '',
+      description: teamData.description || '',
+      createdBy: teamData.createdBy || '',
+      createdAt: teamData.createdAt || '',
+      updatedAt: teamData.updatedAt || '',
+      totalScore: teamData.totalScore || 0,
+      memberCount: teamData.memberCount || 0,
+      memberUids,
+    },
+    members,
+  };
+});
+
+/**
+ * Admin-only: kick a member out of a team.
+ * This removes the user from the team's memberUids array, clears their teamId
+ * field, and subtracts their score from the team total.
+ */
+exports.adminKickMember = onCall({ enforceAppCheck: true }, async (request) => {
+  await requireAdmin(request);
+
+  const teamId = typeof request.data?.teamId === 'string'
+    ? request.data.teamId.trim()
+    : '';
+  const uid = typeof request.data?.uid === 'string'
+    ? request.data.uid.trim()
+    : '';
+
+  if (!teamId) {
+    throw new HttpsError('invalid-argument', 'teamId is required.');
+  }
+  if (!uid) {
+    throw new HttpsError('invalid-argument', 'uid is required.');
+  }
+
+  const teamRef = db.collection(TEAMS_COLLECTION).doc(teamId);
+  const userRef = db.collection('users').doc(uid);
+
+  await db.runTransaction(async (tx) => {
+    const tSnap = await tx.get(teamRef);
+    if (!tSnap.exists) {
+      throw new HttpsError('not-found', 'Team not found.');
+    }
+    const tData = tSnap.data();
+    const memberUids = Array.isArray(tData.memberUids) ? tData.memberUids : [];
+
+    if (!memberUids.includes(uid)) {
+      throw new HttpsError('failed-precondition', 'User is not a member of this team.');
+    }
+
+    const uSnap = await tx.get(userRef);
+    const userScore = uSnap.exists ? (uSnap.data().progress?.totalScore || 0) : 0;
+    const updatedMembers = memberUids.filter((id) => id !== uid);
+
+    if (updatedMembers.length === 0) {
+      // Empty team — delete it.
+      tx.delete(teamRef);
+    } else {
+      tx.update(teamRef, {
+        memberUids: updatedMembers,
+        memberCount: updatedMembers.length,
+        totalScore: FieldValue.increment(-userScore),
+        updatedAt: new Date().toISOString(),
+      });
+    }
+
+    tx.update(userRef, {
+      teamId: null,
+      joinedTeamAt: null,
+    });
+  });
+
+  return { ok: true };
+});
+
+/**
+ * Admin-only: update team name and/or description.
+ */
+exports.adminUpdateTeam = onCall({ enforceAppCheck: true }, async (request) => {
+  await requireAdmin(request);
+
+  const teamId = typeof request.data?.teamId === 'string'
+    ? request.data.teamId.trim()
+    : '';
+
+  if (!teamId) {
+    throw new HttpsError('invalid-argument', 'teamId is required.');
+  }
+
+  const updates = {
+    updatedAt: new Date().toISOString(),
+  };
+
+  const name = request.data?.name;
+  if (name !== undefined) {
+    const sanitized = sanitizeTeamName(name);
+    if (!sanitized) {
+      throw new HttpsError('invalid-argument', 'Invalid team name (1-40 chars required).');
+    }
+    updates.name = sanitized;
+  }
+
+  const description = request.data?.description;
+  if (description !== undefined) {
+    const sanitized = sanitizeTeamDescription(description);
+    if (sanitized === null) {
+      throw new HttpsError('invalid-argument', `Description must be under ${MAX_TEAM_DESCRIPTION_LENGTH} characters.`);
+    }
+    updates.description = sanitized;
+  }
+
+  const teamRef = db.collection(TEAMS_COLLECTION).doc(teamId);
+  const teamSnap = await teamRef.get();
+  if (!teamSnap.exists) {
+    throw new HttpsError('not-found', 'Team not found.');
+  }
+
+  await teamRef.update(updates);
+  return { ok: true };
+});
+
+/**
+ * Admin-only: delete a team and clear its members' teamId field.
+ */
+exports.adminDeleteTeam = onCall({ enforceAppCheck: true }, async (request) => {
+  await requireAdmin(request);
+
+  const teamId = typeof request.data?.teamId === 'string'
+    ? request.data.teamId.trim()
+    : '';
+
+  if (!teamId) {
+    throw new HttpsError('invalid-argument', 'teamId is required.');
+  }
+
+  const teamRef = db.collection(TEAMS_COLLECTION).doc(teamId);
+  const teamSnap = await teamRef.get();
+
+  if (!teamSnap.exists) {
+    throw new HttpsError('not-found', 'Team not found.');
+  }
+
+  const tData = teamSnap.data();
+  const memberUids = Array.isArray(tData.memberUids) ? tData.memberUids : [];
+
+  // Clear teamId from all members in a batch.
+  const memberUpdates = memberUids.map((uid) =>
+    db.collection('users').doc(uid).update({
+      teamId: null,
+      joinedTeamAt: null,
+    }),
+  );
+
+  await Promise.all([
+    ...memberUpdates,
+    teamRef.delete(),
+  ]);
+
+  return { ok: true };
 });

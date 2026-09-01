@@ -96,6 +96,10 @@ export interface UserDoc {
   updatedAt?: string;
   progress: UserProgress;
   progressByCategory?: Record<string, CategoryProgress>;
+  /** ID of the team this user belongs to (if any). */
+  teamId?: string | null;
+  /** User consent to show profile picture, display name, and score to team members (required for visibility). */
+  consentToTeamVisibility?: boolean;
 }
 
 export interface AnswerDoc {
@@ -230,6 +234,48 @@ export interface LeaderboardSnapshot {
   totalUsers: number;
   /** Current user's percentile (0–100, higher is better) */
   percentile: number | null;
+}
+
+/**
+ * Team document (VPK-style friendly competition).
+ *
+ * Teams are an aggregation of user scores — `totalScore` is a server-maintained
+ * sum of member `progress.totalScore` values, kept fresh by the Cloud Function
+ * (quiz submissions bump both user and team). `memberUids` is capped at 50
+ * entries (VPKs rarely exceed that).
+ *
+ * Teams are visible to any authenticated user (similar to the anonymous
+ * leaderboard); the team's own `createdBy` may update metadata.
+ */
+export interface TeamDoc {
+  readonly id?: string;
+  name: string;
+  description?: string;
+  createdBy: string;
+  createdAt: string;
+  /** Sum of members' totalScore (server-maintained). */
+  totalScore: number;
+  /** Number of members in the team. */
+  memberCount: number;
+  /** Capped at 50; supports array-contains queries for "is user in a team". */
+  memberUids: string[];
+}
+
+export interface TeamMemberSummary {
+  uid: string;
+  displayName: string | null;
+  totalScore: number;
+  rank: string;
+  photoURL: string | null;
+}
+
+export interface TeamSnapshot {
+  currentTeam: TeamDoc | null;
+  topTeams: TeamDoc[];
+  totalTeams: number;
+  members: TeamMemberSummary[];
+  /** Current team's position among all teams (1 = top), or null. */
+  teamPosition: number | null;
 }
 
 export interface GeneratedQuestionSource {

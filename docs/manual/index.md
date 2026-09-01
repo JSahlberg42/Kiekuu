@@ -29,6 +29,9 @@ Kiekuu on ilmainen, OPS 2026 -oppimissuunnitelmaan perustuva oppimisalusta, joka
 - [Ensimmäiset askeleet](getting-started/first-steps)
 - [UKK — Usein kysytyt kysymykset](getting-started/faq)
 
+### Ominaisuudet
+- [Joukkueet (Tiimit)](joukkueet)
+
 ### Tasot
 1. [Harjoittelija](ranks/harjoittelija)
 2. [Nuorempi sammutusmies](ranks/nuorempi-sammutusmies)

@@ -10,6 +10,7 @@ const QuizBrowser = lazy(() => import('./pages/QuizBrowser'));
 const QuizTake = lazy(() => import('./pages/QuizTake'));
 const Progress = lazy(() => import('./pages/Progress'));
 const Leaderboard = lazy(() => import('./pages/Leaderboard'));
+const Teams = lazy(() => import('./pages/Teams'));
 
 const AdminDashboard = lazy(() => import('./pages/AdminDashboard'));
 const Feedback = lazy(() => import('./pages/Feedback'));
@@ -20,6 +21,7 @@ const QuestionManagement = lazy(() => import('./pages/QuestionManagement'));
 const Statistics = lazy(() => import('./pages/Statistics'));
 const PlatformConfiguration = lazy(() => import('./pages/PlatformConfiguration'));
 const AdminFeedback = lazy(() => import('./pages/AdminFeedback'));
+const TeamsManagement = lazy(() => import('./pages/TeamsManagement'));
 
 const routeFallback = (
   <div className="min-h-screen bg-slate-950 flex items-center justify-center" role="status" aria-live="polite">
@@ -84,6 +86,16 @@ function App() {
               <ProtectedRoute>
                 <Suspense fallback={routeFallback}>
                   <Leaderboard />
+                </Suspense>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/teams"
+            element={
+              <ProtectedRoute>
+                <Suspense fallback={routeFallback}>
+                  <Teams />
                 </Suspense>
               </ProtectedRoute>
             }
@@ -174,6 +186,16 @@ function App() {
               <ProtectedRoute adminOnly>
                 <Suspense fallback={routeFallback}>
                   <AdminFeedback />
+                </Suspense>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/teams"
+            element={
+              <ProtectedRoute adminOnly>
+                <Suspense fallback={routeFallback}>
+                  <TeamsManagement />
                 </Suspense>
               </ProtectedRoute>
             }
