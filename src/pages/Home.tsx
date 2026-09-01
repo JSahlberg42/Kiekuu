@@ -176,10 +176,31 @@ function Home() {
               Näytä tilastot →
             </div>
           </Link>
+
+          {/* Leaderboard Card */}
+          <Link
+            to="/leaderboard"
+            className="group bg-linear-to-br from-slate-900 to-slate-800 border border-slate-800 hover:border-orange-600 rounded-xl p-8 transition-all cursor-pointer hover:shadow-lg hover:shadow-orange-500/20"
+          >
+            <div className="flex items-start justify-between mb-4">
+              <div className="w-12 h-12 bg-linear-to-br from-orange-500 to-orange-600 rounded-lg flex items-center justify-center text-white text-xl font-bold group-hover:scale-110 transition-transform">
+                🏆
+              </div>
+            </div>
+            <h3 className="text-2xl font-bold text-slate-50 mb-2 group-hover:text-orange-400 transition-colors">
+              Tulostaulukko
+            </h3>
+            <p className="text-slate-400 mb-4">
+              Näe oma sijoituksesi anonyymisti — vain sinä tiedät, kuka olet.
+            </p>
+            <div className="inline-block px-4 py-2 bg-orange-500 group-hover:bg-orange-600 rounded-lg text-white text-sm font-semibold transition-colors">
+              Avaa tulostaulukko →
+            </div>
+          </Link>
         </div>
 
         {/* Stats Overview */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
           <div className="bg-slate-900 border border-slate-800 rounded-lg p-4">
             <p className="text-slate-400 text-sm mb-1">Vastaukset</p>
             <p className="text-2xl font-bold text-blue-400">{userData?.progress?.questionsAnswered || 0}</p>
@@ -196,6 +217,14 @@ function Home() {
             <p className="text-slate-400 text-sm mb-1">Taso</p>
             <p className="text-2xl font-bold text-yellow-400 capitalize">{userData?.rank || 'harjoittelija'}</p>
           </div>
+          <Link
+            to="/leaderboard"
+            className="bg-slate-900 border border-slate-800 hover:border-orange-500 rounded-lg p-4 transition-colors"
+            aria-label="Avaa tulostaulukko"
+          >
+            <p className="text-slate-400 text-sm mb-1">Tulostaulukko</p>
+            <p className="text-2xl font-bold text-orange-400">🏆 Sija →</p>
+          </Link>
         </div>
       </main>
 

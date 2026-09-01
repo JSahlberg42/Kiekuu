@@ -209,6 +209,7 @@ exports.submitQuizAnswer = onCall({ enforceAppCheck: true }, async (request) => 
   await db.collection('users').doc(uid).set(userUpdate, { merge: true });
 
   let rankChanged = null;
+  let currentRank = null;
   try {
     const [userDoc, ranksSnap] = await Promise.all([
       db.collection('users').doc(uid).get(),
@@ -240,13 +241,53 @@ exports.submitQuizAnswer = onCall({ enforceAppCheck: true }, async (request) => 
         });
         rankChanged = { id: earned.id, name: earned.name };
       }
+      currentRank = earned ? earned.name : (userData.rank || null);
     }
   } catch (error) {
     console.warn('Rank evaluation failed:', error);
   }
 
+  // Sync anonymous leaderboard entry (Layer 1 scoreboard).
+  // Best-effort: failures must not break the quiz submission flow.
+  try {
+    if (currentRank) {
+      await syncLeaderboardEntry(uid, currentRank);
+    }
+  } catch (error) {
+    console.warn('Leaderboard sync failed:', uid, error.message || error);
+  }
+
   return { ok: true, answerId: answerRef.id, isCorrect, points, rankChanged };
 });
+
+/**
+ * Recomputes the position of one user in the leaderboard and writes their
+ * anonymous entry. Position is calculated by counting how many other
+ * users have a strictly higher totalScore, plus one.
+ *
+ * Cost: 1 count() query + 1 set() write per quiz submission.
+ * Runs only when the user's rank is known (post-evaluation).
+ */
+const syncLeaderboardEntry = async (uid, rank) => {
+  const userDoc = await db.collection('users').doc(uid).get();
+  if (!userDoc.exists) return;
+  const totalScore = userDoc.data().progress?.totalScore || 0;
+
+  const higherSnap = await db
+    .collection('users')
+    .where('progress.totalScore', '>', totalScore)
+    .count()
+    .get();
+  const position = (higherSnap.data().count || 0) + 1;
+
+  await db.collection('leaderboard').doc(uid).set({
+    uid,
+    totalScore,
+    rank,
+    position,
+    lastUpdated: new Date().toISOString(),
+  });
+};
 
 const buildSchemaPrompt = () => {
   return [

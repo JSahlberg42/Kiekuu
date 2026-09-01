@@ -204,6 +204,34 @@ export interface CategoryStatistic {
   accuracy: number;
 }
 
+/**
+ * Anonymous leaderboard entry (Layer 1 of the personal scoreboard).
+ *
+ * Documents in the `leaderboard` collection contain only score + rank data;
+ * no PII (no displayName, email, photo). Each entry is keyed by the
+ * user uid. Documents are written exclusively by the syncLeaderboard Cloud
+ * Function and read by any authenticated user.
+ */
+export interface LeaderboardEntry {
+  uid: string;
+  totalScore: number;
+  rank: string;
+  /** Server-assigned rank position: 1 = highest score, 2 = next, etc. */
+  position?: number;
+  lastUpdated?: string;
+}
+
+export interface LeaderboardSnapshot {
+  /** Current user's own entry, or null if not present yet */
+  currentEntry: LeaderboardEntry | null;
+  /** Top N entries for the "How you compare" card */
+  topEntries: LeaderboardEntry[];
+  /** Total number of users currently on the leaderboard */
+  totalUsers: number;
+  /** Current user's percentile (0–100, higher is better) */
+  percentile: number | null;
+}
+
 export interface GeneratedQuestionSource {
   title?: string;
   page?: string;

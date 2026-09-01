@@ -99,7 +99,17 @@ service cloud.firestore {
       allow create: if false;
       allow read, update, delete: if isAdmin();
     }
-    
+
+    // Leaderboard collection (anonymous scoreboard, Layer 1)
+    // Documents are keyed by uid; only server-written score/rank/lastUpdated
+    // fields. No PII (no displayName, email, photo). All authenticated users
+    // may read all entries; writes are denied client-side and performed by
+    // the syncLeaderboard Cloud Function.
+    match /leaderboard/{uid} {
+      allow read: if isAuthenticated();
+      allow create, update, delete: if false;
+    }
+
     // Deny everything else by default
     match /{document=**} {
       allow read, write: if false;
