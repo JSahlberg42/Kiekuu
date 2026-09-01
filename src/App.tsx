@@ -21,6 +21,7 @@ const QuestionManagement = lazy(() => import('./pages/QuestionManagement'));
 const Statistics = lazy(() => import('./pages/Statistics'));
 const PlatformConfiguration = lazy(() => import('./pages/PlatformConfiguration'));
 const AdminFeedback = lazy(() => import('./pages/AdminFeedback'));
+const TeamsManagement = lazy(() => import('./pages/TeamsManagement'));
 
 const routeFallback = (
   <div className="min-h-screen bg-slate-950 flex items-center justify-center" role="status" aria-live="polite">
@@ -185,6 +186,16 @@ function App() {
               <ProtectedRoute adminOnly>
                 <Suspense fallback={routeFallback}>
                   <AdminFeedback />
+                </Suspense>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/teams"
+            element={
+              <ProtectedRoute adminOnly>
+                <Suspense fallback={routeFallback}>
+                  <TeamsManagement />
                 </Suspense>
               </ProtectedRoute>
             }

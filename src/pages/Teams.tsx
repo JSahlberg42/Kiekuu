@@ -1,4 +1,5 @@
 import { useEffect, useCallback, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { getTeamSnapshot, createTeam, joinTeam, leaveTeam, invalidateTeamCache } from '../services/teamService';
 import { setUserConsentToTeamVisibility } from '../services/authService';
@@ -203,27 +204,31 @@ function Teams() {
   return (
     <div className="min-h-screen bg-gray-50 pb-12">
       {/* Header */}
-      <div className="bg-white border-b border-gray-200 sticky top-0 z-10">
+      <nav className="bg-slate-900 border-b border-slate-800">
         <div className="max-w-3xl mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <Users className="w-7 h-7 text-orange-500" />
-            <h1 className="text-2xl font-bold text-gray-900">Joukkueet</h1>
-            {totalTeams > 0 && (
-              <span className="text-sm text-gray-500 font-medium">{totalTeams} joukkuetta</span>
-            )}
+            <img src={logo} alt="Kiekuu" className="w-8 h-8 object-contain" />
+            <h1 className="text-2xl font-bold text-slate-50">Joukkueet</h1>
+            <span className="text-sm font-medium text-amber-400 uppercase tracking-widest">Admin</span>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-4">
             <button
               onClick={handleRefresh}
               disabled={refreshing}
-              className="p-2 rounded-lg text-gray-500 hover:bg-gray-100 transition-colors disabled:opacity-50"
+              className="p-2 text-slate-400 hover:text-slate-50 hover:bg-slate-800 rounded-lg transition-colors disabled:opacity-50"
               title="Päivitä"
             >
               <RefreshCw className={`w-5 h-5${refreshing ? ' animate-spin' : ''}`} />
             </button>
+            <Link
+              to="/"
+              className="px-4 py-2 bg-slate-800 hover:bg-slate-700 rounded-lg text-slate-50 text-sm font-medium transition-colors min-h-[44px]"
+            >
+              Koti
+            </Link>
           </div>
         </div>
-      </div>
+      </nav>
 
       <div className="max-w-3xl mx-auto px-4 pt-6 space-y-6">
 
