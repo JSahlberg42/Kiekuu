@@ -3,7 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import { getTeamSnapshot, createTeam, joinTeam, leaveTeam, invalidateTeamCache } from '../services/teamService';
 import { logFirestoreErrorContext } from '../utils/firestoreDiagnostics';
 import type { TeamDoc, TeamMemberSummary } from '../types/models';
-import { Users, Trophy, Plus, LogOut, RefreshCw, Crown } from 'lucide-react';
+import { Users, Trophy, Plus, LogOut, RefreshCw, Crown, Copy } from 'lucide-react';
 import logo from '../assets/images/Kiekuu_logo.jpg';
 
 function Teams() {
@@ -25,19 +25,35 @@ function Teams() {
   const [createName, setCreateName] = useState('');
   const [createDesc, setCreateDesc] = useState('');
   const [joinId, setJoinId] = useState('');
+  /** Team ID to pass directly to getTeamSnapshot, bypassing the array-contains
+   *  lookup. Set after create/join so the UI shows the team immediately without
+   *  waiting for the user's teamId field to propagate from the CF write. */
+  const [pendingTeamId, setPendingTeamId] = useState<string | null>(null);
+  /** Most-recently created team ID — shown with a "copy ID" button in the banner. */
+  const [lastCreatedTeamId, setLastCreatedTeamId] = useState<string | null>(null);
+  const [copiedId, setCopiedId] = useState(false);
 
   const load = useCallback(async (forceRefresh = false) => {
     if (!user?.uid) return;
     try {
-      const data = await getTeamSnapshot(user.uid, { forceRefresh });
+      const data = await getTeamSnapshot(user.uid, {
+        forceRefresh,
+        // If we just created/joined a team, use it directly so the team card
+        // appears immediately without waiting for teamId field propagation.
+        knownTeamId: pendingTeamId,
+      });
       setSnapshot(data);
+      // Once the team is visible via the array-contains query, clear the hint.
+      if (data.currentTeam && data.currentTeam.id === pendingTeamId) {
+        setPendingTeamId(null);
+      }
     } catch (err) {
       logFirestoreErrorContext('Teams.load', err);
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [user?.uid]);
+  }, [user?.uid, pendingTeamId]);
 
   useEffect(() => {
     if (!user?.uid) return;
@@ -51,24 +67,39 @@ function Teams() {
     }
   };
 
+  const copyTeamId = async (id: string) => {
+    try {
+      await navigator.clipboard.writeText(id);
+      setCopiedId(true);
+      setTimeout(() => setCopiedId(false), 2000);
+    } catch {
+      // Fallback for browsers without clipboard API.
+    }
+  };
+
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!createName.trim()) return;
+    // Guard: prevent creating a second team while on one.
+    if (snapshot?.currentTeam) {
+      setActionError('Olet jo joukkueessa. Poistu nykyisestä joukkueesta ensin.');
+      return;
+    }
     setActionLoading(true);
     setActionError(null);
-    setActionSuccess(null);
     try {
       const { teamId } = await createTeam({
         name: createName.trim(),
         description: createDesc.trim() || undefined,
       });
+      setLastCreatedTeamId(teamId);
       setActionSuccess(`Joukkue "${createName.trim()}" luotu!`);
       setCreateName('');
       setCreateDesc('');
       setShowCreate(false);
       invalidateTeamCache(user!.uid);
+      setPendingTeamId(teamId);
       await load(true);
-      void teamId;
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
       setActionError(msg.includes('already') || msg.includes('team')
@@ -82,15 +113,22 @@ function Teams() {
   const handleJoin = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!joinId.trim()) return;
+    // Guard: prevent joining a second team while on one.
+    if (snapshot?.currentTeam) {
+      setActionError('Olet jo joukkueessa. Poistu nykyisestä joukkueesta ensin.');
+      return;
+    }
     setActionLoading(true);
     setActionError(null);
-    setActionSuccess(null);
     try {
-      await joinTeam({ teamId: joinId.trim() });
+      const newTeamId = joinId.trim();
+      await joinTeam({ teamId: newTeamId });
+      setLastCreatedTeamId(newTeamId);
       setActionSuccess('Liityit joukkueeseen!');
       setJoinId('');
       setShowJoin(false);
       invalidateTeamCache(user!.uid);
+      setPendingTeamId(newTeamId);
       await load(true);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
@@ -113,6 +151,7 @@ function Teams() {
     try {
       await leaveTeam();
       setActionSuccess('Poistuit joukkueesta.');
+      setLastCreatedTeamId(null);
       invalidateTeamCache(user!.uid);
       await load(true);
     } catch (err: unknown) {
@@ -170,10 +209,28 @@ function Teams() {
 
       <div className="max-w-3xl mx-auto px-4 pt-6 space-y-6">
 
-        {/* Feedback banners */}
+        {/* Feedback / info banner */}
         {actionSuccess && (
-          <div className="bg-green-50 border border-green-200 rounded-xl p-4 flex items-center justify-between">
-            <span className="text-green-800 font-medium">{actionSuccess}</span>
+          <div className="bg-green-50 border border-green-200 rounded-xl p-4 flex items-center justify-between flex-wrap gap-3">
+            <div className="flex items-center gap-3 flex-wrap">
+              <span className="text-green-800 font-medium">{actionSuccess}</span>
+              {lastCreatedTeamId && (
+                <div className="flex items-center gap-2 bg-white border border-green-200 rounded-lg px-3 py-1.5">
+                  <code className="text-xs font-mono text-gray-600 break-all">{lastCreatedTeamId}</code>
+                  <button
+                    onClick={() => copyTeamId(lastCreatedTeamId)}
+                    className="text-gray-500 hover:text-gray-800 transition-colors flex-shrink-0"
+                    title="Kopioi joukkueen tunnus"
+                    aria-label="Kopioi joukkueen tunnus"
+                  >
+                    {copiedId
+                      ? <span className="text-xs font-semibold text-green-600">Kopioitu!</span>
+                      : <Copy className="w-4 h-4" />
+                    }
+                  </button>
+                </div>
+              )}
+            </div>
             <button onClick={dismissFeedback} className="text-green-600 hover:text-green-800 text-sm">Sulje</button>
           </div>
         )}
