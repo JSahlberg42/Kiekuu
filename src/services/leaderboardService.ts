@@ -59,7 +59,9 @@ const writeCache = (uid: string, snapshot: LeaderboardSnapshot): void => {
 };
 
 const computePercentile = (position: number, total: number): number => {
-  if (total <= 1) return 0;
+  if (total === 0) return 0;
+  // With a single user, position = 1 and total = 1 → 100% (top of the pool).
+  if (total === 1) return 100;
   // Higher percentile = better rank. position 1 → top.
   return Math.round(((total - position) / (total - 1)) * 100);
 };
