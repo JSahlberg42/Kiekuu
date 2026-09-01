@@ -10,6 +10,7 @@ import logo from '../assets/images/Kiekuu_logo.jpg';
 
 function Teams() {
   const { user } = useAuth();
+  const isAnon = Boolean(user?.isAnonymous);
   const [snapshot, setSnapshot] = useState<{
     currentTeam: TeamDoc | null;
     topTeams: TeamDoc[];
@@ -83,6 +84,11 @@ function Teams() {
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!createName.trim()) return;
+    // Guard: anonymous users cannot create teams.
+    if (isAnon) {
+      setActionError('Anonyymit käyttäjät eivät voi luoda joukkueita. Luo tili tai kirjaudu sisään.');
+      return;
+    }
     // Guard: prevent creating a second team while on one.
     if (snapshot?.currentTeam) {
       setActionError('Olet jo joukkueessa. Poistu nykyisestä joukkueesta ensin.');
@@ -123,6 +129,11 @@ function Teams() {
   const handleJoin = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!joinId.trim()) return;
+    // Guard: anonymous users cannot join teams.
+    if (isAnon) {
+      setActionError('Anonyymit käyttäjät eivät voi liittyä joukkueisiin. Luo tili tai kirjaudu sisään.');
+      return;
+    }
     // Guard: prevent joining a second team while on one.
     if (snapshot?.currentTeam) {
       setActionError('Olet jo joukkueessa. Poistu nykyisestä joukkueesta ensin.');
@@ -352,17 +363,31 @@ function Teams() {
             <p className="text-gray-600 text-sm mb-5">
               Luo oma joukkue tai liity olemassa olevaan. VPK-harjoituksissa voit kilpailla joukkueena ystäväsi kanssa!
             </p>
+            {isAnon && (
+              <div className="mb-5 p-4 bg-amber-50 border border-amber-200 rounded-xl text-sm text-amber-800">
+                <p className="font-semibold mb-1">Anonyymi käyttäjä</p>
+                <p>
+                  Anonyymit käyttäjät eivät voi luoda tai liittyä joukkueisiin.{' '}
+                  <Link to="/login" className="text-amber-700 font-semibold underline hover:text-amber-900">
+                    Luo tili tai kirjaudu sisään
+                  </Link>{' '}
+                  jatkaaksesi.
+                </p>
+              </div>
+            )}
             <div className="grid grid-cols-2 gap-3">
               <button
                 onClick={() => { setShowCreate(true); setActionError(null); setActionSuccess(null); }}
-                className="flex items-center justify-center gap-2 py-3 rounded-xl bg-orange-500 text-white font-semibold hover:bg-orange-600 transition-colors"
+                disabled={isAnon}
+                className="flex items-center justify-center gap-2 py-3 rounded-xl bg-orange-500 text-white font-semibold hover:bg-orange-600 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 <Plus className="w-5 h-5" />
                 Luo joukkue
               </button>
               <button
                 onClick={() => { setShowJoin(true); setActionError(null); setActionSuccess(null); }}
-                className="flex items-center justify-center gap-2 py-3 rounded-xl border border-gray-300 text-gray-700 font-semibold hover:bg-gray-50 transition-colors"
+                disabled={isAnon}
+                className="flex items-center justify-center gap-2 py-3 rounded-xl border border-gray-300 text-gray-700 font-semibold hover:bg-gray-50 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 <Users className="w-5 h-5" />
                 Liity joukkueeseen

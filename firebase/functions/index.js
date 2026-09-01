@@ -658,6 +658,10 @@ exports.createTeam = onCall({ enforceAppCheck: true }, async (request) => {
   if (!request.auth) {
     throw new HttpsError('unauthenticated', 'Sign in to create a team.');
   }
+  // Anonymous users cannot create teams (teams require non-anonymous identity).
+  if (request.auth.token?.is_anonymous) {
+    throw new HttpsError('permission-denied', 'Anonymous users cannot create teams. Create an account or sign in.');
+  }
   const uid = request.auth.uid;
 
   const name = sanitizeTeamName(request.data?.name);
@@ -705,6 +709,10 @@ exports.createTeam = onCall({ enforceAppCheck: true }, async (request) => {
 exports.joinTeam = onCall({ enforceAppCheck: true }, async (request) => {
   if (!request.auth) {
     throw new HttpsError('unauthenticated', 'Sign in to join a team.');
+  }
+  // Anonymous users cannot join teams (teams require non-anonymous identity).
+  if (request.auth.token?.is_anonymous) {
+    throw new HttpsError('permission-denied', 'Anonymous users cannot join teams. Create an account or sign in.');
   }
   const uid = request.auth.uid;
 
