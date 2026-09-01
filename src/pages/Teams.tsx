@@ -289,6 +289,22 @@ function Teams() {
                   {currentTeam.description && (
                     <p className="text-gray-600 mt-1 text-sm">{currentTeam.description}</p>
                   )}
+                  {currentTeam.id && (
+                    <div className="flex items-center gap-2 mt-2 bg-white border border-orange-200 rounded-lg px-3 py-1.5 max-w-xs">
+                      <code className="text-xs font-mono text-gray-500 break-all">{currentTeam.id}</code>
+                      <button
+                        onClick={() => copyTeamId(currentTeam.id!)}
+                        className="text-gray-400 hover:text-gray-700 transition-colors flex-shrink-0"
+                        title="Kopioi joukkueen tunnus"
+                        aria-label="Kopioi joukkueen tunnus"
+                      >
+                        {copiedId
+                          ? <span className="text-xs font-semibold text-green-600">Kopioitu!</span>
+                          : <Copy className="w-3.5 h-3.5" />
+                        }
+                      </button>
+                    </div>
+                  )}
                 </div>
                 {snapshot?.teamPosition != null && (
                   <div className="text-right">
