@@ -28,14 +28,15 @@ service cloud.firestore {
                       request.resource.data.role == 'user' &&
                       request.resource.data.rank == 'harjoittelija';
       
-      // Self-service updates are limited to profile/account-linking fields.
+      // Self-service updates are limited to profile/account-linking fields,
+      // plus the teamId field (joining/leaving a team).
       // Progression state (progress, progressByCategory, rank*) is written
       // exclusively by the submitQuizAnswer Cloud Function, so scores and
       // ranks cannot be forged from the client.
-      allow update: if isOwner(userId) && 
+      allow update: if isOwner(userId) &&
                       request.resource.data.role == resource.data.role &&
                       request.resource.data.diff(resource.data).affectedKeys().hasOnly(
-                        ['displayName', 'photoURL', 'email', 'isAnonymous', 'linkedAt']
+                        ['displayName', 'photoURL', 'email', 'isAnonymous', 'linkedAt', 'teamId']
                       );
       
       // Admins have full update access (role management, moderation)
@@ -99,13 +100,24 @@ service cloud.firestore {
       allow create: if false;
       allow read, update, delete: if isAdmin();
     }
-
-    // Leaderboard collection (anonymous scoreboard, Layer 1)
+    
+    // Leaderboard collection (anonymous scoreboard, Layer 1).
     // Documents are keyed by uid; only server-written score/rank/lastUpdated
     // fields. No PII (no displayName, email, photo). All authenticated users
     // may read all entries; writes are denied client-side and performed by
     // the syncLeaderboard Cloud Function.
     match /leaderboard/{uid} {
+      allow read: if isAuthenticated();
+      allow create, update, delete: if false;
+    }
+
+    // Teams collection (VPK-friendly competition groups).
+    // Documents: TeamDoc — name, createdBy, totalScore (server-maintained),
+    // memberUids array (capped at 50), memberCount.
+    // Reads: any authenticated user may list/browse teams.
+    // Writes: only via Cloud Functions (create/join/leave) — clients cannot
+    // manipulate team membership directly.
+    match /teams/{teamId} {
       allow read: if isAuthenticated();
       allow create, update, delete: if false;
     }
