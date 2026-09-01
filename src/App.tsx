@@ -9,6 +9,7 @@ const Home = lazy(() => import('./pages/Home'));
 const QuizBrowser = lazy(() => import('./pages/QuizBrowser'));
 const QuizTake = lazy(() => import('./pages/QuizTake'));
 const Progress = lazy(() => import('./pages/Progress'));
+const Leaderboard = lazy(() => import('./pages/Leaderboard'));
 
 const AdminDashboard = lazy(() => import('./pages/AdminDashboard'));
 const Feedback = lazy(() => import('./pages/Feedback'));
@@ -73,6 +74,16 @@ function App() {
               <ProtectedRoute>
                 <Suspense fallback={routeFallback}>
                   <Progress />
+                </Suspense>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/leaderboard"
+            element={
+              <ProtectedRoute>
+                <Suspense fallback={routeFallback}>
+                  <Leaderboard />
                 </Suspense>
               </ProtectedRoute>
             }
