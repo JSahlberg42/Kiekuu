@@ -675,6 +675,10 @@ exports.createTeam = onCall({ enforceAppCheck: true }, async (request) => {
   if (userSnap.exists && userSnap.data().teamId) {
     throw new HttpsError('failed-precondition', 'Leave your current team before creating a new one.');
   }
+  // Require explicit team-visibility consent (displayName, photoURL, score).
+  if (!userSnap.exists || !userSnap.data().consentToTeamVisibility) {
+    throw new HttpsError('permission-denied', 'Consent required to create a team (display name, photo and score will be visible to team members).');
+  }
 
   const teamRef = db.collection(TEAMS_COLLECTION).doc();
   const now = new Date().toISOString();
@@ -716,6 +720,10 @@ exports.joinTeam = onCall({ enforceAppCheck: true }, async (request) => {
   }
   if (userSnap.exists && userSnap.data().teamId) {
     throw new HttpsError('failed-precondition', 'Leave your current team before joining another.');
+  }
+  // Require explicit team-visibility consent (displayName, photoURL, score).
+  if (!userSnap.exists || !userSnap.data().consentToTeamVisibility) {
+    throw new HttpsError('permission-denied', 'Consent required to join a team (display name, photo and score will be visible to team members).');
   }
 
   const teamRef = db.collection(TEAMS_COLLECTION).doc(teamId);

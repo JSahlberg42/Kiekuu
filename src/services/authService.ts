@@ -213,3 +213,27 @@ export const linkAnonymousAccount = async (
     throw error;
   }
 };
+
+/**
+ * Set or clear the user's team-visibility consent flag.
+ *
+ * This flag controls whether the user's displayName, photoURL and
+ * totalScore are shown to other team members. It is required to be
+ * true before the user can create or join a team — the Cloud Functions
+ * that enforce team membership check it server-side.
+ *
+ * @throws {FirebaseError} Re-throws so callers can surface a failure.
+ */
+export const setUserConsentToTeamVisibility = async (
+  uid: string,
+  consent: boolean
+): Promise<void> => {
+  try {
+    await updateDoc(doc(db, 'users', uid), {
+      consentToTeamVisibility: consent,
+    });
+  } catch (error) {
+    console.error('Set team consent error:', error);
+    throw error;
+  }
+};

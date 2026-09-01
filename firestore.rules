@@ -36,7 +36,7 @@ service cloud.firestore {
       allow update: if isOwner(userId) &&
                       request.resource.data.role == resource.data.role &&
                       request.resource.data.diff(resource.data).affectedKeys().hasOnly(
-                        ['displayName', 'photoURL', 'email', 'isAnonymous', 'linkedAt', 'teamId']
+                        ['displayName', 'photoURL', 'email', 'isAnonymous', 'linkedAt', 'teamId', 'consentToTeamVisibility']
                       );
       
       // Admins have full update access (role management, moderation)

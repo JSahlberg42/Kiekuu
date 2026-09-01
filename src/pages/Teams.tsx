@@ -1,6 +1,7 @@
 import { useEffect, useCallback, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { getTeamSnapshot, createTeam, joinTeam, leaveTeam, invalidateTeamCache } from '../services/teamService';
+import { setUserConsentToTeamVisibility } from '../services/authService';
 import { logFirestoreErrorContext } from '../utils/firestoreDiagnostics';
 import type { TeamDoc, TeamMemberSummary } from '../types/models';
 import { Users, Trophy, Plus, LogOut, RefreshCw, Crown, Copy } from 'lucide-react';
@@ -24,6 +25,7 @@ function Teams() {
   const [showJoin, setShowJoin] = useState(false);
   const [createName, setCreateName] = useState('');
   const [createDesc, setCreateDesc] = useState('');
+  const [consentChecked, setConsentChecked] = useState(false);
   const [joinId, setJoinId] = useState('');
   /** Team ID to pass directly to getTeamSnapshot, bypassing the array-contains
    *  lookup. Set after create/join so the UI shows the team immediately without
@@ -88,6 +90,8 @@ function Teams() {
     setActionLoading(true);
     setActionError(null);
     try {
+      // Persist team-visibility consent before creating a team.
+      await setUserConsentToTeamVisibility(user!.uid, true);
       const { teamId } = await createTeam({
         name: createName.trim(),
         description: createDesc.trim() || undefined,
@@ -96,15 +100,20 @@ function Teams() {
       setActionSuccess(`Joukkue "${createName.trim()}" luotu!`);
       setCreateName('');
       setCreateDesc('');
+      setConsentChecked(false);
       setShowCreate(false);
       invalidateTeamCache(user!.uid);
       setPendingTeamId(teamId);
       await load(true);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
-      setActionError(msg.includes('already') || msg.includes('team')
-        ? 'Olet jo joukkueessa. Poistu nykyisestä joukkueesta ensin.'
-        : 'Joukkueen luonti epäonnistui.');
+      if (msg.toLowerCase().includes('permission-denied') || msg.toLowerCase().includes('consent')) {
+        setActionError('Suostumus vaaditaan. Rastita suostumusruutu ja yritä uudelleen.');
+      } else {
+        setActionError(msg.includes('already') || msg.includes('team')
+          ? 'Olet jo joukkueessa. Poistu nykyisestä joukkueesta ensin.'
+          : 'Joukkueen luonti epäonnistui.');
+      }
     } finally {
       setActionLoading(false);
     }
@@ -121,23 +130,30 @@ function Teams() {
     setActionLoading(true);
     setActionError(null);
     try {
+      // Persist team-visibility consent before joining a team.
+      await setUserConsentToTeamVisibility(user!.uid, true);
       const newTeamId = joinId.trim();
       await joinTeam({ teamId: newTeamId });
       setLastCreatedTeamId(newTeamId);
       setActionSuccess('Liityit joukkueeseen!');
       setJoinId('');
+      setConsentChecked(false);
       setShowJoin(false);
       invalidateTeamCache(user!.uid);
       setPendingTeamId(newTeamId);
       await load(true);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
-      setActionError(
-        msg.includes('not found') ? 'Joukkuetta ei löytynyt.' :
-        msg.includes('full') ? 'Joukkue on täynnä.' :
-        msg.includes('already') ? 'Olet jo joukkueessa.' :
-        'Liittyminen epäonnistui.'
-      );
+      if (msg.toLowerCase().includes('permission-denied') || msg.toLowerCase().includes('consent')) {
+        setActionError('Suostumus vaaditaan. Rastita suostumusruutu ja yritä uudelleen.');
+      } else {
+        setActionError(
+          msg.includes('not found') ? 'Joukkuetta ei löytynyt.' :
+          msg.includes('full') ? 'Joukkue on täynnä.' :
+          msg.includes('already') ? 'Olet jo joukkueessa.' :
+          'Liittyminen epäonnistui.'
+        );
+      }
     } finally {
       setActionLoading(false);
     }
@@ -152,6 +168,8 @@ function Teams() {
       await leaveTeam();
       setActionSuccess('Poistuit joukkueesta.');
       setLastCreatedTeamId(null);
+      // Revoke team-visibility consent on leave (user is no longer a team member).
+      try { await setUserConsentToTeamVisibility(user!.uid, false); } catch { /* best-effort */ }
       invalidateTeamCache(user!.uid);
       await load(true);
     } catch (err: unknown) {
@@ -380,10 +398,25 @@ function Teams() {
                 />
                 <p className="text-xs text-gray-400 mt-1">{createDesc.length}/200 merkkiä</p>
               </div>
+              <label className="flex items-start gap-3 bg-orange-50 border border-orange-200 rounded-xl p-3 cursor-pointer hover:bg-orange-100 transition-colors">
+                <input
+                  type="checkbox"
+                  checked={consentChecked}
+                  onChange={(e) => setConsentChecked(e.target.checked)}
+                  className="mt-0.5 w-5 h-5 rounded border-gray-300 text-orange-500 focus:ring-orange-500 cursor-pointer flex-shrink-0"
+                />
+                <span className="text-xs text-gray-700 leading-relaxed">
+                  <strong className="text-gray-900">Suostumus tietojen näyttämiseen.</strong>{' '}
+                  Liittymällä tai luomalla joukkueen hyväksyn, että profiilikuvani,
+                  näyttönimeni ja pisteeni näkyvät muille joukkueen jäsenille.
+                  Joukkueen jäsenet eivät ole anonyymejä. Voit peruuttaa suostumuksesi
+                  poistumalla joukkueesta milloin tahansa.
+                </span>
+              </label>
               <div className="flex gap-3 pt-1">
                 <button
                   type="submit"
-                  disabled={actionLoading || !createName.trim()}
+                  disabled={actionLoading || !createName.trim() || !consentChecked}
                   className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl bg-orange-500 text-white font-semibold hover:bg-orange-600 transition-colors disabled:opacity-50"
                 >
                   <Plus className="w-4 h-4" />
@@ -418,10 +451,25 @@ function Teams() {
                   className="w-full rounded-xl border border-gray-300 px-4 py-2.5 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent font-mono text-sm"
                 />
               </div>
+              <label className="flex items-start gap-3 bg-orange-50 border border-orange-200 rounded-xl p-3 cursor-pointer hover:bg-orange-100 transition-colors">
+                <input
+                  type="checkbox"
+                  checked={consentChecked}
+                  onChange={(e) => setConsentChecked(e.target.checked)}
+                  className="mt-0.5 w-5 h-5 rounded border-gray-300 text-orange-500 focus:ring-orange-500 cursor-pointer flex-shrink-0"
+                />
+                <span className="text-xs text-gray-700 leading-relaxed">
+                  <strong className="text-gray-900">Suostumus tietojen näyttämiseen.</strong>{' '}
+                  Liittymällä tai luomalla joukkueen hyväksyn, että profiilikuvani,
+                  näyttönimeni ja pisteeni näkyvät muille joukkueen jäsenille.
+                  Joukkueen jäsenet eivät ole anonyymejä. Voit peruuttaa suostumuksesi
+                  poistumalla joukkueesta milloin tahansa.
+                </span>
+              </label>
               <div className="flex gap-3 pt-1">
                 <button
                   type="submit"
-                  disabled={actionLoading || !joinId.trim()}
+                  disabled={actionLoading || !joinId.trim() || !consentChecked}
                   className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl bg-orange-500 text-white font-semibold hover:bg-orange-600 transition-colors disabled:opacity-50"
                 >
                   {actionLoading ? 'Liitytään...' : 'Liity joukkueeseen'}

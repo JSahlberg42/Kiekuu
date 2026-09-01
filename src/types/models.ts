@@ -98,6 +98,8 @@ export interface UserDoc {
   progressByCategory?: Record<string, CategoryProgress>;
   /** ID of the team this user belongs to (if any). */
   teamId?: string | null;
+  /** User consent to show profile picture, display name, and score to team members (required for visibility). */
+  consentToTeamVisibility?: boolean;
 }
 
 export interface AnswerDoc {
