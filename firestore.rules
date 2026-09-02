@@ -36,7 +36,34 @@ service cloud.firestore {
                       request.resource.data.role == resource.data.role &&
                       request.resource.data.diff(resource.data).affectedKeys().hasOnly(
                         ['displayName', 'photoURL', 'email', 'isAnonymous', 'linkedAt', 'consentToTeamVisibility']
-                      );
+                      ) &&
+                      // Type & Size Validations for displayName
+                      // displayName: nullable string, 1-100 chars if present
+                      (request.resource.data.displayName == null ||
+                       (request.resource.data.displayName is string &&
+                        request.resource.data.displayName.size() >= 1 &&
+                        request.resource.data.displayName.size() <= 100)) &&
+                      // photoURL: optional string, valid URL if present, max 500 chars
+                      (request.resource.data.photoURL == null ||
+                       (request.resource.data.photoURL is string &&
+                        request.resource.data.photoURL.matches('^https?://.+$') &&
+                        request.resource.data.photoURL.size() <= 500)) &&
+                      // email: optional string, basic format + length if present
+                      (request.resource.data.email == null ||
+                       (request.resource.data.email is string &&
+                        request.resource.data.email.matches('^.+@.+$') &&
+                        request.resource.data.email.size() <= 254)) &&
+                      // isAnonymous: optional boolean
+                      (request.resource.data.isAnonymous == null ||
+                       request.resource.data.isAnonymous is boolean) &&
+                      // linkedAt: optional ISO timestamp string, max 50 chars
+                      (request.resource.data.linkedAt == null ||
+                       (request.resource.data.linkedAt is string &&
+                        request.resource.data.linkedAt.matches('^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}.*$') &&
+                        request.resource.data.linkedAt.size() <= 50)) &&
+                      // consentToTeamVisibility: optional boolean
+                      (request.resource.data.consentToTeamVisibility == null ||
+                       request.resource.data.consentToTeamVisibility is boolean);
       
       // Admins have full update access (role management, moderation)
       allow update: if isAdmin();
