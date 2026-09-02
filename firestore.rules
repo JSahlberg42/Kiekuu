@@ -13,31 +13,57 @@ service cloud.firestore {
     }
     
     function isAdmin() {
-      return isAuthenticated() && 
-             exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
-             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+      return isAuthenticated() && request.auth.token.role == 'admin';
     }
     
     // Users collection
     match /users/{userId} {
-      // Users can read their own data, admins can read all
-      allow read: if isOwner(userId) || isAdmin();
+      // Single-document reads: owner or admin.
+      // Collection-list queries are denied below.
+      allow get: if isOwner(userId) || isAdmin();
+      allow list: if false;
       
       // Users can create their own document on signup
       allow create: if isOwner(userId) && 
                       request.resource.data.role == 'user' &&
                       request.resource.data.rank == 'harjoittelija';
       
-      // Self-service updates are limited to profile/account-linking fields,
-      // plus the teamId field (joining/leaving a team).
-      // Progression state (progress, progressByCategory, rank*) is written
-      // exclusively by the submitQuizAnswer Cloud Function, so scores and
-      // ranks cannot be forged from the client.
+      // Self-service updates are limited to profile/account-linking fields.
+      // teamId changes go exclusively through joinTeam/leaveTeam Cloud Functions —
+      // direct client updates would desync /users/{userId}.teamId from
+      // /teams/{teamId}.memberUids. Progression state (progress,
+      // progressByCategory, rank*) is written exclusively by the submitQuizAnswer
+      // Cloud Function, so scores and ranks cannot be forged from the client.
       allow update: if isOwner(userId) &&
                       request.resource.data.role == resource.data.role &&
                       request.resource.data.diff(resource.data).affectedKeys().hasOnly(
-                        ['displayName', 'photoURL', 'email', 'isAnonymous', 'linkedAt', 'teamId', 'consentToTeamVisibility']
-                      );
+                        ['displayName', 'photoURL', 'email', 'isAnonymous', 'linkedAt', 'consentToTeamVisibility']
+                      ) &&
+                      // Type & Size Validations for displayName
+                      (request.resource.data.displayName == null ||
+                       (request.resource.data.displayName is string &&
+                        request.resource.data.displayName.size() >= 1 &&
+                        request.resource.data.displayName.size() <= 100)) &&
+                      // photoURL: optional string, valid URL if present, max 500 chars
+                      (request.resource.data.photoURL == null ||
+                       (request.resource.data.photoURL is string &&
+                        request.resource.data.photoURL.matches('^https?://.+$') &&
+                        request.resource.data.photoURL.size() <= 500)) &&
+                      // email: optional string, basic format + length if present
+                      (request.resource.data.email == null ||
+                       (request.resource.data.email is string &&
+                        request.resource.data.email.matches('^.+@.+$') &&
+                        request.resource.data.email.size() <= 254)) &&
+                      // isAnonymous: optional bool (Firestore type is 'bool')
+                      (request.resource.data.isAnonymous == null ||
+                       request.resource.data.isAnonymous is bool) &&
+                      // linkedAt: optional ISO timestamp string, max 50 chars
+                      (request.resource.data.linkedAt == null ||
+                       (request.resource.data.linkedAt is string &&
+                        request.resource.data.linkedAt.size() <= 50)) &&
+                      // consentToTeamVisibility: optional bool
+                      (request.resource.data.consentToTeamVisibility == null ||
+                       request.resource.data.consentToTeamVisibility is bool);
       
       // Admins have full update access (role management, moderation)
       allow update: if isAdmin();
