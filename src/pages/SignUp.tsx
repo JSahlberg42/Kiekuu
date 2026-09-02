@@ -232,6 +232,11 @@ function SignUp() {
                 ← Takaisin alkuun
               </Link>
             </p>
+            <p className="text-slate-500 mt-4 text-xs">
+              <a href="https://jsahlberg42.github.io/Kiekuu/manual/tietosuoja/" target="_blank" rel="noopener noreferrer" className="hover:text-slate-300 transition-colors">
+                Tietosuoja
+              </a>
+            </p>
           </div>
         </form>
       </div>
