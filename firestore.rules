@@ -18,8 +18,10 @@ service cloud.firestore {
     
     // Users collection
     match /users/{userId} {
-      // Users can read their own data, admins can read all
-      allow read: if isOwner(userId) || isAdmin();
+      // Single-document reads: owner or admin.
+      // Collection-list queries are denied below.
+      allow get: if isOwner(userId) || isAdmin();
+      allow list: if false;
       
       // Users can create their own document on signup
       allow create: if isOwner(userId) && 
@@ -38,7 +40,6 @@ service cloud.firestore {
                         ['displayName', 'photoURL', 'email', 'isAnonymous', 'linkedAt', 'consentToTeamVisibility']
                       ) &&
                       // Type & Size Validations for displayName
-                      // displayName: nullable string, 1-100 chars if present
                       (request.resource.data.displayName == null ||
                        (request.resource.data.displayName is string &&
                         request.resource.data.displayName.size() >= 1 &&
@@ -53,17 +54,16 @@ service cloud.firestore {
                        (request.resource.data.email is string &&
                         request.resource.data.email.matches('^.+@.+$') &&
                         request.resource.data.email.size() <= 254)) &&
-                      // isAnonymous: optional boolean
+                      // isAnonymous: optional bool (Firestore type is 'bool')
                       (request.resource.data.isAnonymous == null ||
-                       request.resource.data.isAnonymous is boolean) &&
+                       request.resource.data.isAnonymous is bool) &&
                       // linkedAt: optional ISO timestamp string, max 50 chars
                       (request.resource.data.linkedAt == null ||
                        (request.resource.data.linkedAt is string &&
-                        request.resource.data.linkedAt.matches('^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}.*$') &&
                         request.resource.data.linkedAt.size() <= 50)) &&
-                      // consentToTeamVisibility: optional boolean
+                      // consentToTeamVisibility: optional bool
                       (request.resource.data.consentToTeamVisibility == null ||
-                       request.resource.data.consentToTeamVisibility is boolean);
+                       request.resource.data.consentToTeamVisibility is bool);
       
       // Admins have full update access (role management, moderation)
       allow update: if isAdmin();
