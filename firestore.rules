@@ -13,9 +13,7 @@ service cloud.firestore {
     }
     
     function isAdmin() {
-      return isAuthenticated() && 
-             exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
-             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+      return isAuthenticated() && request.auth.token.role == 'admin';
     }
     
     // Users collection
@@ -28,16 +26,44 @@ service cloud.firestore {
                       request.resource.data.role == 'user' &&
                       request.resource.data.rank == 'harjoittelija';
       
-      // Self-service updates are limited to profile/account-linking fields,
-      // plus the teamId field (joining/leaving a team).
-      // Progression state (progress, progressByCategory, rank*) is written
-      // exclusively by the submitQuizAnswer Cloud Function, so scores and
-      // ranks cannot be forged from the client.
+      // Self-service updates are limited to profile/account-linking fields.
+      // teamId changes go exclusively through joinTeam/leaveTeam Cloud Functions —
+      // direct client updates would desync /users/{userId}.teamId from
+      // /teams/{teamId}.memberUids. Progression state (progress,
+      // progressByCategory, rank*) is written exclusively by the submitQuizAnswer
+      // Cloud Function, so scores and ranks cannot be forged from the client.
       allow update: if isOwner(userId) &&
                       request.resource.data.role == resource.data.role &&
                       request.resource.data.diff(resource.data).affectedKeys().hasOnly(
-                        ['displayName', 'photoURL', 'email', 'isAnonymous', 'linkedAt', 'teamId', 'consentToTeamVisibility']
-                      );
+                        ['displayName', 'photoURL', 'email', 'isAnonymous', 'linkedAt', 'consentToTeamVisibility']
+                      ) &&
+                      // Type & Size Validations for displayName
+                                            (request.resource.data.displayName == null ||
+                                             (@types.isString(request.resource.data.displayName) &&
+                                              stringLength(request.resource.data.displayName) >= 1 &&
+                                              stringLength(request.resource.data.displayName) <= 100)) &&
+                                            // Type & Size Validations for photoURL
+                                            (@types.isEmpty(request.resource.data.photoURL) ||
+                                             (@types.isString(request.resource.data.photoURL) &&
+                                              (request.resource.data.photoURL.startsWith('http://') ||
+                                               request.resource.data.photoURL.startsWith('https://')) &&
+                                              stringLength(request.resource.data.photoURL) <= 500)) &&
+                                            // Type & Size Validations for email
+                                            (@types.isEmpty(request.resource.data.email) ||
+                                             (@types.isString(request.resource.data.email) &&
+                                              request.resource.data.email.matches('^.+@.+$') &&
+                                              stringLength(request.resource.data.email) <= 254)) &&
+                                            // Type Validations for isAnonymous
+                                            (@types.isEmpty(request.resource.data.isAnonymous) ||
+                                             @types.isBoolean(request.resource.data.isAnonymous)) &&
+                                            // Type & Format Validations for linkedAt
+                                            (@types.isEmpty(request.resource.data.linkedAt) ||
+                                             (@types.isString(request.resource.data.linkedAt) &&
+                                              request.resource.data.linkedAt.matches('^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.*$') &&
+                                              stringLength(request.resource.data.linkedAt) <= 50)) &&
+                                            // Type Validations for consentToTeamVisibility
+                                            (@types.isEmpty(request.resource.data.consentToTeamVisibility) ||
+                                             @types.isBoolean(request.resource.data.consentToTeamVisibility));
       
       // Admins have full update access (role management, moderation)
       allow update: if isAdmin();
