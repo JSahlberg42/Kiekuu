@@ -1,95 +1,83 @@
-# Joukkueet (Tiimit)
+# Joukkueet
 
-*Osa Kiekuu-oppimisalustaa. Päivitetty syyskuu 2026.*
-
----
-
-## Yleiskatsaus
-
-**Joukkueet** mahdollistavat VPK-yhteisöjen välisen kilpailun ja ystävällisten taisteluiden järjestämisen. Voit luoda oman tiimin palokunnallesi tai liittyä olemassa olevaan tiimiin.
-
-### Keskeiset ominaisuudet
-
-- **Oman tiimin luonti** — nimeä ja kuvaa tiimi
-- **Liittyminen tiimiin** — liity tunnuksen avulla
-- **Tiimin jäsenet** — näet kaikki tiimin jäsenet ja heidän tuloksensa
-- **Joukkueiden tulostaulukko** — vertailu muihin tiimeihin
-- **Joukkueen yhteispistemäärä** — tiimin kaikkien jäsenten pisteet lasketaan yhteen
-- **Suostumus** — tiimiin liittyminen edellyttää suostumusta siihen, että tiimin jäsenet näkevät profiilikuvan, nimen ja pisteet
+Joukkueet mahdollistavat yhteisen harjoittelun ja kilpailun VPK-kavereiden kanssa.
 
 ---
 
-## Joukkueiden tulostaulukko
+## Miten pistelasku toimii?
 
-Joukkueiden tulostaulukko näyttää kaikki tiimit sijoituksen mukaan:
+Joukkueen kokonaispistemäärä on kaikkien jäsenten henkilökohtaisten pistemäärien summa. Mitä useampi jäsen harjoittelee, sitä korkeammalle joukkue nousee tulostaulukossa.
 
-| Sijoitus | Tiimi | Jäseniä | Yhteispistemäärä |
-|---|---|---|---|
-| 1. | Oulun VPK | 12 | 4 230 |
-| 2. | Tampereen VPK | 8 | 3 800 |
-| 3. | ... | ... | ... |
-
-Sivun yläosassa näkyy myös oma tiimisi kortti, jos olet jossain tiimissä.
+Joukkueen sijoitus päivittyy automaattisesti aina, kun jokin jäsen vastaa tietovisan kysymykseen oikein.
 
 ---
 
-## Oma tiimi
+## Joukkueen luominen
 
-Kun olet tiimin jäsen, näet omalla tiimisivullasi:
+1. Siirry kohtaan **Joukkueet**
+2. Valitse **"Luo uusi joukkue"**
+3. Anna joukkueelle nimi (pakollinen) ja kuvaus (valinnainen)
+4. Hyväksy suostumus tietovisojen jakamisesta joukkueen jäsenten kanssa
+5. Valitse **"Luo joukkue"**
 
-- **Tiimin nimi ja kuvaus**
-- **Yhteispistemäärä** — kaikkien jäsenten pisteet yhteensä
-- **Sijoitus** — tiimisi sijoitus kaikkien tiimien joukossa
-- **Jäsenlista** — kaikki tiimin jäsenet (profiilikuva, nimi, sijoitus, henkilökohtainen pistemäärä)
+Joukkueen luomisen jälkeen näet joukkueen tunnuksen (ID), jonka voit jakaa muille.
 
-### Tiimin toiminnot
-
-- **Kopioi tunnus** — kopioi tiimin tunnus (teamId) ja lähetä se muille
-- **Muokkaa** — muuta tiimin nimeä ja kuvausta (vain tiimin luoja)
-- **Poista tiimi** — poista koko tiimi (vain tiimin luoja)
-- **Poistu tiimistä** — poistu tiimistä itse
+> ⚠️ **Anonyymit käyttäjät** eivät voi luoda tai liittyä joukkueisiin. Rekisteröidy ensin.
 
 ---
 
-## Uuden tiimin luonti
+## Joukkueeseen liittyminen
 
-### Edellytykset
+1. Siirry kohtaan **Joukkueet**
+2. Valitse **"Liity joukkueeseen"**
+3. Syötä joukkueen tunnus (ID), jonka olet saanut joukkueen perustajalta
+4. Hyväksy suostumus tietovisojen jakamisesta
+5. Valitse **"Liity"**
 
-- Sinulla on oltava Kiekuu-tunnus
-- **Et saa olla jo toisessa tiimissä** — poistu ensin nykyisestä tiimistä
-
-### Vaiheet
-
-1. Siirry **Joukkueet**-sivulle
-2. Klikkaa **Luo uusi joukkue**
-3. Täytä lomake:
-   - **Nimi** (1–40 merkkiä, pakollinen) — esim. "Oulun VPK"
-   - **Kuvaus** (valinnainen, max 200 merkkiä) — esim. "Oulun alueen vapaaehtoinen palokunta"
-4. Rastita suostumusruutu: *"Hyväksyn, että profiilikuvani, nimeni ja pisteeni näkyvät muille tiimin jäsenille."*
-5. Klikkaa **Luo joukkue**
-
-Luotuasi tiimin olet sen ainoa jäsen. Saat tiimin tunnuksen (teamId), jonka voit jakaa muille.
-
----
-
-## Tiimiin liittyminen
-
-### Tunnuksen saaminen
-
-Tiimin tunnuksen (teamId) saat tiimin luojalta. Tunnus näkyy onnistuneen luomisen jälkeen "Kopioi tunnus" -painikkeella.
-
-### Vaiheet
-
-1. Siirry **Joukkueet**-sivulle
-2. Klikkaa **Liity joukkueeseen**
-3. Syötä tiimin tunnus (teamId)
-4. Rastita suostumusruutu
-5. Klikkaa **Liity joukkueeseen**
+Voit olla vain yhdessä joukkueessa kerrallaan.
 
 ---
 
 ## Suostumus ja yksityisyys
 
+Kun liityt joukkueeseen tai luot joukkueen, annat suostumuksen siihen, että:
+
+- Nimesi näytetään muille joukkueen jäsenille
+- Pisteesi ja tasosi näkyvät joukkueen jäsenille
+- Voit peruuttaa suostumuksen milloin tahansa poistumalla joukkueesta
+
+Anonyymejä jäseniä ei sallita.
+
+---
+
+## Joukkueesta poistuminen
+
+Valitse **"Poistu joukkueesta"** omalla joukkuekortilla. Suostumus peruuntuu automaattisesti.
+
+---
+
+## Usein kysytyt kysymykset
+
+**Voinko vaihtaa joukkkuetta?**
+Kyllä. Poistu nykyisestä joukkueesta ja liity uuteen.
+
+**Mitä jos joukkueen perustaja poistuu?**
+Joukkue säilyy, mutta sen perustajatieto tyhjenee. Voit edelleen harjoitella joukkueessa.
+
+**Miten joukkueen tunnus toimii?**
+Joukkueen tunnus on Firestore-dokumentin yksilöllinen tunniste. Se ei ole henkilötieto.
+
+---
+
+## Ylläpito (ylläpitäjät)
+
+Sovelluksen ylläpitäjät voivat tarkastella ja hallita kaikkia joukkueita hallintapaneelin kautta. Hallintatoiminnot eivät ole tavallisten käyttäjien saatavilla.
+
+---
+
+## Suostumus ja yksityisyys
+
+<<<<<<< HEAD
 ### Miksi suostumus vaaditaan?
 
 Joukkueen jäsenet eivät ole anonyymejä. Tiimiin liittyminen edellyttää, että hyväksyt tiimin jäsenten näkevän:
@@ -143,3 +131,37 @@ Järjestelmänvalvoja (admin) voi hallita kaikkia tiimejä **Joukkueet**-hallint
 - **Poistaa tiimin** — poistaa koko tiimin
 
 Hallintasivulle pääsee: **Admin → Hallitse joukkueita**
+=======
+Kun liityt joukkueeseen tai luot joukkueen, annat suostumuksen siihen, että:
+
+- Nimesi näytetään muille joukkueen jäsenille
+- Pisteesi ja tasosi näkyvät joukkueen jäsenille
+- Voit peruuttaa suostumuksen milloin tahansa poistumalla joukkueesta
+
+Anonyymejä jäseniä ei sallita.
+
+---
+
+## Joukkueesta poistuminen
+
+Valitse **"Poistu joukkueesta"** omalla joukkuekortilla. Suostumus peruuntuu automaattisesti.
+
+---
+
+## Usein kysytyt kysymykset
+
+**Voinko vaihtaa joukkkuetta?**
+Kyllä. Poistu nykyisestä joukkueesta ja liity uuteen.
+
+**Mitä jos joukkueen perustaja poistuu?**
+Joukkue säilyy, mutta sen perustajatieto tyhjenee. Voit edelleen harjoitella joukkueessa.
+
+**Miten joukkueen tunnus toimii?**
+Joukkueen tunnus on Firestore-dokumentin yksilöllinen tunniste. Se ei ole henkilötieto.
+
+---
+
+## Ylläpito (ylläpitäjät)
+
+Sovelluksen ylläpitäjät voivat tarkastella ja hallita kaikkia joukkueita hallintapaneelin kautta. Hallintatoiminnot eivät ole tavallisten käyttäjien saatavilla.
+>>>>>>> 7a5aaa7 (docs: add Tietosuoja + Joukkueet guides, link privacy from SignUp)

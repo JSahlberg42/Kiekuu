@@ -3,6 +3,7 @@ import { onAuthStateChanged, type User } from 'firebase/auth';
 import { doc, setDoc } from 'firebase/firestore';
 import { auth, db } from '../services/firebase';
 import { getUserData } from '../services/authService';
+import { logSessionStart, setAnalyticsUserProperties } from '../services/analyticsService';
 import type { UserDoc } from '../types/models';
 
 export interface AuthContextValue {
@@ -98,6 +99,11 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
           }
         }
         setUserDataLoading(false);
+
+        // Fire session analytics + set user properties (best-effort, non-blocking)
+        const accountType = firebaseUser.isAnonymous ? 'anonymous' : 'authenticated';
+        logSessionStart(firebaseUser.uid, firebaseUser.isAnonymous, accountType);
+        setAnalyticsUserProperties(firebaseUser.uid, accountType, data?.progress?.currentLevel);
       } else {
         setUser(null);
         setUserData(null);

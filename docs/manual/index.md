@@ -40,6 +40,10 @@ Kiekuu on ilmainen, OPS 2026 -oppimissuunnitelmaan perustuva oppimisalusta, joka
 5. [Ryhmänjohtaja](ranks/ryhmanjohtaja)
 6. [Palokunnan päällikkö](ranks/palokunnan-paallikko)
 
+### Ominaisuudet
+- [Joukkueet](joukkueet)
+- [Tietosuoja](tietosuoja)
+
 ### Tekninen
 - [OPS-vastaavuus](technical/ops-alignment)
 

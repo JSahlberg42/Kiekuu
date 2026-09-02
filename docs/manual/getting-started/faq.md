@@ -81,10 +81,10 @@ Ei. Tarvitset internetyhteyden käyttääksesi Kiekuuta.
 ## Tietosuoja
 
 ### Mitä tietoja Kiekuu kerää?
-Keräämme vain käyttäjätilin luomiseen tarvittavat tiedot (sähköposti, näyttönimi).
+Keräämme vain sovelluksen toiminnan kannalta tarpeelliset tiedot: käyttäjätilin luomiseen tarvittavat tiedot (sähköposti, näyttönimi) sekä anonymisoitua käyttötilastoa (sivulataukset, tietovisan käyttö) Firebase Analyticsin kautta.
 
 ### Onko tietoni turvassa?
-Käytämme Firebase-autentikointia ja tietoturva on toteutettu alan parhaiden käytäntöjen mukaisesti.
+Käytämme Firebase-autentikointia ja tietoturva on toteutettu alan parhaiden käytäntöjen mukaisesti. Lisätietoja: [Tietosuoja](/manual/tietosuoja/)
 
 ### Miten poistan tilini?
 Ota yhteyttä kehittäjään GitHubin kautta.

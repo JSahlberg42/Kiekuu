@@ -2,6 +2,7 @@ import { useEffect, useCallback, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { getLeaderboardSnapshot } from '../services/leaderboardService';
+import { logLeaderboardViewed } from '../services/analyticsService';
 import { logFirestoreErrorContext } from '../utils/firestoreDiagnostics';
 import type { LeaderboardSnapshot } from '../types/models';
 import { Trophy, Medal, Award, RefreshCw } from 'lucide-react';
@@ -30,7 +31,7 @@ function Leaderboard() {
   const [refreshing, setRefreshing] = useState(false);
 
   const load = useCallback(
-    async (forceRefresh = false) => {
+    async (forceRefresh = false): Promise<void> => {
       if (!user) return;
       if (forceRefresh) setRefreshing(true);
       try {
@@ -50,11 +51,16 @@ function Leaderboard() {
   );
 
   const hasLoadedRef = useRef(false);
+  const snapshotRef = useRef<LeaderboardSnapshot | null>(null);
+  useEffect(() => { snapshotRef.current = snapshot; }, [snapshot]);
 
   useEffect(() => {
     if (!user?.uid || hasLoadedRef.current) return;
     hasLoadedRef.current = true;
-    load();
+    load().then(() => {
+      // Fire analytics once we know if the user is on the leaderboard.
+      logLeaderboardViewed(snapshotRef.current?.currentEntry ? 'user_position' : 'top_10');
+    });
   }, [user?.uid, load]);
 
   const handleRefresh = () => {
