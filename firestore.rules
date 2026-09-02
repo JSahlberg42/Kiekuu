@@ -19,14 +19,45 @@ service cloud.firestore {
     // Users collection
     match /users/{userId} {
       // Single-document reads: owner or admin.
-      // Collection-list queries are denied below.
+      // Collection-list queries are allowed only for admins.
       allow get: if isOwner(userId) || isAdmin();
-      allow list: if false;
+      allow list: if isAdmin();
       
-      // Users can create their own document on signup
+      // Users can create their own document on signup.
+      // Field-level restrictions prevent injection of privileged fields (score,
+      // progress, rank, role, teamId) that would survive the update guard.
+      // Note: 'progress' and 'teamId' are server-only fields written exclusively
+      // by Cloud Functions — blocking them here prevents malicious clients from
+      // pre-poisoning documents at creation time.
       allow create: if isOwner(userId) && 
                       request.resource.data.role == 'user' &&
-                      request.resource.data.rank == 'harjoittelija';
+                      request.resource.data.rank == 'harjoittelija' &&
+                      request.resource.data.keys().hasOnly([
+                        'uid', 'email', 'displayName', 'photoURL',
+                        'isAnonymous', 'role', 'rank', 'createdAt',
+                        'consentToTeamVisibility'
+                      ]) &&
+                      // isAnonymous: optional bool (Firestore uses 'bool')
+                      (!('isAnonymous' in request.resource.data) ||
+                       request.resource.data.isAnonymous is bool) &&
+                      // displayName: nullable string, 1-100 chars if present
+                      (!('displayName' in request.resource.data) ||
+                       (request.resource.data.displayName is string &&
+                        request.resource.data.displayName.size() >= 1 &&
+                        request.resource.data.displayName.size() <= 100)) &&
+                      // photoURL: optional string, valid URL if present, max 500 chars
+                      (!('photoURL' in request.resource.data) ||
+                       (request.resource.data.photoURL is string &&
+                        request.resource.data.photoURL.matches('^https?://.+$') &&
+                        request.resource.data.photoURL.size() <= 500)) &&
+                      // email: optional string, basic format + length if present
+                      (!('email' in request.resource.data) ||
+                       (request.resource.data.email is string &&
+                        request.resource.data.email.matches('^.+@.+$') &&
+                        request.resource.data.email.size() <= 254)) &&
+                      // consentToTeamVisibility: optional bool
+                      (!('consentToTeamVisibility' in request.resource.data) ||
+                       request.resource.data.consentToTeamVisibility is bool);
       
       // Self-service updates are limited to profile/account-linking fields.
       // teamId changes go exclusively through joinTeam/leaveTeam Cloud Functions —
@@ -39,30 +70,30 @@ service cloud.firestore {
                       request.resource.data.diff(resource.data).affectedKeys().hasOnly(
                         ['displayName', 'photoURL', 'email', 'isAnonymous', 'linkedAt', 'consentToTeamVisibility']
                       ) &&
-                      // Type & Size Validations for displayName
-                      (request.resource.data.displayName == null ||
+                      // displayName: nullable string, 1-100 chars if present
+                      (!('displayName' in request.resource.data) ||
                        (request.resource.data.displayName is string &&
                         request.resource.data.displayName.size() >= 1 &&
                         request.resource.data.displayName.size() <= 100)) &&
                       // photoURL: optional string, valid URL if present, max 500 chars
-                      (request.resource.data.photoURL == null ||
+                      (!('photoURL' in request.resource.data) ||
                        (request.resource.data.photoURL is string &&
                         request.resource.data.photoURL.matches('^https?://.+$') &&
                         request.resource.data.photoURL.size() <= 500)) &&
                       // email: optional string, basic format + length if present
-                      (request.resource.data.email == null ||
+                      (!('email' in request.resource.data) ||
                        (request.resource.data.email is string &&
                         request.resource.data.email.matches('^.+@.+$') &&
                         request.resource.data.email.size() <= 254)) &&
-                      // isAnonymous: optional bool (Firestore type is 'bool')
-                      (request.resource.data.isAnonymous == null ||
+                      // isAnonymous: optional bool
+                      (!('isAnonymous' in request.resource.data) ||
                        request.resource.data.isAnonymous is bool) &&
                       // linkedAt: optional ISO timestamp string, max 50 chars
-                      (request.resource.data.linkedAt == null ||
+                      (!('linkedAt' in request.resource.data) ||
                        (request.resource.data.linkedAt is string &&
                         request.resource.data.linkedAt.size() <= 50)) &&
                       // consentToTeamVisibility: optional bool
-                      (request.resource.data.consentToTeamVisibility == null ||
+                      (!('consentToTeamVisibility' in request.resource.data) ||
                        request.resource.data.consentToTeamVisibility is bool);
       
       // Admins have full update access (role management, moderation)
