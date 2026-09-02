@@ -1,10 +1,11 @@
-import { Suspense, lazy } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { Suspense, lazy, useEffect } from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import Landing from './pages/Landing';
 import Login from './pages/Login';
 import SignUp from './pages/SignUp';
+import { logPageView } from './services/analyticsService';
 const Home = lazy(() => import('./pages/Home'));
 const QuizBrowser = lazy(() => import('./pages/QuizBrowser'));
 const QuizTake = lazy(() => import('./pages/QuizTake'));
@@ -32,9 +33,22 @@ const routeFallback = (
   </div>
 );
 
+/** Fires a GA `page_view` event whenever the route changes. Must be a child of Router. */
+function PageTracker() {
+  const location = useLocation();
+  useEffect(() => {
+    // page_name = last path segment (e.g. "teams"), page_path = full path (e.g. "/teams/abc")
+    const segs = location.pathname.split('/').filter(Boolean);
+    const pageName = segs[0] || 'home';
+    logPageView(pageName, location.pathname);
+  }, [location.pathname]);
+  return null;
+}
+
 function App() {
   return (
     <Router>
+      <PageTracker />
       <AuthProvider>
         <Routes>
           <Route path="/landing" element={<Landing />} />

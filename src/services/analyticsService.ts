@@ -1,4 +1,4 @@
-import { logEvent } from 'firebase/analytics';
+import { logEvent, setUserProperties } from 'firebase/analytics';
 import { analytics } from './firebase';
 
 /**
@@ -65,4 +65,73 @@ export function logQuizCompleted(
     accuracy: Math.round((correctAnswers / totalQuestions) * 100),
     time_seconds: timeSeconds,
   });
+}
+
+// ─── Team events ───────────────────────────────────────────────────────────────
+
+/** Called when the user successfully creates a team. */
+export function logTeamCreated(teamId: string, teamName: string): void {
+  log('team_created', { team_id: teamId, team_name: teamName });
+}
+
+/** Called when the user successfully joins a team. */
+export function logTeamJoined(teamId: string, teamName: string): void {
+  log('team_joined', { team_id: teamId, team_name: teamName });
+}
+
+/** Called when the user successfully leaves a team. */
+export function logTeamLeft(teamId: string, teamName: string, wasCreator: boolean): void {
+  log('team_left', { team_id: teamId, team_name: teamName, was_creator: wasCreator });
+}
+
+// ─── Leaderboard events ────────────────────────────────────────────────────────
+
+/** Called when the user views the leaderboard. */
+export function logLeaderboardViewed(viewType: 'top_10' | 'user_position'): void {
+  log('leaderboard_viewed', { view_type: viewType });
+}
+
+// ─── Engagement events ────────────────────────────────────────────────────────
+
+/** Called once per session when auth state is resolved. */
+export function logSessionStart(
+  userId: string,
+  isAnonymous: boolean,
+  accountType: 'anonymous' | 'authenticated',
+): void {
+  log('session_start', {
+    user_id: userId,
+    is_anonymous: isAnonymous,
+    account_type: accountType,
+  });
+}
+
+// ─── Page / routing events ────────────────────────────────────────────────────
+
+/** Called on route changes. */
+export function logPageView(pageName: string, pagePath: string): void {
+  log('page_view', { page_name: pageName, page_path: pagePath });
+}
+
+// ─── User properties ──────────────────────────────────────────────────────────
+
+/** Set user-scoped properties on the analytics instance. Call once per session
+ *  after the user is identified (after sign-in / on app load). */
+export function setAnalyticsUserProperties(
+  userId: string,
+  accountType: 'anonymous' | 'authenticated',
+  rank?: string,
+): void {
+  if (!analytics) return;
+  try {
+    const props: Record<string, string> = {
+      account_type: accountType,
+    };
+    if (rank) props.current_rank = rank;
+    setUserProperties(analytics, props);
+    // Also set user_id as a user property
+    setUserProperties(analytics, { user_id: userId });
+  } catch {
+    // Silently ignore analytics errors
+  }
 }
