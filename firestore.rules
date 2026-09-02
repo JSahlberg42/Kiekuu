@@ -38,32 +38,32 @@ service cloud.firestore {
                         ['displayName', 'photoURL', 'email', 'isAnonymous', 'linkedAt', 'consentToTeamVisibility']
                       ) &&
                       // Type & Size Validations for displayName
-                                            (request.resource.data.displayName == null ||
-                                             (@types.isString(request.resource.data.displayName) &&
-                                              stringLength(request.resource.data.displayName) >= 1 &&
-                                              stringLength(request.resource.data.displayName) <= 100)) &&
-                                            // Type & Size Validations for photoURL
-                                            (@types.isEmpty(request.resource.data.photoURL) ||
-                                             (@types.isString(request.resource.data.photoURL) &&
-                                              (request.resource.data.photoURL.startsWith('http://') ||
-                                               request.resource.data.photoURL.startsWith('https://')) &&
-                                              stringLength(request.resource.data.photoURL) <= 500)) &&
-                                            // Type & Size Validations for email
-                                            (@types.isEmpty(request.resource.data.email) ||
-                                             (@types.isString(request.resource.data.email) &&
-                                              request.resource.data.email.matches('^.+@.+$') &&
-                                              stringLength(request.resource.data.email) <= 254)) &&
-                                            // Type Validations for isAnonymous
-                                            (@types.isEmpty(request.resource.data.isAnonymous) ||
-                                             @types.isBoolean(request.resource.data.isAnonymous)) &&
-                                            // Type & Format Validations for linkedAt
-                                            (@types.isEmpty(request.resource.data.linkedAt) ||
-                                             (@types.isString(request.resource.data.linkedAt) &&
-                                              request.resource.data.linkedAt.matches('^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.*$') &&
-                                              stringLength(request.resource.data.linkedAt) <= 50)) &&
-                                            // Type Validations for consentToTeamVisibility
-                                            (@types.isEmpty(request.resource.data.consentToTeamVisibility) ||
-                                             @types.isBoolean(request.resource.data.consentToTeamVisibility));
+                      // displayName: nullable string, 1-100 chars if present
+                      (request.resource.data.displayName == null ||
+                       (request.resource.data.displayName is string &&
+                        request.resource.data.displayName.size() >= 1 &&
+                        request.resource.data.displayName.size() <= 100)) &&
+                      // photoURL: optional string, valid URL if present, max 500 chars
+                      (request.resource.data.photoURL == null ||
+                       (request.resource.data.photoURL is string &&
+                        request.resource.data.photoURL.matches('^https?://.+$') &&
+                        request.resource.data.photoURL.size() <= 500)) &&
+                      // email: optional string, basic format + length if present
+                      (request.resource.data.email == null ||
+                       (request.resource.data.email is string &&
+                        request.resource.data.email.matches('^.+@.+$') &&
+                        request.resource.data.email.size() <= 254)) &&
+                      // isAnonymous: optional boolean
+                      (request.resource.data.isAnonymous == null ||
+                       request.resource.data.isAnonymous is boolean) &&
+                      // linkedAt: optional ISO timestamp string, max 50 chars
+                      (request.resource.data.linkedAt == null ||
+                       (request.resource.data.linkedAt is string &&
+                        request.resource.data.linkedAt.matches('^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}.*$') &&
+                        request.resource.data.linkedAt.size() <= 50)) &&
+                      // consentToTeamVisibility: optional boolean
+                      (request.resource.data.consentToTeamVisibility == null ||
+                       request.resource.data.consentToTeamVisibility is boolean);
       
       // Admins have full update access (role management, moderation)
       allow update: if isAdmin();

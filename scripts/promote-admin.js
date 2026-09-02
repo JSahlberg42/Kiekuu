@@ -51,7 +51,12 @@ async function promoteToAdmin(email) {
     
     console.log(`✅ Found user: ${userRecord.displayName || email} (${uid})`);
     
-    // Update user document in Firestore
+    // Set custom claim on the auth user (used by Firestore security rules)
+    // This takes effect on the user's next token refresh.
+    await auth.setCustomUserClaims(uid, { role: 'admin' });
+    console.log('🔐 Custom claim set: role=admin');
+    
+    // Also update Firestore user document (used by client-side UI checks)
     const userRef = db.collection('users').doc(uid);
     const userDoc = await userRef.get();
     
@@ -80,6 +85,7 @@ async function promoteToAdmin(email) {
     console.log('🎉 Success! User promoted to admin.');
     console.log(`   Email: ${email}`);
     console.log(`   UID: ${uid}`);
+    console.log('📝 Note: Custom claim takes effect on next sign-in. Existing sessions may need re-authentication.');
     
     process.exit(0);
   } catch (error) {
