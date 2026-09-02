@@ -26,15 +26,16 @@ service cloud.firestore {
                       request.resource.data.role == 'user' &&
                       request.resource.data.rank == 'harjoittelija';
       
-      // Self-service updates are limited to profile/account-linking fields,
-      // plus the teamId field (joining/leaving a team).
-      // Progression state (progress, progressByCategory, rank*) is written
-      // exclusively by the submitQuizAnswer Cloud Function, so scores and
-      // ranks cannot be forged from the client.
+      // Self-service updates are limited to profile/account-linking fields.
+      // teamId changes go exclusively through joinTeam/leaveTeam Cloud Functions —
+      // direct client updates would desync /users/{userId}.teamId from
+      // /teams/{teamId}.memberUids. Progression state (progress,
+      // progressByCategory, rank*) is written exclusively by the submitQuizAnswer
+      // Cloud Function, so scores and ranks cannot be forged from the client.
       allow update: if isOwner(userId) &&
                       request.resource.data.role == resource.data.role &&
                       request.resource.data.diff(resource.data).affectedKeys().hasOnly(
-                        ['displayName', 'photoURL', 'email', 'isAnonymous', 'linkedAt', 'teamId', 'consentToTeamVisibility']
+                        ['displayName', 'photoURL', 'email', 'isAnonymous', 'linkedAt', 'consentToTeamVisibility']
                       );
       
       // Admins have full update access (role management, moderation)
